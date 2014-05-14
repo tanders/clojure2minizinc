@@ -1,0 +1,21 @@
+* clojure2minizinc
+
+  A Clojure library designed to solve constraint satisfaction problems (CSP). It generates [[www.minizinc.org][MiniZinc]] code from a CSP specified in Clojure, that is very similar to the corresponding MiniZinc code. The generated MiniZinc program is then solved by one of the MiniZinc solvers (e.g., see http://www.minizinc.org/software.html) available, and the result is read back into Clojure.
+
+** TODO Usage
+
+   The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]] is also a useful documentation for this library. 
+
+
+** Design 
+
+   Most Clojure functions simply generate a string with the corresponding MiniZinc code. So, this library is very easy to extend to support not only the full feature set of MiniZinc, but also MiniZinc extensions proposed by various research projects.
+
+   The downside is that debugging the Clojure programs is somewhat difficult. For example, error messages by MiniZinc refer to line numbers of the generated MiniZinc code. However, constraint problem debuggers are not too helpful anyway. A useful technique is usually to disable all constraints for testing and then by and by enabling them again. 
+ 
+
+** License
+
+Copyright © 2014 Torsten Anders
+
+Distributed under the GNU General Public License.

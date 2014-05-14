@@ -1,0 +1,15 @@
+# Tmp files
+*~
+.lein-repl-history
+.nrepl-port
+.lein-deps-sum
+.lein-plugins
+.lein-failures
+
+# Compiled files
+*.jar
+*.fzn
+target
+
+# System files
+.DS_Store
