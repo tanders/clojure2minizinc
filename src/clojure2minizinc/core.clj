@@ -53,14 +53,21 @@
 (defrecord aDomain [min max mzn-string])
 (defrecord aVariable [name domain mzn-string])
 (defrecord aConstraint [args mzn-string]) ;; args for seq of expressions given to constraint
+(defrecord aConstraintExpression [args mzn-string]) ;; args for seq of expressions given to constraint
 (defrecord aSolve [solver mzn-string])
 (defrecord anOutput [arg mzn-string])
+
+(defn extract-mzn-string [x]
+  (cond (string? x) x
+        (= (type x) clojure2minizinc.core.aVariable) (:name test)
+        (record? x) (:mzn-string x)))
 
 (comment
   (def test (aVariable. 'x (domain 1 3) (format "var %s: %s;\n" (domain 1 3) 'x)))
   (:domain test)
   (:mzn-string test)
-  (type test)
+  (= (type test) clojure2minizinc.core.aVariable)
+  (extract-mzn-string test)
   )
 
 ;;;
@@ -124,18 +131,27 @@
 (defn constraint 
   ""
   [c]
-  (format "constraint c;\n" c))
+  (tell-store (aConstraint. c (format "constraint %s;\n" (extract-mzn-string c)))))
 
+;; constraint expressions just strings for now. Also, should not be told store! 
+;; TODO: consider defining defconstraint (macro) or make-constraint (function) to simplify the definition of new constraint expressions (hiding the tell-store etc.) 
 (defn != 
-  ""
+    ""
   [lh rh]
-  (pprint/cl-format nil "~S != ~S" lh rh))
+  ;; (println "fn constraint:" lh rh)
+  ;; (println "fn constraint:" (type lh) (type rh))
+  ;; TODO: lh and rh can in turn be already aConstraintExpression. If so, extract :mzn-string
+  (aConstraintExpression.
+   [lh rh] 
+   (pprint/cl-format nil "~S != ~S" (extract-mzn-string lh) (extract-mzn-string rh))))
 
 
 
 (comment
-  
-
+  (defn != 
+    ""
+  [lh rh]
+  (pprint/cl-format nil "~S != ~S" (extract-mzn-string lh) (extract-mzn-string rh)))
   )
 
 
@@ -148,7 +164,7 @@
   "Solve items specify what kind of solution is being looked for. Supported values for solver are satisfy, maximize, and minimize (a keyword)."
   [solver]
   {:pre [(#{:satisfy :maximize :minimize} solver)]}
-  (format "solve %s;\n" (name solver)))
+  (tell-store (aSolve. (name solver) (format "solve %s;\n" (name solver)))))
 
 
 (comment
@@ -176,6 +192,7 @@
   arg)
 
 (comment
+  ;; TODO: old test
   (output "this" "is" "a" "test")
   )
 
@@ -185,6 +202,36 @@
 ;;; Communicating with MiniZinc 
 ;;;
 
+;; TODO: this will likely not work as a function, because given function calls are evaluated outside the necessary dynamic scope. Nevertheless, try before using a macro instead
+;; TODO: Possibly I late embed this in minizinc below? Then it needs to become a macro itself.
+;; TODO: should macros defined elsewhere as caution?
+(defmacro clj2mnz 
+  "Translates a constraint problem defined in Clojure into the corresponding MiniZinc code. Expects any number of variable/parameter declarations, any number of constraints, one output, and one solver declaration, all in any order."
+  [& constraints]
+  `(binding [*mzn-store* ()]
+     ~@constraints
+     ;; TODO: map is lazy -- make sure dynamic scope is not left
+     ;; TMP: commented
+     ;; (apply str (map :mzn-string *mzn-store*))
+     ))
+
+(comment
+  ;; minimum CSP
+  ;; TODO: add output
+  ;; TODO: try also macroexpand 
+  (clj2mnz
+   (let [x (variable (domain 1 3) 'x) ;; mzn var naming redundant, but ensures var name in *.mzn file
+         y (variable (domain 1 3) 'y)]
+     ;; BUG: x and y are clojure.lang.Cons -- aVariable instances are wrapped in lists. Why?
+     (println "clj2mnz:" (type x) (type y))
+     (constraint (!= x y))
+     (solve :satisfy)
+     ;; TODO:
+     ;; output solution as map
+     ;; (output {:x x :y y})
+     (pprint/pprint *mzn-store*)
+     ))
+  )
 
 
 
