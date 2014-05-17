@@ -1,4 +1,21 @@
 
+* Relevant documentation
+
+  See FlatZinc, MiniZinc, and Zinc documentation
+
+  Specification of FlatZinc
+  http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
+  
+  Converting MiniZinc to FlatZinc
+  http://www.minizinc.org/downloads/doc-1.6/mzn2fzn.pdf
+
+  MiniZinc Tutorial
+  http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf
+
+  Specifications
+  http://www.minizinc.org/specifications.html
+
+
 * DONE Simplify design: records only for decision variables
   CLOSED: [2014-05-17 Sat 14:20]
 
@@ -13,3 +30,11 @@
 
 * Add constraints
 
+  See list at http://www.minizinc.org/downloads/doc-1.6/mzn-globals.html
+
+  Are these defined in the MiniZinc lib? https://github.com/MiniZinc/minizinc-stdlib/tree/master/lib/minizinc/std
+
+
+* Add Visualizing MiniZinc models with CP-Viz
+
+  See http://www.minizinc.org/downloads/doc-1.6/mzn-viz.pdf
