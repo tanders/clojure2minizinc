@@ -6,14 +6,49 @@
 
 ;; Doc for clojure.test: http://clojure.github.io/clojure/clojure.test-api.html
 
-(comment
-  
-  ;; test outdated
-  (deftest variable-declarations
-    (testing "Integer decision variables."
-      (is (= (variable (domain 1 3) 'x) "var 1..3: x;"))))
-  
+
+
+(deftest parameter-declarations
+  (testing "Integer"
+    (is (= (:mzn-string (parameter :int 1 'x)) "int: x = 1;"))
+    (comment
+      ;; gensym-ed param names not tested -- could perhaps do that with pattern matching later
+      (is (= (:mzn-string (parameter :int 1)) "int: <> = 1;"))
+      (is (= (:mzn-string (parameter :int)) "int: <>;"))
+      )
+    )
+  (testing "Float"
+    (is (= (:mzn-string (parameter :float 1.0 'x)) "float: x = 1.0;"))
+    (comment
+      ;; gensym-ed param names not tested
+      (is (= (:mzn-string (parameter :float 1.0)) "float: <> = 1;"))
+      (is (= (:mzn-string (parameter :float)) "float: <>;"))
+      )  
+    )
+  (testing "Bool"
+    (is (= (:mzn-string (parameter :bool 'true 'x)) "bool: x = true;"))
+    (comment
+      ;; gensym-ed param names not tested
+      (is (= (:mzn-string (parameter :bool 'true)) "bool: <> = true;"))
+      (is (= (:mzn-string (parameter :bool)) "bool: <>;"))
+      )  
+    )
+  (testing "Set of int"
+    (is (= (:mzn-string (parameter "set of int" (domain 1 'max) 'MySet)) "set of int: MySet = 1..max;"))  
+    )
+  (comment
+    ;; causes exception
+    (parameter :foo 1.0 'x)
+    )
   )
+
+
+
+(deftest variable-declarations
+  (testing "Integer decision variables."
+    (is (= (:mzn-string (variable (domain 1 3) 'x)) "var 1..3: x;"))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
