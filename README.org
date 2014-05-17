@@ -2,9 +2,39 @@
 
   A Clojure library designed to solve constraint satisfaction problems (CSP). It generates [[www.minizinc.org][MiniZinc]] code from a CSP specified in Clojure, that is very similar to the corresponding MiniZinc code. The generated MiniZinc program is then solved by one of the MiniZinc solvers (e.g., see http://www.minizinc.org/software.html) available, and the result is read back into Clojure.
 
-** TODO Usage
 
-   The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]] is also a useful documentation for this library. 
+** TODO Installation 
+
+   - Installation of MiniZinc tools
+     - [General distribution] (includes translation of MiniZinc to intermediate simpler format FlatZinc, which is understood by many solvers)
+     - Additional solvers (optional)
+
+   - Installation of this library (with =lein=)
+
+** TODO Usage 
+
+*** TODO A Minimal Example 
+
+    TODO: Revise: update if necessary (e.g., =clj2mnz= will likely be gone, and explicit variable MiniZinc names will be optional. 
+
+#+begin_src clojure :results silent
+(minizinc 
+   (clj2mnz
+    (let [a (variable (domain 0 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
+          b (variable (domain 0 3) 'b)]
+      (constraint (!= a b))
+      (solve :satisfy)
+      (output-map {:a a :b b}))))
+#+end_src
+
+Returns:    
+
+Generates in the background this MiniZinc code and calls solver with it
+
+
+*** Further Reading 
+
+    The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]] is also a useful documentation for this library. 
 
 
 ** Design 
