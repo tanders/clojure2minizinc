@@ -6,16 +6,18 @@
 ** TODO Installation 
 
    - Installation of MiniZinc tools
-     - [General distribution] (includes translation of MiniZinc to intermediate simpler format FlatZinc, which is understood by many solvers)
-     - Additional solvers (optional)
+     - Install the [[http://www.minizinc.org/g12distrib.html][G12 MiniZinc Distribution]] (includes translation of MiniZinc to intermediate simpler format FlatZinc, which is understood by many solvers, but also ready-to-use solvers)
+     - Additional solvers (optional), e.g., see FlatZinc Implementations at http://www.minizinc.org/software.html
 
-   - Installation of this library (with =lein=)
+   - Installation of this library
+     TODO: get installation with =lein= working
+
 
 ** TODO Usage 
 
 *** TODO A Minimal Example 
 
-    TODO: Revise: update if necessary (e.g., =clj2mnz= will likely be gone, and explicit variable MiniZinc names will be optional. 
+    TODO: Revise: update if necessary (e.g., =clj2mnz= will likely be gone later, and explicit variable MiniZinc names will be optional. 
 
 #+begin_src clojure :results silent
 (minizinc 
