@@ -1,0 +1,15 @@
+
+* DONE Simplify design: records only for decision variables
+  CLOSED: [2014-05-17 Sat 14:20]
+
+* Add parameters (plain integers etc)
+
+* Extend interface for minizinc 
+  
+  - Additional solver args
+  - Try calling other solvers (Gecode...)
+
+* Add set domain
+
+* Add constraints
+
