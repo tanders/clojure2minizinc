@@ -194,11 +194,38 @@ TODO: replace by more general variant that supports arbitrary Clojure data strut
   [my-map]
   (tell-store 
    (str "output [\"{\", " 
-         (apply str (map (fn [[key val]] (str "\" " key " \"" ", show(" (:name val) "), ")) my-map)) 
-         "\"}\\n\"];")))
+        ;; BUG: of REPL? Strings containing parentheses can cause blocking.
+        ;; waiting for a response at https://groups.google.com/forum/#!forum/clojure-tools
+        (apply str (doall (map (fn [[key val]] (str "\" " key " \"" ", show(" (:name val) "), ")) my-map))) 
+        "\"}\\n\"];")))
 
 (comment
-  (output-map {:x x :y y})
+  (def x (variable (domain 1 3) 'x))
+  (def y (variable (domain 4 6) 'y))
+  (print (output-map {:x x :y y}))
+
+  (str "output [\"{\", " 
+               (apply str (doall (map (fn [[key val]] (str "\" " key " \"" ", show(" (:name val) "), ")) {:x x :y y}))) 
+               "\"}\\n\"];")
+
+  (apply str '("\" :x \", show(x), " "\" :y \", show(y), "))
+  (apply str '("show(x)" " bar"))
+
+  ;; string with parenthesis blocks str? 
+  (apply str '(")" " bar"))
+
+  ;; BUG: in Clojure? Strings containing parentheses can cause problems?
+  ;; This works in a plain lein repl, so possibly the bug is in CIDER? 
+  (str "(")
+  (str ")")
+
+  (. "test" (toString))
+  (. "(" (toString)) ;; blocks
+  (. ")" (toString))
+
+  ; even evaluating only string containing parentheses causes problems -- seemingly blocks the repl
+  (def parString "()")
+
   )
 
 (comment
@@ -248,12 +275,12 @@ TODO: replace by more general variant that supports arbitrary Clojure data strut
   `(binding [*mzn-store* []]
      ~@constraints
      ;; TODO: map is lazy -- make sure dynamic scope is not left
-     (apply str (map (fn [x#]  ; x# results in unique gensym
-                       (str (cond (= (type x#) clojure2minizinc.core.aVariable) (:mzn-string x#)
-                                  (string? x#) x#
-                                  :else (throw (Exception. (pprint/cl-format nil "~S not supported. MiniZinc statements must be strings or variables defined with function clojure2minizinc.core/variable." x#)))) 
-                            "\n"))
-                     *mzn-store*))))
+     (apply str (doall (map (fn [x#]  ; x# results in unique gensym
+                              (str (cond (= (type x#) clojure2minizinc.core.aVariable) (:mzn-string x#)
+                                         (string? x#) x#
+                                         :else (throw (Exception. (pprint/cl-format nil "~S not supported. MiniZinc statements must be strings or variables defined with function clojure2minizinc.core/variable." x#)))) 
+                                   "\n"))
+                            *mzn-store*)))))
 
 (comment
   ;; minimum CSP
@@ -276,40 +303,53 @@ TODO: replace by more general variant that supports arbitrary Clojure data strut
 ;; TODO: allow for multiple solutions: split string with multiple solution along the "--------" marking, and read each solution individually
 ;; TODO: Support all solver arguments as keywords (e.g., how many solutions) 
 (defn minizinc 
-  "Calls a MiniZinc solver on a given MiniZinc program and returns the result.
+  "Calls a MiniZinc solver on a given MiniZinc program and returns a list of one or more solutions.
 
 Options are
 
-:mzn        (string) a MiniZinc program, which can be created with other functions of clojure2minizinc
-:solver     (string) solver to call
-:mznfile    (string or file) MiniZinc file generated
-:print-mzn? (boolean) whether or not to print resulting MiniZinc program (for debugging)"
-  [mzn & {:keys [solver mznfile print-mzn?] 
+:mzn            (string) a MiniZinc program, which can be created with other functions of clojure2minizinc
+:solver         (string) solver to call
+:mznfile        (string or file) MiniZinc file generated
+:print-mzn?     (boolean) whether or not to print resulting MiniZinc program (for debugging)
+
+Solver options
+:num-solutions  (int) An upper bound on the number of solutions to output
+"
+  [mzn & {:keys [solver mznfile print-mzn?
+                 num-solutions] 
           :or {solver *fd-solver*
                mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)
-               print-mzn? false}}]
+               print-mzn? false
+               num-solutions 1}}]
   ;; (println "mzn:" mzn "\nmznfile:" mznfile "\nsolver:" solver)
   (when print-mzn? (println mzn))
   (spit mznfile mzn)
-  ;; TODO: read result with read-string, once I assured that output always results in clojure-parsable output
   ;; mznfile split into filename (base-name) and dirname (parent), so that shell/sh first moves into that dir, because otherwise I got errors from *fd-solver*
-  (let [result (shell/sh solver (fs/base-name mznfile) :dir (fs/parent mznfile))]
+  (let [result (shell/sh solver 
+                         (format "-n%s" num-solutions) 
+                         (fs/base-name mznfile)
+                         :dir (fs/parent mznfile)
+                         )]
     (if (= (:exit result) 0)
-      (read-string (:out result))
+      (map read-string
+           (clojure.string/split (:out result) #"\n----------\n"))
       (throw (Exception. (format "MiniZinc error: %s" (:err result)))))))
+
 
 (comment
   ;; !! NB: first mini version running :)
   (minizinc 
    (clj2mnz
-    (let [a (variable (domain 0 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
-          b (variable (domain 0 3) 'b)]
+    (let [a (variable (domain -1 1) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
+          b (variable (domain -1 1) 'b)]
       (constraint (!= a b))
       (solve :satisfy)
       (output-map {:a a :b b})
       ;; (pprint/pprint *mzn-store*)
       ))
-   :print-mzn? true)
+   :print-mzn? true
+   :num-solutions 3
+   )
 
 
   ;; aust CSP in Clojure using a Clojure vector of variables
