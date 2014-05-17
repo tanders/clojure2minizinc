@@ -4,7 +4,7 @@
   (:require [clojure.pprint :as pprint])
   ;; http://raynes.github.io/fs/  https://github.com/Raynes/fs
   (:require [me.raynes.fs :as fs])
-  (:require [clojure.walk :as walk])
+  (:require [clojure.walk :as walk]) ;; not used yet
   )
 
 ;; (require '[clojure2minizinc.core :as mzn])
@@ -55,20 +55,14 @@
 ;;; (I could perhaps only use strings, but more additional explicit information could be helpful later)
 ;;;
 
-(defrecord aDomain [min max mzn-string])
 (defrecord aVariable [name domain mzn-string])
-(defrecord aConstraint [args mzn-string]) ;; args for seq of expressions given to constraint
-(defrecord aConstraintExpression [args mzn-string]) ;; args for seq of expressions given to constraint
-(defrecord aSolve [solver mzn-string])
-(defrecord anOutput [arg mzn-string])
 
-(defn extract-mzn-string [x]
-  (cond ;; (string? x) x
-        (= (type x) clojure2minizinc.core.aVariable) (:name x)
-        (record? x) (:mzn-string x)
-        ;; :else (throw (Exception. (pprint/cl-format nil "extract-mzn-string cannot handle ~S of type ~S" x (type x))))
-        :else x
-        ))
+(defn- extract-mzn-string 
+  "Returns the name of aVariable instances (called within constraint expressions), or simply argument if arg is a string."
+  [x]
+  (cond (= (type x) clojure2minizinc.core.aVariable) (:name x)
+        (string? x) x
+        :else (throw (Exception. (pprint/cl-format nil "extract-mzn-string cannot handle ~S of type ~S" x (type x))))))
 
 
 (comment
@@ -91,7 +85,7 @@
 (defn domain 
   "Expects a minimum an a maximum value (ints or floats) and returns a domain specification for a decision variable (ints or floats)."
   [min max]
-  (aDomain. min max (pprint/cl-format nil "~S..~S" min max)))
+  (pprint/cl-format nil "~S..~S" min max))
 
 ;; TODO: Var name should be optional  
 ;; OK TODO: Create a central store, where variables and constraints on these variables are added. Then, variables can be stored in arbitrary Clojure data structures and constraints to these can be applied by traversing these data structures. However, the problem is to create such store locally, so that multiple csp can be created and solved concurrently. 
@@ -99,7 +93,7 @@
 (defn variable
   "Declares a decision variable (int or float) with the given domain and variable name (string, symbol or keyword)."
   [dom var-name]
-  (tell-store (aVariable. (name var-name) dom (format "var %s: %s;" (:mzn-string dom) (name var-name)))))
+  (tell-store (aVariable. (name var-name) dom (format "var %s: %s;" dom (name var-name)))))
 
 (comment
   (domain 1 3)
@@ -144,20 +138,15 @@
 (defn constraint 
   ""
   [c]
-  (tell-store (aConstraint. c (format "constraint %s;" (extract-mzn-string c)))))
+  (tell-store (format "constraint %s;" (extract-mzn-string c))))
 
 ;; constraint expressions just strings for now. Also, should not be told store! 
 ;; TODO: consider defining defconstraint (macro) or make-constraint (function) to simplify the definition of new constraint expressions (hiding the tell-store etc.) 
+;; TODO: Consistently rename constraint so that it does not shadow basic built-ins (e.g., use c!= for constraint != instead?)
 (defn != 
     ""
   [lh rh]
-  ;; (println "fn constraint:" lh rh)
-  ;; (println "fn constraint:" (type lh) (type rh))
-  ;; TODO: lh and rh can in turn be already aConstraintExpression. If so, extract :mzn-string
-  (aConstraintExpression.
-   [lh rh] 
-   (format "%s != %s" (extract-mzn-string lh) (extract-mzn-string rh))))
-
+  (format "%s != %s" (extract-mzn-string lh) (extract-mzn-string rh)))
 
 
 (comment
@@ -165,8 +154,6 @@
     ""
   [lh rh]
   (pprint/cl-format nil "~S != ~S" (extract-mzn-string lh) (extract-mzn-string rh)))
-
-  (format "%s != %s" "a" "b")
 
   
   )
@@ -181,7 +168,7 @@
   "Solve items specify what kind of solution is being looked for. Supported values for solver are satisfy, maximize, and minimize (a keyword)."
   [solver]
   {:pre [(#{:satisfy :maximize :minimize} solver)]}
-  (tell-store (aSolve. (name solver) (format "solve %s;" (name solver)))))
+  (tell-store (format "solve %s;" (name solver))))
 
 
 (comment
@@ -202,19 +189,19 @@
 
 ;; TMP: def until a more general function output that translates arbitrary data structures containing variables is defined.
 (defn output-map
-  "TMP function: Expects a map containing MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure map for Clojure to read."
+  "[TMP function] Expects a map containing MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure map for Clojure to read.
+TODO: replace by more general variant that supports arbitrary Clojure data strutures."
   [my-map]
   (tell-store 
-   (anOutput. 
-    my-map 
-    (str "output [\"{\", " 
+   (str "output [\"{\", " 
          (apply str (map (fn [[key val]] (str "\" " key " \"" ", show(" (:name val) "), ")) my-map)) 
-         "\"}\\n\"];"))))
+         "\"}\\n\"];")))
 
 (comment
   (output-map {:x x :y y})
   )
 
+(comment
 ;; TODO: finish definition
 ;; TODO: then revise definition such that it always results in a string expressing a clojure value such as a map.
 ;; Idea: input is also a map, where the values at keys are variables, or some other clojure data structure containing variables. This data structure is then expressed as a string.
@@ -223,8 +210,6 @@
   [arg]
   arg)
 
-
-(comment
   ;; TODO: old test
   (output "this" "is" "a" "test")
 
@@ -263,8 +248,12 @@
   `(binding [*mzn-store* []]
      ~@constraints
      ;; TODO: map is lazy -- make sure dynamic scope is not left
-     (apply str (map #(str (:mzn-string %) "\n") *mzn-store*))
-     ))
+     (apply str (map (fn [x#]  ; x# results in unique gensym
+                       (str (cond (= (type x#) clojure2minizinc.core.aVariable) (:mzn-string x#)
+                                  (string? x#) x#
+                                  :else (throw (Exception. (pprint/cl-format nil "~S not supported. MiniZinc statements must be strings or variables defined with function clojure2minizinc.core/variable." x#)))) 
+                            "\n"))
+                     *mzn-store*))))
 
 (comment
   ;; minimum CSP
@@ -283,28 +272,31 @@
 
 
 
-;; TODO: add convenience function to create program from multiple strings
+;; TODO: incorporate clj2mnz into minizinc (turning minizinc into a macro)?
+;; TODO: allow for multiple solutions: split string with multiple solution along the "--------" marking, and read each solution individually
+;; TODO: Support all solver arguments as keywords (e.g., how many solutions) 
 (defn minizinc 
   "Calls a MiniZinc solver on a given MiniZinc program and returns the result.
 
 Options are
 
-:csp      (string) a MiniZinc program, which can be created with other functions of clojure2minizinc.
-:solver   (string) solver to call. 
-:mznfile  (string or file) MiniZinc file generated."
-  [csp & {:keys [solver mznfile] 
+:mzn        (string) a MiniZinc program, which can be created with other functions of clojure2minizinc
+:solver     (string) solver to call
+:mznfile    (string or file) MiniZinc file generated
+:print-mzn? (boolean) whether or not to print resulting MiniZinc program (for debugging)"
+  [mzn & {:keys [solver mznfile print-mzn?] 
           :or {solver *fd-solver*
-               mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)}}]
-  (println "csp:" csp "\nmznfile:" mznfile "\nsolver:" solver)
-  (spit mznfile csp)
+               mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)
+               print-mzn? false}}]
+  ;; (println "mzn:" mzn "\nmznfile:" mznfile "\nsolver:" solver)
+  (when print-mzn? (println mzn))
+  (spit mznfile mzn)
   ;; TODO: read result with read-string, once I assured that output always results in clojure-parsable output
   ;; mznfile split into filename (base-name) and dirname (parent), so that shell/sh first moves into that dir, because otherwise I got errors from *fd-solver*
   (let [result (shell/sh solver (fs/base-name mznfile) :dir (fs/parent mznfile))]
     (if (= (:exit result) 0)
       (read-string (:out result))
-      (throw (Exception. "MiniZinc error: %s" (:err result))))))
-
-
+      (throw (Exception. (format "MiniZinc error: %s" (:err result)))))))
 
 (comment
   ;; !! NB: first mini version running :)
@@ -315,9 +307,33 @@ Options are
       (constraint (!= a b))
       (solve :satisfy)
       (output-map {:a a :b b})
-      (pprint/pprint *mzn-store*)
-      )))
-  
+      ;; (pprint/pprint *mzn-store*)
+      ))
+   :print-mzn? true)
+
+
+  ;; aust CSP in Clojure using a Clojure vector of variables
+  ;; TODO: incomplete -- constraints and integer decl missing
+  ;; TODO: not yet working?
+  (minizinc 
+   (clj2mnz
+    ;; TODO: Create map instead of vector for named variables. Give vector of keys and by and by extend map {} by adding keys with vars (e.g., using fun reduce)
+    (let [vars (map #(variable (domain 1 3) %) [:wa :nt :sa :q :nsw :v :t])]
+      (solve :satisfy)
+      ;; TODO: use map created above
+      (output-map
+       (apply hash-map 
+              (flatten (map #(cons (keyword (:name %)) (list %))
+                            vars))))
+      ;; (pprint/pprint *mzn-store*)
+      ))
+   )  
+  ;; (apply hash-map 
+  ;;        (flatten (map #(cons (keyword (:name %)) (list %))
+  ;;                      (map #(variable (domain 1 3) %) [:wa :nt :sa :q :nsw :v :t]))))
+
+
+  ;; dummy example
   (minizinc 
    "var 0..2: x;
 solve satisfy;"
