@@ -314,25 +314,30 @@ Options are
 
 Solver options
 :num-solutions  (int) An upper bound on the number of solutions to output
+:all-solutions  (boolean) If true, return all solutions
 "
   [mzn & {:keys [solver mznfile print-mzn?
-                 num-solutions] 
+                 num-solutions all-solutions?] 
           :or {solver *fd-solver*
                mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)
                print-mzn? false
-               num-solutions 1}}]
+               num-solutions 1
+               all-solutions? false}}]
   ;; (println "mzn:" mzn "\nmznfile:" mznfile "\nsolver:" solver)
   (when print-mzn? (println mzn))
   (spit mznfile mzn)
   ;; mznfile split into filename (base-name) and dirname (parent), so that shell/sh first moves into that dir, because otherwise I got errors from *fd-solver*
   (let [result (shell/sh solver 
-                         (format "-n%s" num-solutions) 
+                         (if all-solutions?
+                           "--all-solutions"
+                           ;; I could not get long parameter names working 
+                           (format "-n%s" num-solutions)) 
                          (fs/base-name mznfile)
                          :dir (fs/parent mznfile)
                          )]
     (if (= (:exit result) 0)
       (map read-string
-           (clojure.string/split (:out result) #"\n----------\n"))
+           (clojure.string/split (:out result) #"(\n----------\n|==========\n)"))
       (throw (Exception. (format "MiniZinc error: %s" (:err result)))))))
 
 
@@ -349,6 +354,7 @@ Solver options
       ))
    :print-mzn? true
    :num-solutions 3
+   ;; :all-solutions? true
    )
 
 
