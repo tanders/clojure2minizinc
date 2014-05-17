@@ -55,7 +55,7 @@
 ;;; (I could perhaps only use strings, but more additional explicit information could be helpful later)
 ;;;
 
-(defrecord aVariable [name domain mzn-string])
+(defrecord aVariable [name mzn-string])
 
 (defn- extract-mzn-string 
   "Returns the name of aVariable instances (called within constraint expressions), or simply argument if arg is a string."
@@ -78,22 +78,45 @@
   )
 
 ;;;
+;;; Creating MiniZinc parameters (quasi constants)
+;;;
+
+;; TODO: ?? make set declaration more concise (instead of "set of int" some shorter type expression, e.g., :set-of-int)
+;; TODO: ? add convenience funs for individual types
+;; TODO: add array declarations
+(defn parameter   
+  "Declares a parameter (quasi a constant) with the given type (a string, symbol or keyword; can be int, float, bool...), an optional init-value (default nil, meaning no initialisation), and optional variable name (a string, symbol or keyword, default is a gensym-ed name)."
+  ([param-type]
+     ;; (println (pprint/cl-format nil "param-type: ~S" param-type))
+     (parameter param-type nil))
+  ([param-type init-value]
+     ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S" param-type init-value))
+     (parameter param-type init-value (gensym (name param-type))))
+  ([param-type init-value var-name]
+     {:pre [(#{"int" "float" "bool" "set of int"} (name param-type))]}
+     ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
+     (tell-store
+      (aVariable. (name var-name) 
+                  (if init-value
+                      (format "%s: %s = %s;" (name param-type) (name var-name) init-value)
+                      (format "%s: %s;" (name param-type) (name var-name)))))))
+
+
+;;;
 ;;; Creating MiniZinc variables
 ;;;
 
-;; TODO: find out whether there is a way to restrict the domain of an integer to only a given list of integers (i.e., "cut holes" into the domain)
+;; TODO: find out whether there is a way in MiniZinc to restrict the domain of an integer to only a given list of integers (i.e., "cut holes" into the domain)
 (defn domain 
   "Expects a minimum an a maximum value (ints or floats) and returns a domain specification for a decision variable (ints or floats)."
   [min max]
   (pprint/cl-format nil "~S..~S" min max))
 
-;; TODO: Var name should be optional  
-;; OK TODO: Create a central store, where variables and constraints on these variables are added. Then, variables can be stored in arbitrary Clojure data structures and constraints to these can be applied by traversing these data structures. However, the problem is to create such store locally, so that multiple csp can be created and solved concurrently. 
-;; For different variable bindings in different threads I may need some form of dynamic scope. See book "The Joy of Clojure", Sec. 11.9 Vars and dynamic binding
 (defn variable
-  "Declares a decision variable (int or float) with the given domain and variable name (string, symbol or keyword)."
-  [dom var-name]
-  (tell-store (aVariable. (name var-name) dom (format "var %s: %s;" dom (name var-name)))))
+  "Declares a decision variable (int or float) with the given domain and an optional variable name (string, symbol or keyword)."
+  ([dom] (variable dom (gensym "var")))
+  ([dom var-name]
+     (tell-store (aVariable. (name var-name) (format "var %s: %s;" dom (name var-name))))))
 
 (comment
   (domain 1 3)
@@ -102,6 +125,7 @@
     (variable (domain 1 3) 'x))
   (binding [*mzn-store* ()]
     (variable (domain 1 3) :x))
+  (variable (domain 1 3))
   )
 
 ;; TMP: test
@@ -164,6 +188,7 @@
 ;;; Solver
 ;;;
 
+;; TODO: for solve maximise function should additionally expect an expression to maximise
 (defn solve 
   "Solve items specify what kind of solution is being looked for. Supported values for solver are satisfy, maximize, and minimize (a keyword)."
   [solver]
@@ -301,7 +326,7 @@ TODO: replace by more general variant that supports arbitrary Clojure data strut
 
 ;; TODO: incorporate clj2mnz into minizinc (turning minizinc into a macro)?
 ;; TODO: allow for multiple solutions: split string with multiple solution along the "--------" marking, and read each solution individually
-;; TODO: Support all solver arguments as keywords (e.g., how many solutions) 
+;; TODO: Add solver arguments: cmdline-data, parallel (unrecognized for mzn-g12fd), random-seed, solver-backend, flatzinc-flags (?), keep-files, ... 
 (defn minizinc 
   "Calls a MiniZinc solver on a given MiniZinc program and returns a list of one or more solutions.
 
