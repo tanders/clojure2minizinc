@@ -36,7 +36,53 @@ Generates in the background this MiniZinc code and calls solver with it
 
 *** Further Reading 
 
-    The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]] is also a useful documentation for this library. 
+
+** Similarity  and differences between MiniZinc and its Clojure complement
+
+   Definitions in clojure2minizinc can be very similar to MiniZinc code. This sections lists important differences.
+
+*** Code similarity
+
+   In clojure2minizinc all code is expressed by standard Lisp S-expressions. Most MiniZinc operators, functions etc. are called exactly the same in clojure2minizinc, except for a prefix =_= to avoid shadowing existing Lisp functions etc. For example the following two code snippets show a MiniZinc code line and the corresponding clojure2minizinc 
+
+#+begin_src minizinc :results silent
+constraint x + y != z;
+#+end_src
+
+#+begin_src clojure :results silent
+(_constraint (_!= (_+ x y) z))
+#+end_src
+
+   Because of this similarity of code, the main documentation of clojure2minizinc is actually the MiniZinc documentation. For example, the [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]] is also a useful documentation for this library. 
+
+   *TODO* add links to further MiniZinc documentation
+
+*** Exceptions to the similarity
+
+    There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure. These are the following.
+
+    *TODO* full (short) list of different function names: 
+     - =/\= becomes =_and=
+     - =\/= becomes =_or=
+     - =/= becomes *TODO*
+
+
+*** Going beyond MiniZinc limitations
+    
+    clojure2minizinc allows to do a number of things that are impossible in plain MiniZinc. Particular important is the fact that decision variables can be stored in arbitrary Clojure data structures, and then constraints be applied to these data structures. MiniZinc does not see the Clojure data structure, but it may help to express information about the constraint problem to model (e.g., to express how certain variables are related).  
+
+    *TODO* Demo example
+
+    In addition, most Clojure functionality is available for defining MiniZinc models. For example, auto-completion and documentation of your editor will help you (standard MiniZinc editors do not support anything like that).
+
+
+*** TODO Limitations compared to standard Clojure programming 
+
+    Constraint programming provides a very high level of abstraction for the programmer. However, this strength comes with a certain price. In particular, 
+...
+
+software using constraint programming is harder to debug.
+ 
 
 
 ** Design 
