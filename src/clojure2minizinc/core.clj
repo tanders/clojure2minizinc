@@ -56,6 +56,7 @@
 
 (defrecord aVar [name mzn-string])
 
+;; TODO: add type-checker and replace calls of function type with bespoke type-checker
 (defn- extract-mzn-string 
   "Returns the name of aVar instances (called within constraint expressions), or simply argument if arg is a string."
   [x]
@@ -65,40 +66,75 @@
 
 
 (comment
-  (def test (aVar. 'x (domain 1 3) (format "var %s: %s;" (:mzn-string (domain 1 3)) (name 'x))))
-  (:domain test)
-  (:name test)
-  (:mzn-string test)
-  (= (type test) clojure2minizinc.core.aVar)
+  (def myVar (aVar. 'x (format "var %s: %s;" (_dom 1 3) (name 'x))))
+  (:name myVar)
+  (:mzn-string myVar)
+  (= (type myVar) clojure2minizinc.core.aVar)
 
-  (extract-mzn-string "test")
-  (extract-mzn-string test)
-  (extract-mzn-string ['test])
+  (extract-mzn-string "myVar")
+  (extract-mzn-string myVar)
+  (extract-mzn-string ['myVar])
   )
 
 ;;;
 ;;; Creating MiniZinc parameters (quasi constants)
 ;;;
 
-;; TODO: ?? make set declaration more concise (instead of "set of int" some shorter type expression, e.g., :set-of-int)
-;; TODO: ? add convenience funs for individual types
 ;; TODO: add array declarations
-(defn parameter   
+(defn- parameter   
   "Declares a parameter (quasi a constant) with the given type (a string, symbol or keyword; can be int, float, bool...), an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([param-type]
-     ;; (println (pprint/cl-format nil "param-type: ~S" param-type))
-     (parameter param-type nil))
-  ([param-type init-value]
-     ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S" param-type init-value))
-     (parameter param-type init-value (gensym (name param-type))))
+  ([param-type] (parameter param-type nil))
+  ([param-type init-value] (parameter param-type init-value (gensym (name param-type))))
   ([param-type init-value var-name]
      {:pre [(#{"int" "float" "bool" "set of int"} (name param-type))]}
      ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
      (tell-store
       (aVar. (name var-name) 
-                  (if init-value
-                      (format "%s: %s = %s;" (name param-type) (name var-name) init-value)
-                      (format "%s: %s;" (name param-type) (name var-name)))))))
+             (if init-value
+               (format "%s: %s = %s;" (name param-type) (name var-name) init-value)
+               (format "%s: %s;" (name param-type) (name var-name)))))))
+
+(comment
+  (:mzn-string (parameter :int 1 'x))
+  (parameter :int 1)
+  (parameter :int)
+
+  (parameter :float 1.0 'x)
+  (parameter :float 1.0)
+  (parameter :float)
+
+  (parameter :bool 'true 'x)
+  (parameter :bool 'true)
+  (parameter :bool)
+
+  (parameter :set-of-int (_dom 1 'max) 'MySet)
+)
+
+(defn _int 
+  "Declares an initeger parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  ([] (parameter :int)) 
+  ([init-value] (parameter :int init-value))
+  ([init-value var-name] (parameter :int init-value var-name)))
+
+(defn _float 
+  "Declares a float parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  ([] (parameter :float)) 
+  ([init-value] (parameter :float init-value))
+  ([init-value var-name] (parameter :float init-value var-name)))
+
+(defn _bool 
+  "Declares a bool parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  ([] (parameter :bool)) 
+  ([init-value] (parameter :bool init-value))
+  ([init-value var-name] (parameter :bool init-value var-name)))
+
+(defn _set-of-int
+  "Declares a set of integers parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  ([] (parameter "set of int")) 
+  ([init-value] (parameter "set of int" init-value))
+  ([init-value var-name] (parameter "set of int" init-value var-name)))
+
+
 
 
 ;;;
