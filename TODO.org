@@ -16,6 +16,29 @@
   http://www.minizinc.org/specifications.html
 
 
+* DONE Naming conventions 
+  CLOSED: [2014-05-20 Tue 20:05]
+
+  Many names MiniZinc keywords clash with Clojure function/macro/etc names. I do not want to confuse those, but finding different -- and much longer -- names is also not really a good idea. 
+
+  Can I have some initial character before all clojure2minizinc defs, that does not hinder reading the actual name?
+
+  Ideas:
+
+  -int
+
+  !! _int
+  Note that _ has special meaning (required but unused argument), but longer vars are perhaps different
+  vars starting with _ are seemingly used also in other contexts, e.g., __meta  http://onclojure.com/
+  
+
+  !!? =int -- makes it clear that there is a constraint..
+
+  - Problem only for function names etc that start with [Sonderzeichen], such as =, -> etc.
+  - Consider shadowing = 
+
+    
+
 * DONE Simplify design: records only for decision variables
   CLOSED: [2014-05-17 Sat 14:20]
 
