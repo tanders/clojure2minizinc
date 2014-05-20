@@ -67,7 +67,7 @@
         ))
 
 (comment
-  (def myVar (aVar. 'x (format "var %s: %s;" (_dom 1 3) (name 'x))))
+  (def myVar (aVar. 'x (format "var %s: %s;" (_.. 1 3) (name 'x))))
   (:name myVar)
   (:mzn-string myVar)
   (= (type myVar) clojure2minizinc.core.aVar)
@@ -110,7 +110,7 @@
   (parameter :bool 'true)
   (parameter :bool)
 
-  (parameter :set-of-int (_dom 1 'max) 'MySet)
+  (parameter :set-of-int (_.. 1 'max) 'MySet)
 )
 
 (defn _int 
@@ -145,7 +145,7 @@
 ;;;
 
 ;; TODO: find out whether there is a way in MiniZinc to restrict the domain of an integer to only a given list of integers (i.e., "cut holes" into the domain)
-(defn _dom 
+(defn _..
   "Expects a minimum an a maximum value (ints or floats) and returns a domain specification for a decision variable (ints or floats)."
   [min max]
   (pprint/cl-format nil "~S..~S" min max))
@@ -204,6 +204,7 @@
   (tell-store (format "constraint %s;" (extract-mzn-string c))))
 
 (defmacro def-unary-operator
+  "Defines a function that outputs the code for a MiniZinc unary operator."
   [op-name operation doc-string]
   `(defn ~op-name
      ~doc-string
@@ -211,6 +212,7 @@
      (format ~(str operation " %s")  (extract-mzn-string arg#))))
 
 (defmacro def-binary-operator
+  "Defines a function that outputs the code for a MiniZinc binary operator."
   [op-name operation doc-string]
   `(defn ~op-name
      ~doc-string
@@ -218,6 +220,7 @@
      (format ~(str "%s " operation " %s") (extract-mzn-string lh#) (extract-mzn-string rh#))))
 
 (defmacro def-unary-and-binary-operator
+  "Defines a function that outputs the code for a MiniZinc unary and binary operator."
   [op-name operation doc-string]
   `(defn ~op-name
      ~doc-string
@@ -226,6 +229,13 @@
      ([lh# rh#]
         (format ~(str "%s " operation " %s") (extract-mzn-string lh#) (extract-mzn-string rh#)))))
 
+(defmacro def-function
+  "Defines a function that outputs the code for a MiniZinc function."
+  [fn-name fn doc-string]
+  `(defn ~fn-name
+     ~doc-string
+     [arg#]
+     (format ~(str fn "(%s)")  (extract-mzn-string arg#))))
 
 (def-unary-operator _not not 
   "Logical not constraint")
@@ -247,6 +257,7 @@
   "Logical and constraint")
 (def-binary-operator _and "/\\"
   "Logical xor constraint")
+;; TODO: document briefly all below constraints
 (def-binary-operator _< <
   " constraint")
 (def-binary-operator _> >
@@ -275,20 +286,148 @@
   " constraint")
 (def-binary-operator _intersect intersect
   " constraint")
+(def-binary-operator _++ ++
+  " constraint")
 (def-binary-operator _* *
   " constraint")
-(def-binary-operator _/ /
-  " constraint")
+;; TODO: add division constraint
+;; BUG: invalid token _/
+;; No idea why, and no good idea how to preplace yet
+;; (comment
+;;   (def-binary-operator _/ /
+;;   " constraint")
+;;   )
 (def-binary-operator _div div
   " constraint")
 (def-binary-operator _mod mod
   " constraint")
 
+;; TODO: doc strings
+(def-function _abort abort
+  " function constraint")
+(def-function _abs abs
+  " function constraint")
+(def-function _acosh acosh
+  " function constraint")
+(def-function _array_intersect array_intersect
+  " function constraint")
+(def-function _array_union array_union
+  " function constraint")
+(def-function _array1d array1d
+  " function constraint")
+(def-function _array2d array2d
+  " function constraint")
+(def-function _array3d array3d
+  " function constraint")
+(def-function _array4d array4d
+  " function constraint")
+(def-function _array5d array5d
+  " function constraint")
+(def-function _array6d array6d
+  " function constraint")
+(def-function _asin asin
+  " function constraint")
+(def-function _assert assert
+  " function constraint")
+(def-function _atan atan
+  " function constraint")
+(def-function _bool2int bool2int
+  " function constraint")
+(def-function _card card
+  " function constraint")
+(def-function _ceil ceil
+  " function constraint")
+(def-function _concat concat
+  " function constraint")
+(def-function _cos cos
+  " function constraint")
+(def-function _cosh cosh
+  " function constraint")
+(def-function _dom dom
+  " function constraint")
+(def-function _dom_array dom_array
+  " function constraint")
+(def-function _dom_size dom_size
+  " function constraint")
+(def-function _fix fix
+  " function constraint")
+(def-function _exp exp
+  " function constraint")
+(def-function _floor floor
+  " function constraint")
+(def-function _index_set index_set
+  " function constraint")
+(def-function _index_set_1of2 index_set_1of2
+  " function constraint")
+(def-function _index_set_2of2 index_set_2of2
+  " function constraint")
+(def-function _index_set_1of3 index_set_1of3
+  " function constraint")
+(def-function _index_set_2of3 index_set_2of3
+  " function constraint")
+(def-function _index_set_3of3 index_set_3of3
+  " function constraint")
+(def-function _int2float int2float
+  " function constraint")
+(def-function _is_fixed is_fixed
+  " function constraint")
+(def-function _join join
+  " function constraint")
+(def-function _lb lb
+  " function constraint")
+(def-function _lb_array lb_array
+  " function constraint")
+(def-function _length length
+  " function constraint")
+(def-function _ln ln
+  " function constraint")
+(def-function _log log
+  " function constraint")
+(def-function _log2 log2
+  " function constraint")
+(def-function _log10 log10
+  " function constraint")
+(def-function _min min
+  " function constraint")
+(def-function _max max
+  " function constraint")
+(def-function _pow pow
+  " function constraint")
+(def-function _product product
+  " function constraint")
+(def-function _round round
+  " function constraint")
+(def-function _set2array set2array
+  " function constraint")
+(def-function _show show
+  " function constraint")
+(def-function _show_int show_int
+  " function constraint")
+(def-function _show_float show_float
+  " function constraint")
+(def-function _sin sin
+  " function constraint")
+(def-function _sinh sinh
+  " function constraint")
+(def-function _sqrt sqrt
+  " function constraint")
+(def-function _sum sum
+  " function constraint")
+(def-function _tan tan
+  " function constraint")
+(def-function _tanh tanh
+  " function constraint")
+(def-function _trace trace
+  " function constraint")
+(def-function _ub ub
+  " function constraint")
+(def-function _ub_array ub_array
+  " function constraint")
 
 
 (comment
-  (def x (_var (_dom -1 1) 'x))
-  (def y (_var (_dom -1 1) 'y))
+  (def x (_var (_.. -1 1) 'x))
+  (def y (_var (_.. -1 1) 'y))
 
   (_not x)
 
@@ -458,8 +597,8 @@
   ;; TODO: try also macroexpand 
   (print
    (clj2mnz
-    (let [a (_var (_dom 1 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
-          b (_var (_dom 1 3) 'b)]
+    (let [a (_var (_.. 1 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
+          b (_var (_.. 1 3) 'b)]
       (_constraint (_!= a b))
       (_solve :satisfy)
       (_output-map {:a a :b b})
@@ -515,8 +654,8 @@ Solver options
   ;; !! NB: first mini version running :)
   (minizinc 
    (clj2mnz
-    (let [a (_var (_dom -1 1)) 
-          b (_var (_dom -1 1))]
+    (let [a (_var (_.. -1 1)) 
+          b (_var (_.. -1 1))]
       (_constraint (_!= a b))
       (_solve :satisfy)
       (_output-map {:a a :b b})
@@ -532,8 +671,8 @@ Solver options
   ;; !! not working yet
   (minizinc 
    (clj2mnz
-    (let [a (_var (_dom -1 1))
-          b (_var (_dom -1 1))]
+    (let [a (_var (_.. -1 1))
+          b (_var (_.. -1 1))]
       (_constraint (_!= a b))
       (_solve :satisfy)
       (_output-map {:a a :b b})
