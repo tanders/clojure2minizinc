@@ -229,13 +229,21 @@
      ([lh# rh#]
         (format ~(str "%s " operation " %s") (extract-mzn-string lh#) (extract-mzn-string rh#)))))
 
-(defmacro def-function
+(defmacro def-unary-function
   "Defines a function that outputs the code for a MiniZinc function."
   [fn-name fn doc-string]
   `(defn ~fn-name
      ~doc-string
      [arg#]
      (format ~(str fn "(%s)")  (extract-mzn-string arg#))))
+
+(defmacro def-binary-function
+  "Defines a function that outputs the code for a MiniZinc function."
+  [fn-name fn doc-string]
+  `(defn ~fn-name
+     ~doc-string
+     [arg1# arg2#]
+     (format ~(str fn "(%s)")  (extract-mzn-string arg1#) (extract-mzn-string arg2#))))
 
 (def-unary-operator _not not 
   "Logical not constraint")
@@ -303,126 +311,133 @@
   " constraint")
 
 ;; TODO: doc strings
-(def-function _abort abort
+(def-unary-function _abort abort
   " function constraint")
-(def-function _abs abs
+(def-unary-function _abs abs
+  "absolute value constraint")
+(def-unary-function _acos acos
+  "arccosine constraint")
+(def-unary-function _acosh acosh
+  "hyperbolic arccosine constraint")
+(def-unary-function _array_intersect array_intersect
   " function constraint")
-(def-function _acosh acosh
+(def-unary-function _array_union array_union
   " function constraint")
-(def-function _array_intersect array_intersect
+(def-unary-function _array1d array1d
   " function constraint")
-(def-function _array_union array_union
+(def-unary-function _array2d array2d
   " function constraint")
-(def-function _array1d array1d
+(def-unary-function _array3d array3d
   " function constraint")
-(def-function _array2d array2d
+(def-unary-function _array4d array4d
   " function constraint")
-(def-function _array3d array3d
+(def-unary-function _array5d array5d
   " function constraint")
-(def-function _array4d array4d
+(def-unary-function _array6d array6d
   " function constraint")
-(def-function _array5d array5d
+(def-unary-function _asin asin
+  "arcsine constraint")
+(def-unary-function _asinh asinh
+  "hyperbolic arcsine constraint")
+(def-unary-function _assert assert
   " function constraint")
-(def-function _array6d array6d
+(def-unary-function _atan atan
+  "arctangent constraint")
+(def-unary-function _atanh atanh
+  "hyperbolic arctangent constraint")
+(def-unary-function _bool2int bool2int
   " function constraint")
-(def-function _asin asin
+(def-unary-function _card card
   " function constraint")
-(def-function _assert assert
+(def-unary-function _ceil ceil
   " function constraint")
-(def-function _atan atan
+(def-unary-function _concat concat
   " function constraint")
-(def-function _bool2int bool2int
+(def-unary-function _cos cos
+  "cosine constraint")
+(def-unary-function _cosh cosh
+  "hyperbolic cosine constraint")
+(def-unary-function _dom dom
   " function constraint")
-(def-function _card card
+(def-unary-function _dom_array dom_array
   " function constraint")
-(def-function _ceil ceil
+(def-unary-function _dom_size dom_size
   " function constraint")
-(def-function _concat concat
+(def-unary-function _fix fix
   " function constraint")
-(def-function _cos cos
+(def-unary-function _exp exp
+  "exponentiation of e constraint")
+(def-unary-function _floor floor
   " function constraint")
-(def-function _cosh cosh
+(def-unary-function _index_set index_set
   " function constraint")
-(def-function _dom dom
+(def-unary-function _index_set_1of2 index_set_1of2
   " function constraint")
-(def-function _dom_array dom_array
+(def-unary-function _index_set_2of2 index_set_2of2
   " function constraint")
-(def-function _dom_size dom_size
+(def-unary-function _index_set_1of3 index_set_1of3
   " function constraint")
-(def-function _fix fix
+(def-unary-function _index_set_2of3 index_set_2of3
   " function constraint")
-(def-function _exp exp
+(def-unary-function _index_set_3of3 index_set_3of3
   " function constraint")
-(def-function _floor floor
+(def-unary-function _int2float int2float
+  "Function to coerce integers to floating point numbers")
+(def-unary-function _is_fixed is_fixed
   " function constraint")
-(def-function _index_set index_set
+(def-unary-function _join join
   " function constraint")
-(def-function _index_set_1of2 index_set_1of2
+(def-unary-function _lb lb
   " function constraint")
-(def-function _index_set_2of2 index_set_2of2
+(def-unary-function _lb_array lb_array
   " function constraint")
-(def-function _index_set_1of3 index_set_1of3
+(def-unary-function _length length
   " function constraint")
-(def-function _index_set_2of3 index_set_2of3
+(def-unary-function _ln ln
+  "natural logarithm constraint")
+(def-unary-function _log log
   " function constraint")
-(def-function _index_set_3of3 index_set_3of3
+(def-unary-function _log2 log2
+  "logarithm base 2 constraint")
+(def-unary-function _log10 log10
+  "logarithm base 10 constraint")
+(def-unary-function _min min
   " function constraint")
-(def-function _int2float int2float
+(def-unary-function _max max
   " function constraint")
-(def-function _is_fixed is_fixed
+(def-unary-function _product product
   " function constraint")
-(def-function _join join
+(def-unary-function _round round
   " function constraint")
-(def-function _lb lb
+(def-unary-function _set2array set2array
   " function constraint")
-(def-function _lb_array lb_array
+(def-unary-function _show show
   " function constraint")
-(def-function _length length
+(def-unary-function _show_int show_int
   " function constraint")
-(def-function _ln ln
+(def-unary-function _show_float show_float
   " function constraint")
-(def-function _log log
+(def-unary-function _sin sin
+  "sine constraint")
+(def-unary-function _sinh sinh
+  "hyperbolic sine constraint")
+(def-unary-function _sqrt sqrt
+  "square root constraint")
+(def-unary-function _sum sum
   " function constraint")
-(def-function _log2 log2
+(def-unary-function _tan tan
+  "tangent constraint")
+(def-unary-function _tanh tanh
+  "hyperbolic tangent constraint")
+(def-unary-function _trace trace
   " function constraint")
-(def-function _log10 log10
+(def-unary-function _ub ub
   " function constraint")
-(def-function _min min
+(def-unary-function _ub_array ub_array
   " function constraint")
-(def-function _max max
-  " function constraint")
-(def-function _pow pow
-  " function constraint")
-(def-function _product product
-  " function constraint")
-(def-function _round round
-  " function constraint")
-(def-function _set2array set2array
-  " function constraint")
-(def-function _show show
-  " function constraint")
-(def-function _show_int show_int
-  " function constraint")
-(def-function _show_float show_float
-  " function constraint")
-(def-function _sin sin
-  " function constraint")
-(def-function _sinh sinh
-  " function constraint")
-(def-function _sqrt sqrt
-  " function constraint")
-(def-function _sum sum
-  " function constraint")
-(def-function _tan tan
-  " function constraint")
-(def-function _tanh tanh
-  " function constraint")
-(def-function _trace trace
-  " function constraint")
-(def-function _ub ub
-  " function constraint")
-(def-function _ub_array ub_array
-  " function constraint")
+
+(def-binary-function _pow pow
+  "power constraint")
 
 
 (comment
