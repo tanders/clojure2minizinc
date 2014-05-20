@@ -61,8 +61,10 @@
   [x]
   (cond (= (type x) clojure2minizinc.core.aVar) (:name x)
         (string? x) x
-        :else (throw (Exception. (pprint/cl-format nil "extract-mzn-string cannot handle ~S of type ~S" x (type x))))))
-
+        (number? x) x
+        ;; :else x
+        :else (throw (Exception. (pprint/cl-format nil "extract-mzn-string cannot handle ~S of type ~S" x (type x))))
+        ))
 
 (comment
   (def myVar (aVar. 'x (format "var %s: %s;" (_dom 1 3) (name 'x))))
@@ -73,6 +75,8 @@
   (extract-mzn-string "myVar")
   (extract-mzn-string myVar)
   (extract-mzn-string ['myVar])
+  (extract-mzn-string 'x)
+  (extract-mzn-string 1)
   )
 
 ;;;
@@ -193,25 +197,86 @@
 ;;; Constraints
 ;;;
 
+;; TODO: add doc string
 (defn _constraint 
   ""
   [c]
   (tell-store (format "constraint %s;" (extract-mzn-string c))))
 
-;; constraint expressions just strings for now. Also, should not be told store! 
+(defmacro def-unary-operator
+  [op-name operation doc-string]
+  `(defn ~op-name
+     ~doc-string
+     [arg#]
+     (format ~(str operation " %s")  (extract-mzn-string arg#))))
+
+(defmacro def-binary-operator
+  [op-name operation doc-string]
+  `(defn ~op-name
+     ~doc-string
+     [lh# rh#]
+     (format ~(str "%s " operation " %s") (extract-mzn-string lh#) (extract-mzn-string rh#))))
+
+(defmacro def-unary-and-binary-operator
+  [op-name operation doc-string]
+  `(defn ~op-name
+     ~doc-string
+     ([arg#]
+        (format ~(str operation " %s") (extract-mzn-string arg#)))
+     ([lh# rh#]
+        (format ~(str "%s " operation " %s") (extract-mzn-string lh#) (extract-mzn-string rh#)))))
+
+
+(def-unary-operator _not not 
+  "Logical not constraint")
+(def-unary-and-binary-operator _+ + 
+  "+ constraint")
+(def-unary-and-binary-operator _- -
+  "- constraint")
+
+(comment
+  (def x (_var (_dom -1 1) 'x))
+  (def y (_var (_dom -1 1) 'y))
+
+  (_not x)
+
+  (_+ x)
+  (_+ x y)
+  (_+ x 2)
+  )
+
+
+
+;; constraint expressions just strings for now, and should not be told store! 
 ;; TODO: consider defining defconstraint (macro) or make-constraint (function) to simplify the definition of new constraint expressions (hiding the tell-store etc.) 
-;; TODO: Consistently rename constraint so that it does not shadow basic built-ins (e.g., use c!= for constraint != instead?)
-(defn _!= 
-    ""
-  [lh rh]
-  (format "%s != %s" (extract-mzn-string lh) (extract-mzn-string rh)))
+
+(def-binary-operator _!= !=
+  "My doc")
+
+(def-binary-operator _+ +
+  "Binary + constraint")
+
 
 
 (comment
+  (def x (aVar. 'x (format "var %s: %s;" (_dom 1 3) (name 'x))))
+
+  (_!= x 2)
+
+  )
+
+
+(comment
+
   (defn _!= 
     ""
-  [lh rh]
-  (pprint/cl-format nil "~S != ~S" (extract-mzn-string lh) (extract-mzn-string rh)))
+    [lh rh]
+    (format "%s != %s" (extract-mzn-string lh) (extract-mzn-string rh)))
+
+  ;; (defn _!= 
+  ;;   ""
+  ;; [lh rh]
+  ;; (pprint/cl-format nil "~S != ~S" (extract-mzn-string lh) (extract-mzn-string rh)))
 
   
   )
