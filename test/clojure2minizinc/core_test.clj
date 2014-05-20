@@ -7,34 +7,33 @@
 ;; Doc for clojure.test: http://clojure.github.io/clojure/clojure.test-api.html
 
 
-
 (deftest parameter-declarations
   (testing "Integer"
-    (is (= (:mzn-string (parameter :int 1 'x)) "int: x = 1;"))
+    (is (= (:mzn-string (_int 1 'x)) "int: x = 1;"))
     (comment
       ;; gensym-ed param names not tested -- could perhaps do that with pattern matching later
-      (is (= (:mzn-string (parameter :int 1)) "int: <> = 1;"))
-      (is (= (:mzn-string (parameter :int)) "int: <>;"))
+      (is (= (:mzn-string (_int 1)) "int: <> = 1;"))
+      (is (= (:mzn-string (_int)) "int: <>;"))
       )
     )
   (testing "Float"
-    (is (= (:mzn-string (parameter :float 1.0 'x)) "float: x = 1.0;"))
+    (is (= (:mzn-string (_float 1.0 'x)) "float: x = 1.0;"))
     (comment
       ;; gensym-ed param names not tested
-      (is (= (:mzn-string (parameter :float 1.0)) "float: <> = 1;"))
-      (is (= (:mzn-string (parameter :float)) "float: <>;"))
+      (is (= (:mzn-string (_float 1.0)) "float: <> = 1;"))
+      (is (= (:mzn-string (_float)) "float: <>;"))
       )  
     )
   (testing "Bool"
-    (is (= (:mzn-string (parameter :bool 'true 'x)) "bool: x = true;"))
+    (is (= (:mzn-string (_bool 'true 'x)) "bool: x = true;"))
     (comment
       ;; gensym-ed param names not tested
-      (is (= (:mzn-string (parameter :bool 'true)) "bool: <> = true;"))
-      (is (= (:mzn-string (parameter :bool)) "bool: <>;"))
+      (is (= (:mzn-string (_bool 'true)) "bool: <> = true;"))
+      (is (= (:mzn-string (_bool)) "bool: <>;"))
       )  
     )
   (testing "Set of int"
-    (is (= (:mzn-string (parameter "set of int" (domain 1 'max) 'MySet)) "set of int: MySet = 1..max;"))  
+    (is (= (:mzn-string (_set-of-int (_dom 1 'max) 'MySet)) "set of int: MySet = 1..max;"))
     )
   (comment
     ;; causes exception
@@ -43,16 +42,15 @@
   )
 
 
-
 (deftest variable-declarations
   (testing "Integer decision variables."
-    (is (= (:mzn-string (variable (domain 1 3) 'x)) "var 1..3: x;"))))
+    (is (= (:mzn-string (_var (_dom 1 3) 'x)) "var 1..3: x;"))))
 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; Playing around
+;;; TMP: Playing around
 ;;;
 
 ;;; Testing to call external programs
@@ -92,7 +90,3 @@ This is another line
   
   )
 
-
-
-(comment 
-  (minizinc ))
