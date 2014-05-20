@@ -197,7 +197,7 @@
 ;;; Constraints
 ;;;
 
-;; TODO: add doc string
+;; TODO: add doc string 
 (defn _constraint 
   ""
   [c]
@@ -229,10 +229,62 @@
 
 (def-unary-operator _not not 
   "Logical not constraint")
+
 (def-unary-and-binary-operator _+ + 
   "+ constraint")
 (def-unary-and-binary-operator _- -
   "- constraint")
+
+(def-binary-operator _<-> <->
+  "Logical equivalence constraint")
+(def-binary-operator _-> ->
+  "Logical implication constraint")
+(def-binary-operator _<- <-
+  "")
+(def-binary-operator _or "\\/"
+  "Logical or constraint")
+(def-binary-operator _xor xor
+  "Logical and constraint")
+(def-binary-operator _and "/\\"
+  "Logical xor constraint")
+(def-binary-operator _< <
+  " constraint")
+(def-binary-operator _> >
+  " constraint")
+(def-binary-operator _<= <=
+  " constraint")
+(def-binary-operator _>= >=
+  " constraint")
+(def-binary-operator _= =
+  " constraint")
+(def-binary-operator _== ==
+  " constraint")
+(def-binary-operator _!= !=
+  "Not equal constraint")
+(def-binary-operator _in in
+  " constraint")
+(def-binary-operator _subset subset
+  " constraint")
+(def-binary-operator _superset superset
+  " constraint")
+(def-binary-operator _union union
+  " constraint")
+(def-binary-operator _diff diff
+  " constraint")
+(def-binary-operator _symdiff symdiff
+  " constraint")
+(def-binary-operator _intersect intersect
+  " constraint")
+(def-binary-operator _* *
+  " constraint")
+(def-binary-operator _/ /
+  " constraint")
+(def-binary-operator _div div
+  " constraint")
+(def-binary-operator _mod mod
+  " constraint")
+
+
 
 (comment
   (def x (_var (_dom -1 1) 'x))
@@ -243,29 +295,20 @@
   (_+ x)
   (_+ x y)
   (_+ x 2)
-  )
 
-
-
-;; constraint expressions just strings for now, and should not be told store! 
-;; TODO: consider defining defconstraint (macro) or make-constraint (function) to simplify the definition of new constraint expressions (hiding the tell-store etc.) 
-
-(def-binary-operator _!= !=
-  "My doc")
-
-(def-binary-operator _+ +
-  "Binary + constraint")
-
-
-
-(comment
-  (def x (aVar. 'x (format "var %s: %s;" (_dom 1 3) (name 'x))))
+  (_<-> x y)
+  (_or x y)
+  (print (_and x y))
 
   (_!= x 2)
-
   )
 
 
+
+
+
+
+;; TMP: old defs
 (comment
 
   (defn _!= 
