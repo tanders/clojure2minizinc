@@ -145,10 +145,14 @@
 ;;;
 
 ;; TODO: find out whether there is a way in MiniZinc to restrict the domain of an integer to only a given list of integers (i.e., "cut holes" into the domain)
-(defn _..
+(defn _--
   "Expects a minimum an a maximum value (ints or floats) and returns a domain specification for a decision variable (ints or floats)."
   [min max]
   (pprint/cl-format nil "~S..~S" min max))
+
+(comment
+  (_-- 0 2)
+  )
 
 (defn _var
   "Declares a decision variable (int or float) with the given domain and an optional variable name (string, symbol or keyword)."
@@ -243,7 +247,7 @@
   `(defn ~fn-name
      ~doc-string
      [arg1# arg2#]
-     (format ~(str fn "(%s)")  (extract-mzn-string arg1#) (extract-mzn-string arg2#))))
+     (format ~(str fn "(%s, %s)")  (extract-mzn-string arg1#) (extract-mzn-string arg2#))))
 
 (def-unary-operator _not not 
   "Logical not constraint")
@@ -441,8 +445,8 @@
 
 
 (comment
-  (def x (_var (_.. -1 1) 'x))
-  (def y (_var (_.. -1 1) 'y))
+  (def x (_var (_-- -1 1) 'x))
+  (def y (_var (_-- -1 1) 'y))
 
   (_not x)
 
@@ -455,6 +459,9 @@
   (print (_and x y))
 
   (_!= x 2)
+
+  (_pow 2 3)
+
   )
 
 
@@ -612,8 +619,8 @@
   ;; TODO: try also macroexpand 
   (print
    (clj2mnz
-    (let [a (_var (_.. 1 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
-          b (_var (_.. 1 3) 'b)]
+    (let [a (_var (_-- 1 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
+          b (_var (_-- 1 3) 'b)]
       (_constraint (_!= a b))
       (_solve :satisfy)
       (_output-map {:a a :b b})
@@ -669,8 +676,8 @@ Solver options
   ;; !! NB: first mini version running :)
   (minizinc 
    (clj2mnz
-    (let [a (_var (_.. -1 1)) 
-          b (_var (_.. -1 1))]
+    (let [a (_var (_-- -1 1)) 
+          b (_var (_-- -1 1))]
       (_constraint (_!= a b))
       (_solve :satisfy)
       (_output-map {:a a :b b})
@@ -686,8 +693,8 @@ Solver options
   ;; !! not working yet
   (minizinc 
    (clj2mnz
-    (let [a (_var (_.. -1 1))
-          b (_var (_.. -1 1))]
+    (let [a (_var (_-- -1 1))
+          b (_var (_-- -1 1))]
       (_constraint (_!= a b))
       (_solve :satisfy)
       (_output-map {:a a :b b})
