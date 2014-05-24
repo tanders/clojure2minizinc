@@ -1,13 +1,11 @@
 # Tmp files
 *~
-.lein-repl-history
+.lein-*
 .nrepl-port
-.lein-deps-sum
-.lein-plugins
-.lein-failures
 
 # Compiled files
 *.jar
+*.class
 *.fzn
 target
 
