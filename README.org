@@ -1,7 +1,11 @@
 * clojure2minizinc
 
-  A Clojure library designed to solve constraint satisfaction problems (CSP). It generates [[www.minizinc.org][MiniZinc]] code from a CSP specified in Clojure, that is very similar to the corresponding MiniZinc code. The generated MiniZinc program is then solved by one of the MiniZinc solvers (e.g., see http://www.minizinc.org/software.html) available, and the result is read back into Clojure.
+** Summary
 
+   A Clojure library designed to solve constraint satisfaction problems (CSP). It generates [[www.minizinc.org][MiniZinc]] code from Clojure code, that is very similar to the corresponding MiniZinc code. The generated MiniZinc program is then solved by one of the MiniZinc solvers available (e.g., see http://www.minizinc.org/software.html), and the result is read back into Clojure.
+
+
+** TODO What is MiniZinc and why clojure2minizinc?
 
 ** TODO Installation 
 
@@ -57,6 +61,7 @@ constraint x + y != z;
 
    *TODO* add links to further MiniZinc documentation
 
+
 *** Exceptions to the similarity
 
     There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure. These are the following.
@@ -65,6 +70,7 @@ constraint x + y != z;
      - =/\= becomes =_and=
      - =\/= becomes =_or=
      - =/= becomes *TODO*
+     - =..= becomes =_--=
 
 
 *** Going beyond MiniZinc limitations
@@ -75,6 +81,9 @@ constraint x + y != z;
 
     In addition, most Clojure functionality is available for defining MiniZinc models. For example, auto-completion and documentation of your editor will help you (standard MiniZinc editors do not support anything like that).
 
+    combination with any other Clojure [features]
+    IO
+    GUI
 
 *** TODO Limitations compared to standard Clojure programming 
 
