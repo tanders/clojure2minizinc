@@ -13,6 +13,6 @@
   ;; see https://github.com/weavejester/codox
   :codox {:defaults {:doc "TODO: write docs"
                      :doc/format :markdown}
-          :output-dir "doc/codox"
+          :output-dir "doc/reference"
           :src-dir-uri "https://github.com/tanders/clojure2minizinc/tree/master/"
           :src-linenum-anchor-prefix "L"})
