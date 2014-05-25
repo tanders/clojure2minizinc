@@ -9,4 +9,10 @@
   ;; or other FlatZinc implementations
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [me.raynes/fs "1.4.5"]
-                 ])
+                 ]
+  ;; see https://github.com/weavejester/codox
+  :codox {:defaults {:doc "TODO: write docs"
+                     :doc/format :markdown}
+          :output-dir "doc/codox"
+          :src-dir-uri "https://github.com/tanders/clojure2minizinc/tree/master/"
+          :src-linenum-anchor-prefix "L"})
