@@ -1,3 +1,5 @@
+;; TODO: break into multiple namespaces for clarification, e.g., for integer, set and float domains and core defs.
+
 (ns clojure2minizinc.core
   (:require [clojure.java.shell :as shell])
   ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
@@ -17,7 +19,7 @@
 ;; (def *mzn2fzn* "Path to the mzn2fzn executable" 
 ;;   "/Applications/minizinc-1.6/bin/mzn2fzn")
 ;; TODO: Find out -- use def or defvar? And does def support a doc string?
-(def *fd-solver* "Path to constraint solver for finite domain (integers)" 
+(def ^:dynamic *fd-solver* "Path to constraint solver for finite domain (integers)" 
   "mzn-g12fd")
 
 
@@ -207,7 +209,7 @@
   [c]
   (tell-store (format "constraint %s;" (extract-mzn-string c))))
 
-(defmacro def-unary-operator
+(defmacro ^:private def-unary-operator
   "Defines a function that outputs the code for a MiniZinc unary operator."
   [op-name operation doc-string]
   `(defn ~op-name
@@ -215,7 +217,7 @@
      [arg#]
      (format ~(str operation " %s")  (extract-mzn-string arg#))))
 
-(defmacro def-binary-operator
+(defmacro ^:private def-binary-operator
   "Defines a function that outputs the code for a MiniZinc binary operator."
   [op-name operation doc-string]
   `(defn ~op-name
@@ -223,7 +225,7 @@
      [lh# rh#]
      (format ~(str "%s " operation " %s") (extract-mzn-string lh#) (extract-mzn-string rh#))))
 
-(defmacro def-unary-and-binary-operator
+(defmacro ^:private def-unary-and-binary-operator
   "Defines a function that outputs the code for a MiniZinc unary and binary operator."
   [op-name operation doc-string]
   `(defn ~op-name
@@ -233,7 +235,7 @@
      ([lh# rh#]
         (format ~(str "%s " operation " %s") (extract-mzn-string lh#) (extract-mzn-string rh#)))))
 
-(defmacro def-unary-function
+(defmacro ^:private def-unary-function
   "Defines a function that outputs the code for a MiniZinc function."
   [fn-name fn doc-string]
   `(defn ~fn-name
@@ -241,7 +243,7 @@
      [arg#]
      (format ~(str fn "(%s)")  (extract-mzn-string arg#))))
 
-(defmacro def-binary-function
+(defmacro ^:private def-binary-function
   "Defines a function that outputs the code for a MiniZinc function."
   [fn-name fn doc-string]
   `(defn ~fn-name
