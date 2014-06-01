@@ -7,6 +7,7 @@
 
 ** TODO What is MiniZinc and why clojure2minizinc?
 
+
 ** TODO Installation 
 
    - Installation of MiniZinc tools
@@ -47,14 +48,14 @@ Generates in the background this MiniZinc code and calls solver with it
 
 *** Code similarity
 
-   In clojure2minizinc all code is expressed by standard Lisp S-expressions. Most MiniZinc operators, functions etc. are called exactly the same in clojure2minizinc, except for a prefix =_= to avoid shadowing existing Lisp functions etc. For example the following two code snippets show a MiniZinc code line and the corresponding clojure2minizinc 
+   In clojure2minizinc all code is expressed by standard Lisp S-expressions. Most MiniZinc operators, functions etc. are called exactly the same in clojure2minizinc. For example the following two code snippets show a MiniZinc code line and the corresponding clojure2minizinc 
 
 #+begin_src minizinc :results silent
 constraint x + y != z;
 #+end_src
 
 #+begin_src clojure :results silent
-(_constraint (_!= (_+ x y) z))
+(constraint (!= (+ x y) z))
 #+end_src
 
    Because of this similarity of code, the main documentation of clojure2minizinc is actually the MiniZinc documentation. For example, the [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]] is also a useful documentation for this library. 
@@ -64,13 +65,18 @@ constraint x + y != z;
 
 *** Exceptions to the similarity
 
-    There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure. These are the following.
+    There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure due to certain restrictions of Clojure. These are listed below (first MiniZinc, then the corresponding Clojure function name of this library).
 
     *TODO* full (short) list of different function names: 
-     - =/\= becomes =_and=
-     - =\/= becomes =_or=
-     - =/= becomes *TODO*
-     - =..= becomes =_--=
+     - =var= is =variable=
+     - =..= is =--=
+     - =/\= is =and=
+     - =\/= is =or=
+
+
+**** Temporary differences
+
+     An equivalent for the MiniZinc =output= does not exist, use =output-map= instead.
 
 
 *** Going beyond MiniZinc limitations
@@ -84,6 +90,7 @@ constraint x + y != z;
     combination with any other Clojure [features]
     IO
     GUI
+
 
 *** TODO Limitations compared to standard Clojure programming 
 
