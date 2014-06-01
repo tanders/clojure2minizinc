@@ -67,7 +67,7 @@
 (defn- extract-mzn-string 
   "Returns the name of aVar instances (called within constraint expressions), or simply argument if arg is a string."
   [x]
-  (cond (= (type x) clojure2minizinc.core.aVar) (:name x)
+  (cond (clojure.core/= (type x) clojure2minizinc.core.aVar) (:name x)
         (string? x) x
         (number? x) x
         ;; :else x
@@ -75,16 +75,18 @@
         ))
 
 (comment
-  (def myVar (aVar. 'x (format "var %s: %s;" (.. 1 3) (name 'x))))
+  (def myVar (aVar. 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
   (:name myVar)
   (:mzn-string myVar)
-  (= (type myVar) clojure2minizinc.core.aVar)
+  (clojure.core/= (type myVar) clojure2minizinc.core.aVar)
 
   (extract-mzn-string "myVar")
   (extract-mzn-string myVar)
+  (extract-mzn-string 1)
+
+  ;; errors 
   (extract-mzn-string ['myVar])
   (extract-mzn-string 'x)
-  (extract-mzn-string 1)
   )
 
 ;;;
@@ -467,6 +469,21 @@
   (!= x 2)
 
   (pow 2 3)
+  (print (pow 2 3))
+
+  (constraint (!= x y))
+
+  (print (output-map {:x x :y y}))
+
+  (print 
+   (clj2mnz
+    (let [a (variable (-- -1 1)) 
+          b (variable (-- -1 1))]
+      (constraint (!= a b))
+      (solve :satisfy)
+      (output-map {:a a :b b})
+      (pprint/pprint *mzn-store*)
+      )))
 
   )
 
@@ -581,7 +598,7 @@
   (def y (variable (domain 4 6) 'y))
 
   (type x)
-  (= (type x) clojure2minizinc.core.aVar) 
+  (clojure.core/= (type x) clojure2minizinc.core.aVar) 
   (:name x)
 
   (name :x)
@@ -590,11 +607,11 @@
              {:x x :y y})
 
 
-  (walk/walk #(if (= (type %) clojure2minizinc.core.aVar) 
+  (walk/walk #(if (clojure.core/= (type %) clojure2minizinc.core.aVar) 
                   (:name %)
                   %)
                identity
-     {:x x :y y})
+               {:x x :y y})
   )
 
 
@@ -613,7 +630,7 @@
      ~@constraints
      ;; TODO: map is lazy -- make sure dynamic scope is not left
      (apply str (doall (map (fn [x#]  ; x# results in unique gensym
-                              (str (cond (= (type x#) clojure2minizinc.core.aVar) (:mzn-string x#)
+                              (str (cond (clojure.core/= (type x#) clojure2minizinc.core.aVar) (:mzn-string x#)
                                          (string? x#) x#
                                          :else (throw (Exception. (pprint/cl-format nil "~S not supported. MiniZinc statements must be strings or variables defined with function clojure2minizinc.core/variable." x#)))) 
                                    "\n"))
@@ -672,7 +689,7 @@ Solver options
                          (fs/base-name mznfile)
                          :dir (fs/parent mznfile)
                          )]
-    (if (= (:exit result) 0)
+    (if (clojure.core/= (:exit result) 0)
       (map read-string
            (clojure.string/split (:out result) #"(\n----------\n|==========\n)"))
       (throw (Exception. (format "MiniZinc error: %s" (:err result)))))))
@@ -707,6 +724,8 @@ Solver options
       ;; (pprint/pprint *mzn-store*)
       ))
    )
+
+  
 
   ;; aust CSP in Clojure using a Clojure vector of variables
   ;; TODO: incomplete -- constraints and integer decl missing
