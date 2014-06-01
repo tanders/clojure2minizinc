@@ -1,5 +1,11 @@
 ;; TODO: break into multiple namespaces for clarification, e.g., for integer, set and float domains and core defs.
 
+;; TODO: ? Add support for arrays
+
+;; TODO: Add some examples (in extra files) -- just start with examples from MiniZinc tutorial 
+
+
+
 (ns clojure2minizinc.core
   (:require [clojure.java.shell :as shell])
   ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
@@ -69,7 +75,7 @@
         ))
 
 (comment
-  (def myVar (aVar. 'x (format "var %s: %s;" (_.. 1 3) (name 'x))))
+  (def myVar (aVar. 'x (format "var %s: %s;" (.. 1 3) (name 'x))))
   (:name myVar)
   (:mzn-string myVar)
   (= (type myVar) clojure2minizinc.core.aVar)
@@ -86,10 +92,10 @@
 ;;;
 
 ;; TODO: add array declarations
-(defn- parameter   
+(defn- par   
   "Declares a parameter (quasi a constant) with the given type (a string, symbol or keyword; can be int, float, bool...), an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([param-type] (parameter param-type nil))
-  ([param-type init-value] (parameter param-type init-value (gensym (name param-type))))
+  ([param-type] (par param-type nil))
+  ([param-type init-value] (par param-type init-value (gensym (name param-type))))
   ([param-type init-value var-name]
      {:pre [(#{"int" "float" "bool" "set of int"} (name param-type))]}
      ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
@@ -100,46 +106,48 @@
                (format "%s: %s;" (name param-type) (name var-name)))))))
 
 (comment
-  (:mzn-string (parameter :int 1 'x))
-  (parameter :int 1)
-  (parameter :int)
+  (:mzn-string (par :int 1 'x))
+  (par :int 1)
+  (par :int)
 
-  (parameter :float 1.0 'x)
-  (parameter :float 1.0)
-  (parameter :float)
+  (par :float 1.0 'x)
+  (par :float 1.0)
+  (par :float)
 
-  (parameter :bool 'true 'x)
-  (parameter :bool 'true)
-  (parameter :bool)
+  (par :bool 'true 'x)
+  (par :bool 'true)
+  (par :bool)
 
-  (parameter :set-of-int (_.. 1 'max) 'MySet)
+  (par :set-of-int (.. 1 'max) 'MySet)
 )
 
-(defn _int 
+(defn int 
   "Declares an initeger parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([] (parameter :int)) 
-  ([init-value] (parameter :int init-value))
-  ([init-value var-name] (parameter :int init-value var-name)))
+  ([] (par :int)) 
+  ([init-value] (par :int init-value))
+  ([init-value var-name] (par :int init-value var-name)))
 
-(defn _float 
+(defn float 
   "Declares a float parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([] (parameter :float)) 
-  ([init-value] (parameter :float init-value))
-  ([init-value var-name] (parameter :float init-value var-name)))
+  ([] (par :float)) 
+  ([init-value] (par :float init-value))
+  ([init-value var-name] (par :float init-value var-name)))
 
-(defn _bool 
+(defn bool 
   "Declares a bool parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([] (parameter :bool)) 
-  ([init-value] (parameter :bool init-value))
-  ([init-value var-name] (parameter :bool init-value var-name)))
+  ([] (par :bool)) 
+  ([init-value] (par :bool init-value))
+  ([init-value var-name] (par :bool init-value var-name)))
 
-(defn _set-of-int
+(defn set-of-int
   "Declares a set of integers parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([] (parameter "set of int")) 
-  ([init-value] (parameter "set of int" init-value))
-  ([init-value var-name] (parameter "set of int" init-value var-name)))
+  ([] (par "set of int")) 
+  ([init-value] (par "set of int" init-value))
+  ([init-value var-name] (par "set of int" init-value var-name)))
 
-
+(comment
+  (int)
+  )
 
 
 ;;;
@@ -147,29 +155,30 @@
 ;;;
 
 ;; TODO: find out whether there is a way in MiniZinc to restrict the domain of an integer to only a given list of integers (i.e., "cut holes" into the domain)
-(defn _--
+(defn --
   "Expects a minimum an a maximum value (ints or floats) and returns a domain specification for a decision variable (ints or floats)."
   [min max]
   (pprint/cl-format nil "~S..~S" min max))
 
 (comment
-  (_-- 0 2)
+  (-- 0 2)
   )
 
-(defn _var
+;; You cannot shadow special forms, and therefore a function cannot be called var
+(defn variable
   "Declares a decision variable (int or float) with the given domain and an optional variable name (string, symbol or keyword)."
-  ([dom] (_var dom (gensym "var")))
+  ([dom] (variable dom (gensym "var")))
   ([dom var-name]
      (tell-store (aVar. (name var-name) (format "var %s: %s;" dom (name var-name))))))
 
 (comment
-  (domain 1 3)
-  (domain 1.0 3.0)
+  (-- 1 3)
+  (-- 1.0 3.0)
   (binding [*mzn-store* ()]
-    (_var (domain 1 3) 'x))
+    (variable (-- 1 3) 'x))
   (binding [*mzn-store* ()]
-    (_var (domain 1 3) :x))
-  (_var (domain 1 3))
+    (variable (-- 1 3) :x))
+  (variable (-- 1 3))
   )
 
 ;; TMP: test
@@ -204,7 +213,7 @@
 ;;;
 
 ;; TODO: add doc string 
-(defn _constraint 
+(defn constraint 
   ""
   [c]
   (tell-store (format "constraint %s;" (extract-mzn-string c))))
@@ -251,218 +260,213 @@
      [arg1# arg2#]
      (format ~(str fn "(%s, %s)")  (extract-mzn-string arg1#) (extract-mzn-string arg2#))))
 
-(def-unary-operator _not not 
+(def-unary-operator not not 
   "Logical not constraint")
 
-(def-unary-and-binary-operator _+ + 
+(def-unary-and-binary-operator + + 
   "+ constraint")
-(def-unary-and-binary-operator _- -
+(def-unary-and-binary-operator - -
   "- constraint")
 
-(def-binary-operator _<-> <->
+(def-binary-operator <-> <->
   "Logical equivalence constraint")
-(def-binary-operator _-> ->
+(def-binary-operator -> ->
   "Logical implication constraint")
-(def-binary-operator _<- <-
+(def-binary-operator <- <-
   "")
-(def-binary-operator _or "\\/"
+(def-binary-operator or "\\/"
   "Logical or constraint")
-(def-binary-operator _xor xor
+(def-binary-operator xor xor
   "Logical and constraint")
-(def-binary-operator _and "/\\"
+(def-binary-operator and "/\\"
   "Logical xor constraint")
 ;; TODO: document briefly all below constraints
-(def-binary-operator _< <
+(def-binary-operator < <
   " constraint")
-(def-binary-operator _> >
+(def-binary-operator > >
   " constraint")
-(def-binary-operator _<= <=
+(def-binary-operator <= <=
   " constraint")
-(def-binary-operator _>= >=
+(def-binary-operator >= >=
   " constraint")
-(def-binary-operator _= =
+(def-binary-operator = =
   " constraint")
-(def-binary-operator _== ==
+(def-binary-operator == ==
   " constraint")
-(def-binary-operator _!= !=
+(def-binary-operator != !=
   "Not equal constraint")
-(def-binary-operator _in in
+(def-binary-operator in in
   " constraint")
-(def-binary-operator _subset subset
+(def-binary-operator subset subset
   " constraint")
-(def-binary-operator _superset superset
+(def-binary-operator superset superset
   " constraint")
-(def-binary-operator _union union
+(def-binary-operator union union
   " constraint")
-(def-binary-operator _diff diff
+(def-binary-operator diff diff
   " constraint")
-(def-binary-operator _symdiff symdiff
+(def-binary-operator symdiff symdiff
   " constraint")
-(def-binary-operator _intersect intersect
+(def-binary-operator intersect intersect
   " constraint")
-(def-binary-operator _++ ++
+(def-binary-operator ++ ++
   " constraint")
-(def-binary-operator _* *
+(def-binary-operator * *
   " constraint")
-;; TODO: add division constraint
-;; BUG: invalid token _/
-;; No idea why, and no good idea how to preplace yet
-;; (comment
-;;   (def-binary-operator _/ /
-;;   " constraint")
-;;   )
-(def-binary-operator _div div
+(def-binary-operator / /
   " constraint")
-(def-binary-operator _mod mod
+(def-binary-operator div div
+  " constraint")
+(def-binary-operator mod mod
   " constraint")
 
 ;; TODO: doc strings
-(def-unary-function _abort abort
+(def-unary-function abort abort
   " function constraint")
-(def-unary-function _abs abs
+(def-unary-function abs abs
   "absolute value constraint")
-(def-unary-function _acos acos
+(def-unary-function acos acos
   "arccosine constraint")
-(def-unary-function _acosh acosh
+(def-unary-function acosh acosh
   "hyperbolic arccosine constraint")
-(def-unary-function _array_intersect array_intersect
+(def-unary-function array_intersect array_intersect
   " function constraint")
-(def-unary-function _array_union array_union
+(def-unary-function array_union array_union
   " function constraint")
-(def-unary-function _array1d array1d
+(def-unary-function array1d array1d
   " function constraint")
-(def-unary-function _array2d array2d
+(def-unary-function array2d array2d
   " function constraint")
-(def-unary-function _array3d array3d
+(def-unary-function array3d array3d
   " function constraint")
-(def-unary-function _array4d array4d
+(def-unary-function array4d array4d
   " function constraint")
-(def-unary-function _array5d array5d
+(def-unary-function array5d array5d
   " function constraint")
-(def-unary-function _array6d array6d
+(def-unary-function array6d array6d
   " function constraint")
-(def-unary-function _asin asin
+(def-unary-function asin asin
   "arcsine constraint")
-(def-unary-function _asinh asinh
+(def-unary-function asinh asinh
   "hyperbolic arcsine constraint")
-(def-unary-function _assert assert
+(def-unary-function assert assert
   " function constraint")
-(def-unary-function _atan atan
+(def-unary-function atan atan
   "arctangent constraint")
-(def-unary-function _atanh atanh
+(def-unary-function atanh atanh
   "hyperbolic arctangent constraint")
-(def-unary-function _bool2int bool2int
+(def-unary-function bool2int bool2int
   " function constraint")
-(def-unary-function _card card
+(def-unary-function card card
   " function constraint")
-(def-unary-function _ceil ceil
+(def-unary-function ceil ceil
   " function constraint")
-(def-unary-function _concat concat
+(def-unary-function concat concat
   " function constraint")
-(def-unary-function _cos cos
+(def-unary-function cos cos
   "cosine constraint")
-(def-unary-function _cosh cosh
+(def-unary-function cosh cosh
   "hyperbolic cosine constraint")
-(def-unary-function _dom dom
+(def-unary-function dom dom
   " function constraint")
-(def-unary-function _dom_array dom_array
+(def-unary-function dom_array dom_array
   " function constraint")
-(def-unary-function _dom_size dom_size
+(def-unary-function dom_size dom_size
   " function constraint")
-(def-unary-function _fix fix
+(def-unary-function fix fix
   " function constraint")
-(def-unary-function _exp exp
+(def-unary-function exp exp
   "exponentiation of e constraint")
-(def-unary-function _floor floor
+(def-unary-function floor floor
   " function constraint")
-(def-unary-function _index_set index_set
+(def-unary-function index_set index_set
   " function constraint")
-(def-unary-function _index_set_1of2 index_set_1of2
+(def-unary-function index_set_1of2 index_set_1of2
   " function constraint")
-(def-unary-function _index_set_2of2 index_set_2of2
+(def-unary-function index_set_2of2 index_set_2of2
   " function constraint")
-(def-unary-function _index_set_1of3 index_set_1of3
+(def-unary-function index_set_1of3 index_set_1of3
   " function constraint")
-(def-unary-function _index_set_2of3 index_set_2of3
+(def-unary-function index_set_2of3 index_set_2of3
   " function constraint")
-(def-unary-function _index_set_3of3 index_set_3of3
+(def-unary-function index_set_3of3 index_set_3of3
   " function constraint")
-(def-unary-function _int2float int2float
+(def-unary-function int2float int2float
   "Function to coerce integers to floating point numbers")
-(def-unary-function _is_fixed is_fixed
+(def-unary-function is_fixed is_fixed
   " function constraint")
-(def-unary-function _join join
+(def-unary-function join join
   " function constraint")
-(def-unary-function _lb lb
+(def-unary-function lb lb
   " function constraint")
-(def-unary-function _lb_array lb_array
+(def-unary-function lb_array lb_array
   " function constraint")
-(def-unary-function _length length
+(def-unary-function length length
   " function constraint")
-(def-unary-function _ln ln
+(def-unary-function ln ln
   "natural logarithm constraint")
-(def-unary-function _log log
+(def-unary-function log log
   " function constraint")
-(def-unary-function _log2 log2
+(def-unary-function log2 log2
   "logarithm base 2 constraint")
-(def-unary-function _log10 log10
+(def-unary-function log10 log10
   "logarithm base 10 constraint")
-(def-unary-function _min min
+(def-unary-function min min
   " function constraint")
-(def-unary-function _max max
+(def-unary-function max max
   " function constraint")
-(def-unary-function _product product
+(def-unary-function product product
   " function constraint")
-(def-unary-function _round round
+(def-unary-function round round
   " function constraint")
-(def-unary-function _set2array set2array
+(def-unary-function set2array set2array
   " function constraint")
-(def-unary-function _show show
+(def-unary-function show show
   " function constraint")
-(def-unary-function _show_int show_int
+(def-unary-function show_int show_int
   " function constraint")
-(def-unary-function _show_float show_float
+(def-unary-function show_float show_float
   " function constraint")
-(def-unary-function _sin sin
+(def-unary-function sin sin
   "sine constraint")
-(def-unary-function _sinh sinh
+(def-unary-function sinh sinh
   "hyperbolic sine constraint")
-(def-unary-function _sqrt sqrt
+(def-unary-function sqrt sqrt
   "square root constraint")
-(def-unary-function _sum sum
+(def-unary-function sum sum
   " function constraint")
-(def-unary-function _tan tan
+(def-unary-function tan tan
   "tangent constraint")
-(def-unary-function _tanh tanh
+(def-unary-function tanh tanh
   "hyperbolic tangent constraint")
-(def-unary-function _trace trace
+(def-unary-function trace trace
   " function constraint")
-(def-unary-function _ub ub
+(def-unary-function ub ub
   " function constraint")
-(def-unary-function _ub_array ub_array
+(def-unary-function ub_array ub_array
   " function constraint")
 
-(def-binary-function _pow pow
+(def-binary-function pow pow
   "power constraint")
 
 
 (comment
-  (def x (_var (_-- -1 1) 'x))
-  (def y (_var (_-- -1 1) 'y))
+  (def x (variable (-- -1 1) 'x))
+  (def y (variable (-- -1 1) 'y))
 
-  (_not x)
+  (not x)
 
-  (_+ x)
-  (_+ x y)
-  (_+ x 2)
+  (+ x)
+  (+ x y)
+  (+ x 2)
 
-  (_<-> x y)
-  (_or x y)
-  (print (_and x y))
+  (<-> x y)
+  (or x y)
+  (print (and x y))
 
-  (_!= x 2)
+  (!= x 2)
 
-  (_pow 2 3)
+  (pow 2 3)
 
   )
 
@@ -474,12 +478,12 @@
 ;; TMP: old defs
 (comment
 
-  (defn _!= 
+  (defn != 
     ""
     [lh rh]
     (format "%s != %s" (extract-mzn-string lh) (extract-mzn-string rh)))
 
-  ;; (defn _!= 
+  ;; (defn != 
   ;;   ""
   ;; [lh rh]
   ;; (pprint/cl-format nil "~S != ~S" (extract-mzn-string lh) (extract-mzn-string rh)))
@@ -494,7 +498,7 @@
 ;;;
 
 ;; TODO: for solve maximise function should additionally expect an expression to maximise
-(defn _solve 
+(defn solve 
   "Solve items specify what kind of solution is being looked for. Supported values for solver are satisfy, maximize, and minimize (a keyword)."
   [solver]
   {:pre [(#{:satisfy :maximize :minimize} solver)]}
@@ -502,8 +506,8 @@
 
 
 (comment
-  (_solve :satisfy)
-  (_solve :foo) ;; error -> assert failed
+  (solve :satisfy)
+  (solve :foo) ;; error -> assert failed
   )
 
 
@@ -520,7 +524,7 @@
 ;; TMP: def until a more general function output that translates arbitrary data structures containing variables is defined.
 ;; ??? TODO: replace by more general variant that supports arbitrary Clojure data strutures.
 ;; NOTE: “fancy” output can be (very) slow (http://web.it.kth.se/~cschulte/events/SweConsNet-2012/hakan.pdf)
-(defn _output-map
+(defn output-map
   "[TMP function] Expects a map containing MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure map for Clojure to read."
   [my-map]
   (tell-store 
@@ -531,9 +535,9 @@
         "\"}\\n\"];")))
 
 (comment
-  (def x (_var (domain 1 3) 'x))
-  (def y (_var (domain 4 6) 'y))
-  (print (_output-map {:x x :y y}))
+  (def x (variable (domain 1 3) 'x))
+  (def y (variable (domain 4 6) 'y))
+  (print (output-map {:x x :y y}))
 
   (str "output [\"{\", " 
                (apply str (doall (map (fn [[key val]] (str "\" " key " \"" ", show(" (:name val) "), ")) {:x x :y y}))) 
@@ -573,8 +577,8 @@
   ;; TODO: old test
   (output "this" "is" "a" "test")
 
-  (def x (_var (domain 1 3) 'x))
-  (def y (_var (domain 4 6) 'y))
+  (def x (variable (domain 1 3) 'x))
+  (def y (variable (domain 4 6) 'y))
 
   (type x)
   (= (type x) clojure2minizinc.core.aVar) 
@@ -621,11 +625,11 @@
   ;; TODO: try also macroexpand 
   (print
    (clj2mnz
-    (let [a (_var (_-- 1 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
-          b (_var (_-- 1 3) 'b)]
-      (_constraint (_!= a b))
-      (_solve :satisfy)
-      (_output-map {:a a :b b})
+    (let [a (variable (-- 1 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
+          b (variable (-- 1 3) 'b)]
+      (constraint (!= a b))
+      (solve :satisfy)
+      (output-map {:a a :b b})
       (pprint/pprint *mzn-store*)
       )))
   )
@@ -678,11 +682,11 @@ Solver options
   ;; !! NB: first mini version running :)
   (minizinc 
    (clj2mnz
-    (let [a (_var (_-- -1 1)) 
-          b (_var (_-- -1 1))]
-      (_constraint (_!= a b))
-      (_solve :satisfy)
-      (_output-map {:a a :b b})
+    (let [a (variable (-- -1 1)) 
+          b (variable (-- -1 1))]
+      (constraint (!= a b))
+      (solve :satisfy)
+      (output-map {:a a :b b})
       ;; (pprint/pprint *mzn-store*)
       ))
    :print-mzn? true
@@ -691,15 +695,15 @@ Solver options
    )
 
   
-  ;; Idea for revised notation -- start all clojure2minizinc defs with underscore (_)
+  ;; Idea for revised notation -- start all clojure2minizinc defs with underscore ()
   ;; !! not working yet
   (minizinc 
    (clj2mnz
-    (let [a (_var (_-- -1 1))
-          b (_var (_-- -1 1))]
-      (_constraint (_!= a b))
-      (_solve :satisfy)
-      (_output-map {:a a :b b})
+    (let [a (variable (-- -1 1))
+          b (variable (-- -1 1))]
+      (constraint (!= a b))
+      (solve :satisfy)
+      (output-map {:a a :b b})
       ;; (pprint/pprint *mzn-store*)
       ))
    )
@@ -710,10 +714,10 @@ Solver options
   (minizinc 
    (clj2mnz
     ;; TODO: Create map instead of vector for named variables. Give vector of keys and by and by extend map {} by adding keys with vars (e.g., using fun reduce)
-    (let [vars (map #(_var (domain 1 3) %) [:wa :nt :sa :q :nsw :v :t])]
-      (_solve :satisfy)
+    (let [vars (map #(variable (domain 1 3) %) [:wa :nt :sa :q :nsw :v :t])]
+      (solve :satisfy)
       ;; TODO: use map created above
-      (_output-map
+      (output-map
        (apply hash-map 
               (flatten (map #(cons (keyword (:name %)) (list %))
                             vars))))
@@ -722,7 +726,7 @@ Solver options
    )  
   ;; (apply hash-map 
   ;;        (flatten (map #(cons (keyword (:name %)) (list %))
-  ;;                      (map #(_var (domain 1 3) %) [:wa :nt :sa :q :nsw :v :t]))))
+  ;;                      (map #(variable (domain 1 3) %) [:wa :nt :sa :q :nsw :v :t]))))
 
 
   ;; dummy example
