@@ -143,12 +143,17 @@
 
 (defn set-of-int
   "Declares a set of integers parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([] (par "set of int")) 
-  ([init-value] (par "set of int" init-value))
+  ([] (set-of-int nil)) 
+  ([init-value] (set-of-int init-value (gensym "Set")))
   ([init-value var-name] (par "set of int" init-value var-name)))
 
 (comment
   (int)
+  (bool)
+
+  (set-of-int)
+  (set-of-int (-- 1 10))
+  (set-of-int (-- 1 10) "MySet")
   )
 
 
