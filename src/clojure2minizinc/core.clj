@@ -74,19 +74,6 @@
   (aVar? myVar)
 )
 
-;; TODO: rename -- fn extracts name of aVar or returns given value more or less
-(defn- extract-mzn-string 
-  "Returns the name of aVar instances (called within constraint expressions), or simply argument if arg is a string."
-  [x]
-  (cond (aVar? x) (:name x)
-        (string? x) x
-        (number? x) x
-        ;; :else x
-        :else (throw (Exception. 
-                      (pprint/cl-format nil "extract-mzn-string cannot handle ~S of type ~S" 
-                                        x (type x))))
-        ))
-
 (defn- expr
   "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar, it returns its name. If x returns true for some function given in literal-tests, then it returns x."
   ([x] (expr x (list string? number?))) 
