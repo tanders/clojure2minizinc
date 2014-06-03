@@ -67,7 +67,14 @@
   [x]
   (clojure.core/= (type x) clojure2minizinc.core.aVar))
 
-;; TODO: add type-checker and replace calls of function type with bespoke type-checker
+(comment
+  (def myVar (aVar. 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
+  (:name myVar)
+  (:mzn-string myVar)
+  (aVar? myVar)
+)
+
+;; TODO: rename -- fn extracts name of aVar or returns given value more or less
 (defn- extract-mzn-string 
   "Returns the name of aVar instances (called within constraint expressions), or simply argument if arg is a string."
   [x]
@@ -80,19 +87,31 @@
                                         x (type x))))
         ))
 
+(defn- expr
+  "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar, it returns its name. If x returns true for some function given in literal-tests, then it returns x."
+  ([x] (expr x (list string? number?))) 
+  ([x literal-tests]
+     (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
+     (cond (aVar? x) (:name x)
+           (some #(% x) literal-tests) x
+           :else (throw (Exception. 
+                         (pprint/cl-format 
+                          nil "expr: not allowed as literal MiniZinc expr: ~S of type ~S" 
+                          x (type x)))))))
+
 (comment
+
+  (some #(% "test") (list string? number?))
+
   (def myVar (aVar. 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
-  (:name myVar)
-  (:mzn-string myVar)
-  (aVar? myVar)
 
-  (extract-mzn-string "myVar")
-  (extract-mzn-string myVar)
-  (extract-mzn-string 1)
-
+  (expr "myVar")
+  (expr myVar)
+  (expr 1)
+  
   ;; errors 
-  (extract-mzn-string ['myVar])
-  (extract-mzn-string 'x)
+  (expr ['myVar])
+  (expr 'x)
   )
 
 ;;;
@@ -275,7 +294,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 (defn constraint 
   ""
   [c]
-  (tell-store (format "constraint %s;" (extract-mzn-string c))))
+  (tell-store (format "constraint %s;" (expr c))))
 
 (defmacro ^:private def-unary-operator
   "Defines a function that outputs the code for a MiniZinc unary operator."
@@ -283,7 +302,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   `(defn ~op-name
      ~doc-string
      [arg#]
-     (format ~(str operation " %s")  (extract-mzn-string arg#))))
+     (format ~(str operation " %s")  (expr arg#))))
 
 (defmacro ^:private def-binary-operator
   "Defines a function that outputs the code for a MiniZinc binary operator."
@@ -291,7 +310,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   `(defn ~op-name
      ~doc-string
      [lh# rh#]
-     (format ~(str "%s " operation " %s") (extract-mzn-string lh#) (extract-mzn-string rh#))))
+     (format ~(str "%s " operation " %s") (expr lh#) (expr rh#))))
 
 (defmacro ^:private def-unary-and-binary-operator
   "Defines a function that outputs the code for a MiniZinc unary and binary operator."
@@ -299,9 +318,9 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   `(defn ~op-name
      ~doc-string
      ([arg#]
-        (format ~(str operation " %s") (extract-mzn-string arg#)))
+        (format ~(str operation " %s") (expr arg#)))
      ([lh# rh#]
-        (format ~(str "%s " operation " %s") (extract-mzn-string lh#) (extract-mzn-string rh#)))))
+        (format ~(str "%s " operation " %s") (expr lh#) (expr rh#)))))
 
 (defmacro ^:private def-unary-function
   "Defines a function that outputs the code for a MiniZinc function."
@@ -309,7 +328,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   `(defn ~fn-name
      ~doc-string
      [arg#]
-     (format ~(str fn "(%s)")  (extract-mzn-string arg#))))
+     (format ~(str fn "(%s)")  (expr arg#))))
 
 (defmacro ^:private def-binary-function
   "Defines a function that outputs the code for a MiniZinc function."
@@ -317,7 +336,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   `(defn ~fn-name
      ~doc-string
      [arg1# arg2#]
-     (format ~(str fn "(%s, %s)")  (extract-mzn-string arg1#) (extract-mzn-string arg2#))))
+     (format ~(str fn "(%s, %s)")  (expr arg1#) (expr arg2#))))
 
 (def-unary-operator not not 
   "Logical not constraint")
@@ -555,12 +574,12 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   (defn != 
     ""
     [lh rh]
-    (format "%s != %s" (extract-mzn-string lh) (extract-mzn-string rh)))
+    (format "%s != %s" (expr lh) (expr rh)))
 
   ;; (defn != 
   ;;   ""
   ;; [lh rh]
-  ;; (pprint/cl-format nil "~S != ~S" (extract-mzn-string lh) (extract-mzn-string rh)))
+  ;; (pprint/cl-format nil "~S != ~S" (expr lh) (expr rh)))
 
   
   )
@@ -660,7 +679,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 
   (name :x)
 
-  (walk/walk extract-mzn-string identity
+  (walk/walk expr identity
              {:x x :y y})
 
 
