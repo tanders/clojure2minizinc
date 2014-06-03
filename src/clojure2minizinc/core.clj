@@ -62,12 +62,16 @@
 ;;;
 
 (defrecord aVar [name mzn-string])
+(defn aVar? 
+  "Returns true if x is aVar."
+  [x]
+  (clojure.core/= (type x) clojure2minizinc.core.aVar))
 
 ;; TODO: add type-checker and replace calls of function type with bespoke type-checker
 (defn- extract-mzn-string 
   "Returns the name of aVar instances (called within constraint expressions), or simply argument if arg is a string."
   [x]
-  (cond (clojure.core/= (type x) clojure2minizinc.core.aVar) (:name x)
+  (cond (aVar? x) (:name x)
         (string? x) x
         (number? x) x
         ;; :else x
@@ -78,7 +82,7 @@
   (def myVar (aVar. 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
   (:name myVar)
   (:mzn-string myVar)
-  (clojure.core/= (type myVar) clojure2minizinc.core.aVar)
+  (aVar? myVar)
 
   (extract-mzn-string "myVar")
   (extract-mzn-string myVar)
@@ -93,9 +97,8 @@
 ;;; Creating MiniZinc parameters (quasi constants)
 ;;;
 
-;; TODO: add array declarations
 (defn- par   
-  "Declares a parameter (quasi a constant) with the given type (a string, symbol or keyword; can be int, float, bool...), an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  "Declares a parameter (quasi a constant) with the given type (a string, symbol or keyword; can be int, float, bool and 'set of int'), an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
   ([param-type] (par param-type nil))
   ([param-type init-value] (par param-type init-value (gensym (name param-type))))
   ([param-type init-value var-name]
@@ -124,25 +127,25 @@
 )
 
 (defn int 
-  "Declares an initeger parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  "Declares an initeger parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :int)) 
   ([init-value] (par :int init-value))
   ([init-value var-name] (par :int init-value var-name)))
 
 (defn float 
-  "Declares a float parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  "Declares a float parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :float)) 
   ([init-value] (par :float init-value))
   ([init-value var-name] (par :float init-value var-name)))
 
 (defn bool 
-  "Declares a bool parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  "Declares a bool parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :bool)) 
   ([init-value] (par :bool init-value))
   ([init-value var-name] (par :bool init-value var-name)))
 
 (defn set-of-int
-  "Declares a set of integers parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  "Declares a set of integers parameter (quasi a constant) with an optional init-value and optional name (a string, symbol or keyword, default is a gensym-ed name). The init value is a range, e.g., `(-- 1 10)` meaning the set contains all integers in the range. The default is nil, meaning no initialisation."
   ([] (set-of-int nil)) 
   ([init-value] (set-of-int init-value (gensym "Set")))
   ([init-value var-name] (par "set of int" init-value var-name)))
@@ -155,6 +158,7 @@
   (set-of-int (-- 1 10))
   (set-of-int (-- 1 10) "MySet")
   )
+
 
 
 ;;;
@@ -603,7 +607,7 @@
   (def y (variable (domain 4 6) 'y))
 
   (type x)
-  (clojure.core/= (type x) clojure2minizinc.core.aVar) 
+  (aVar? x)
   (:name x)
 
   (name :x)
@@ -612,7 +616,7 @@
              {:x x :y y})
 
 
-  (walk/walk #(if (clojure.core/= (type %) clojure2minizinc.core.aVar) 
+  (walk/walk #(if (aVar? %) 
                   (:name %)
                   %)
                identity
@@ -635,7 +639,8 @@
      ~@constraints
      ;; TODO: map is lazy -- make sure dynamic scope is not left
      (apply str (doall (map (fn [x#]  ; x# results in unique gensym
-                              (str (cond (clojure.core/= (type x#) clojure2minizinc.core.aVar) (:mzn-string x#)
+                              (str (cond (aVar? x#)
+                                         (:mzn-string x#)
                                          (string? x#) x#
                                          :else (throw (Exception. (pprint/cl-format nil "~S not supported. MiniZinc statements must be strings or variables defined with function clojure2minizinc.core/variable." x#)))) 
                                    "\n"))
