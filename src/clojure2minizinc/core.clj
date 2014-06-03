@@ -75,7 +75,9 @@
         (string? x) x
         (number? x) x
         ;; :else x
-        :else (throw (Exception. (pprint/cl-format nil "extract-mzn-string cannot handle ~S of type ~S" x (type x))))
+        :else (throw (Exception. 
+                      (pprint/cl-format nil "extract-mzn-string cannot handle ~S of type ~S" 
+                                        x (type x))))
         ))
 
 (comment
@@ -157,6 +159,52 @@
   (set-of-int)
   (set-of-int (-- 1 10))
   (set-of-int (-- 1 10) "MySet")
+  )
+
+
+;; TODO: 
+;; array literal
+(defn array   
+  "Declares a one- or multi-dimensional array.
+
+Arguments are
+
+param-type: The type of the variables contained in the array (a string, symbol or keyword; can be int, float, bool, string and \"set of int\").
+index-set: The explicitly declared indices of the array. Either an integer range (declared with function --), a set variable initialised to an integer range, or for multi-dimensional arrays a list of integer ranges and set variables.
+var-name: an optional name for the array (a string, symbol or keyword) Default is a gensym-ed name."
+  ([param-type index-set] (array param-type index-set (gensym (str (name param-type) "_array"))))
+  ([param-type index-set var-name]
+     {:pre [(#{"int" "float" "bool" "string" "set of int"} (name param-type))]}
+     ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
+     (tell-store
+      (aVar. (name var-name) 
+             (format "array[%s] of var %s: %s;" 
+                     (cond (aVar? index-set) (:name index-set)
+                           (string? index-set) index-set
+                           (list? index-set) (apply str
+                                                    (interpose 
+                                                     ", "
+                                                     (map #(cond (aVar? %) (:name %)
+                                                                 (string? %) %
+                                                                 :else (throw (Exception. 
+                                                                               (pprint/cl-format 
+                                                                                nil "Not allowed as array index-set: ~S of type ~S" 
+                                                                                % (type %)))))
+                                                          index-set)))
+                           :else (throw (Exception. 
+                                         (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
+                                                           index-set (type index-set)))))
+                     (name param-type) 
+                     (name var-name))))))
+
+
+
+(comment
+  (array :bool (-- 0 10))
+  (array :int (-- 0 10) "test") ;"array[0..10] of var int: test;"
+
+  (array :int (set-of-int (-- 1 10)))
+  (array :int (list (-- 0 10) (-- 0 10) (set-of-int (-- 1 10))))
   )
 
 
@@ -321,7 +369,7 @@
 (def-binary-operator intersect intersect
   " constraint")
 (def-binary-operator ++ ++
-  " constraint")
+  "Concatenates strings and arrays.")
 (def-binary-operator * *
   " constraint")
 (def-binary-operator / /
@@ -413,7 +461,7 @@
 (def-unary-function lb_array lb_array
   " function constraint")
 (def-unary-function length length
-  " function constraint")
+  "Returns the length of an array.")
 (def-unary-function ln ln
   "natural logarithm constraint")
 (def-unary-function log log
