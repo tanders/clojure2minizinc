@@ -188,15 +188,9 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
                      (cond (aVar? index-set) (:name index-set)
                            (string? index-set) index-set
                            (list? index-set) (apply str
-                                                    (interpose 
-                                                     ", "
-                                                     (map #(cond (aVar? %) (:name %)
-                                                                 (string? %) %
-                                                                 :else (throw (Exception. 
-                                                                               (pprint/cl-format 
-                                                                                nil "Not allowed as array index-set: ~S of type ~S" 
-                                                                                % (type %)))))
-                                                          index-set)))
+                                                    (interpose ", "
+                                                               (map #(expr % (list string?))
+                                                                    index-set)))
                            :else (throw (Exception. 
                                          (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
                                                            index-set (type index-set)))))
