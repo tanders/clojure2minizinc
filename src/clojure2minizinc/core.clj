@@ -13,6 +13,7 @@
   ;; http://raynes.github.io/fs/  https://github.com/Raynes/fs
   (:require [me.raynes.fs :as fs])
   (:require [clojure.walk :as walk]) ;; not used yet
+  (:require [clojure.java.io :as io]) ;; only required for testing here
   )
 
 ;; (require '[clojure2minizinc.core :as mzn])
@@ -266,6 +267,16 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   )
 
 
+
+(defn include 
+  "Include the given file."
+  [file]
+  (format "include \"%s\";" file))
+
+(comment
+  (include "test.mzn")
+  (include (io/as-file "test2.mzn"))
+  )
 
 ;;;
 ;;; Constraints
