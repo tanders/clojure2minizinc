@@ -209,6 +209,19 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   )
 
 
+(defn literal-array 
+  "Specifies a one- or two-dimensional array that contains the given MiniZinc expressions as elements. Two-dimensional arrays are defined by a list of expressions."
+  [& exprs]
+  (if (every? list? exprs)
+    (str "[|" (apply str (flatten (interpose " | " (map (fn [sub-exprs]
+                                                        (interpose ", " (map expr sub-exprs)))
+                                                      exprs)))) "|]")    
+    (format "[%s]" (apply str (interpose ", " (map expr exprs))))))
+
+(comment
+  (literal-array (int) (int) (int))
+  (print (literal-array (list (int) (int)) (list (int) (int))))
+  )
 
 ;;;
 ;;; Creating MiniZinc vars
