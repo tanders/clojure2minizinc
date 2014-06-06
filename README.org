@@ -28,15 +28,17 @@
 #+begin_src clojure :results silent
 (minizinc 
    (clj2mnz
-    (let [a (variable (domain 0 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
-          b (variable (domain 0 3) 'b)]
+    (let [a (variable (-- -1 1)) 
+          b (variable (-- -1 1))]
       (constraint (!= a b))
       (solve :satisfy)
-      (output-map {:a a :b b}))))
+      (output-map {:a a :b b})))
+   :num-solutions 3
+   ;; :all-solutions? true
+   )
 #+end_src
 
-    Returns:    
-    *TODO*
+    Results in =({:a 0, :b -1} {:a 1, :b -1} {:a -1, :b 0})=.
     
     Generates in the background this MiniZinc code and calls solver with it
     
