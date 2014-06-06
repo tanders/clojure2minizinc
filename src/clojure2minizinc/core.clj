@@ -79,7 +79,7 @@
   "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar, it returns its name. If x returns true for some function given in literal-tests, then it returns x."
   ([x] (expr x (list string? number?))) 
   ([x literal-tests]
-     (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
+     ;; (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
      (cond (aVar? x) (:name x)
            (some #(% x) literal-tests) x
            :else (throw (Exception. 
