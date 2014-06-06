@@ -309,6 +309,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
      [arg#]
      (format ~(str operation " %s")  (expr arg#))))
 
+;; TODO: add parenthesis around operator to clarify [Vorrang], just in case 
 (defmacro ^:private def-binary-operator
   "Defines a function that outputs the code for a MiniZinc binary operator."
   [op-name operation doc-string]
