@@ -20,6 +20,7 @@
 
 ** TODO Usage 
 
+
 *** TODO A Minimal Example 
 
     TODO: Revise: update if necessary (e.g., =clj2mnz= will likely be gone later, and explicit variable MiniZinc names will be optional. 
@@ -34,10 +35,12 @@
       (output-map {:a a :b b}))))
 #+end_src
 
-Returns:    
-
-Generates in the background this MiniZinc code and calls solver with it
-
+    Returns:    
+    *TODO*
+    
+    Generates in the background this MiniZinc code and calls solver with it
+    
+    Note that this library overwrites many standard Clojure functions. You may want to use the library with a namespace prefix.
 
 *** Further Reading 
 
@@ -45,6 +48,7 @@ Generates in the background this MiniZinc code and calls solver with it
 ** Similarity  and differences between MiniZinc and its Clojure complement
 
    Definitions in clojure2minizinc can be very similar to MiniZinc code. This sections lists important differences.
+
 
 *** Code similarity
 
