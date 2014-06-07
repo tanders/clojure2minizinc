@@ -1,4 +1,4 @@
-;; TODO: break into multiple namespaces for clarification, e.g., for integer, set and float domains and core defs.
+; TODO: break into multiple namespaces for clarification, e.g., for integer, set and float domains and core defs.
 
 ;; TODO: ? Add support for arrays
 
@@ -112,6 +112,8 @@
 ;;; Creating MiniZinc parameters (quasi constants)
 ;;;
 
+;; BUG: I may need to declare a parameter with an explicitly given name, but not initialisation -- initialisation happens in init file. This case is more important than being able to initialise a variable without giving it a name - giving it a name unnecessarily does not hurt too much (but is inconvenient). By contrast, initialising it unnecessarily makes initialisation in datafile impossible. 
+;; More flexible, but more verbose: using keyword args. Even better: making key-args also an option.
 (defn- par   
   "Declares a parameter (quasi a constant) with the given type (a string, symbol or keyword; can be int, float, bool and 'set of int'), an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
   ([param-type] (par param-type nil))
