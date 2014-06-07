@@ -38,7 +38,8 @@
 ;;;
 
 ;; Sending all constraints to a single store instead of returning them from functions like constraint allows, e.g., to store minizinc vars in arbitrary clojure data structures and freely traversing such data structure for applying constraints to these, without worrying how to collect the constraint information.
-(def ^{:dynamic true :private true} *mzn-store*
+;; Note: Must be public so that other packages can indirectly write to it (why? tell-store does not need to be public either.)
+(def ^{:dynamic true} *mzn-store*  ; :private true
   "A thread-local store for collecting all information about a CSP."
   false)
 
