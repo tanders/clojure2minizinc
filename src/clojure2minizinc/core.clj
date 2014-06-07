@@ -776,16 +776,19 @@ Options are
 :mzn            (string) a MiniZinc program, which can be created with other functions of clojure2minizinc
 :solver         (string) solver to call
 :mznfile        (string or file) MiniZinc file generated
+:data           (string) Content for a MiniZinc data file (*.dzn file). Can be created, e.g., with map2minizinc 
 :print-mzn?     (boolean) whether or not to print resulting MiniZinc program (for debugging)
 
 Solver options
 :num-solutions  (int) An upper bound on the number of solutions to output
 :all-solutions  (boolean) If true, return all solutions
 "
-  [mzn & {:keys [solver mznfile print-mzn?
+  [mzn & {:keys [solver mznfile data
+                 print-mzn?
                  num-solutions all-solutions?] 
           :or {solver *fd-solver*
                mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)
+               data false
                print-mzn? false
                num-solutions 1
                all-solutions? false}}]
@@ -798,6 +801,9 @@ Solver options
                            "--all-solutions"
                            ;; I could not get long parameter names working 
                            (format "-n%s" num-solutions)) 
+                         (if data
+                           (format "-D%s" data)
+                           "")
                          (fs/base-name mznfile)
                          :dir (fs/parent mznfile)
                          )]
