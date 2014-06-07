@@ -7,6 +7,9 @@
 
 
 (ns clojure2minizinc.core
+  ;; make explicit shadowing a range of core clojure functions etc
+  (:refer-clojure :exclude [> >= <= < = == -> + - * / mod assert concat min max int float or and not]) 
+  (:require [clojure.core :as core])
   (:require [clojure.java.shell :as shell])
   ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
   (:require [clojure.pprint :as pprint])
@@ -66,7 +69,7 @@
 (defn aVar? 
   "Returns true if x is aVar."
   [x]
-  (clojure.core/= (type x) clojure2minizinc.core.aVar))
+  (core/= (type x) clojure2minizinc.core.aVar))
 
 (comment
   (def myVar (aVar. 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
@@ -774,7 +777,7 @@ Solver options
                          (fs/base-name mznfile)
                          :dir (fs/parent mznfile)
                          )]
-    (if (clojure.core/= (:exit result) 0)
+    (if (core/= (:exit result) 0)
       (map read-string
            (clojure.string/split (:out result) #"(\n----------\n|==========\n)"))
       (throw (Exception. (format "MiniZinc error: %s" (:err result)))))))
