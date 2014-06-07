@@ -80,26 +80,28 @@
 )
 
 (defn- expr
-  "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar, it returns its name. If x returns true for some function given in literal-tests, then it returns x."
-  ([x] (expr x (list string? number?))) 
-  ([x literal-tests]
-     ;; (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
-     (cond (aVar? x) (:name x)
-           (some #(% x) literal-tests) x
-           :else (throw (Exception. 
-                         (pprint/cl-format 
-                          nil "expr: not allowed as literal MiniZinc expr: ~S of type ~S" 
-                          x (type x)))))))
+  "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.)."
+  [x]
+  ;; (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
+  (cond (aVar? x) (:name x)
+        (core/or (string? x)
+                 (number? x)) x
+        (core/or (keyword? x)
+                 (symbol? x)) (name x)
+                 ;; (some #(% x) literal-tests) x
+        :else (throw (Exception. 
+                      (pprint/cl-format nil
+                                        "expr: not allowed as literal MiniZinc expr: ~S of type ~S" 
+                                        x (type x))))))
 
 (comment
-
-  (some #(% "test") (list string? number?))
 
   (def myVar (aVar. 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
 
   (expr "myVar")
   (expr myVar)
   (expr 1)
+  (expr :test)
   
   ;; errors 
   (expr ['myVar])
@@ -194,7 +196,12 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
                            (string? index-set) index-set
                            (list? index-set) (apply str
                                                     (interpose ", "
-                                                               (map #(expr % (list string?))
+                                                               (map #(cond (aVar? %) (:name %)
+                                                                           (string? %) %
+                                                                           :else (throw 
+                                                                                  (Exception. 
+                                                                                   (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
+                                                                                                     % (type %)))))
                                                                     index-set)))
                            :else (throw (Exception. 
                                          (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
