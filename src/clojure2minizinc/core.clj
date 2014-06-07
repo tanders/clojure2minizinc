@@ -596,12 +596,14 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 ;;; Solver
 ;;;
 
-;; TODO: for solve maximise function should additionally expect an expression to maximise
 (defn solve 
   "Solve items specify what kind of solution is being looked for. Supported values for solver are satisfy, maximize, and minimize (a keyword)."
-  [solver]
-  {:pre [(#{:satisfy :maximize :minimize} solver)]}
-  (tell-store (format "solve %s;" (name solver))))
+  ([solver]
+     {:pre [(#{:satisfy} solver)]}
+     (tell-store (format "solve %s;" (name solver))))
+  ([solver expr]
+     {:pre [(#{:maximize :minimize} solver)]}
+     (tell-store (format "solve %s %s;" (name solver) expr))))
 
 
 (comment
