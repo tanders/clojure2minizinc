@@ -234,10 +234,14 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 (defn --
   "Expects a minimum an a maximum value (ints or floats) and returns a domain specification for a decision variable (ints or floats)."
   [min max]
-  (pprint/cl-format nil "~S..~S" min max))
+  (format  "%s..%s" (expr min) (expr max))
+  ;; (pprint/cl-format nil "~S..~S" (expr min) (expr max))
+  )
 
 (comment
+  (def myInt (int 3))
   (-- 0 2)
+  (-- 0 myInt)
   )
 
 ;; You cannot shadow special forms, and therefore a function cannot be called var
