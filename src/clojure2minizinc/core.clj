@@ -765,21 +765,19 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 
 
 
-;; TODO: incorporate clj2mnz into minizinc (turning minizinc into a macro)?
-;; TODO: allow for multiple solutions: split string with multiple solution along the "--------" marking, and read each solution individually
-;; TODO: Add solver arguments: cmdline-data, parallel (unrecognized for mzn-g12fd), random-seed, solver-backend, flatzinc-flags (?), keep-files, ... 
+;; ?? TODO: incorporate clj2mnz into minizinc (turning minizinc into a macro)? Perhaps having it separate is a good idea? Makes call more structured. 
+;; TODO: Add solver arguments: parallel (unrecognized for mzn-g12fd), random-seed, solver-backend, flatzinc-flags (?), keep-files, ... 
 (defn minizinc 
   "Calls a MiniZinc solver on a given MiniZinc program and returns a list of one or more solutions.
 
 Options are
 
-:mzn            (string) a MiniZinc program, which can be created with other functions of clojure2minizinc
-:solver         (string) solver to call
-:mznfile        (string or file) MiniZinc file generated
-:data           (string) Content for a MiniZinc data file (*.dzn file). Can be created, e.g., with map2minizinc 
+:mzn            (string) a MiniZinc program, which can be created with other functions of clojure2minizinc wrapped into clj2mnz
 :print-mzn?     (boolean) whether or not to print resulting MiniZinc program (for debugging)
+:solver         (string) solver to call
+:mznfile        (string or file) MiniZinc file path to generate and use in the background
+:data           (string) Content for a MiniZinc data file (*.dzn file). Can conveniently be created with map2minizinc 
 
-Solver options
 :num-solutions  (int) An upper bound on the number of solutions to output
 :all-solutions  (boolean) If true, return all solutions
 "
@@ -794,28 +792,32 @@ Solver options
                all-solutions? false}}]
   ;; (println "mzn:" mzn "\nmznfile:" mznfile "\nsolver:" solver)
   (when print-mzn? (println mzn))
+  ;; TMP: 
+  ;; (when data (throw (Exception. (format "minizinc: arg data not yet supported. %s" data))))
   (spit mznfile mzn)
   ;; mznfile split into filename (base-name) and dirname (parent), so that shell/sh first moves into that dir, because otherwise I got errors from *fd-solver*
-  (let [result (shell/sh solver 
-                         (if all-solutions?
-                           "--all-solutions"
-                           ;; I could not get long parameter names working 
-                           (format "-n%s" num-solutions)) 
-                         (if data
-                           (format "-D%s" data)
-                           "")
-                         (fs/base-name mznfile)
-                         :dir (fs/parent mznfile)
-                         )]
+  (let [sh-args (core/concat [solver]
+                          [(if all-solutions?
+                             "--all-solutions"
+                             ;; I could not get long parameter names working 
+                             (format "-n%s" num-solutions))]
+                          (if data
+                            [(format "-D%s" data)]
+                            [])
+                          [(fs/base-name mznfile)]
+                          [:dir (fs/parent mznfile)])
+        dummy (pprint/pprint sh-args)
+        result (apply shell/sh sh-args)]
     (if (core/= (:exit result) 0)
       (map read-string
            (clojure.string/split (:out result) #"(\n----------\n|==========\n)"))
       (throw (Exception. (format "MiniZinc error: %s" (:err result)))))))
 
 
+
 (comment
   ;; !! NB: first mini version running :)
-  (minizinc 
+  (minizinc
    (clj2mnz
     (let [a (variable (-- -1 1)) 
           b (variable (-- -1 1))]
