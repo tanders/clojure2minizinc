@@ -1,20 +1,18 @@
 (ns clojure2minizinc.examples
-  (:refer-clojure :exclude [> >= <= < = == -> + - * / mod assert concat min max int float or and not]) 
-  (:require [clojure.core :as core])
-  (:require ;; [clojure.test :refer :all]
-            [clojure2minizinc.core :refer :all :as m]
+  (:require [clojure2minizinc.core :as m] ; 
             ;; [clojure.java.shell :as shell]
             [clojure.pprint :as pprint])
   )
 
+ 
 
 ;; Examples of MiniZinc tutorial, translated to Clojure
 
 ;; Colouring Australia using nc colours (tutorial of version 1.6, p. 4)
 ;; Version as in tutorial, only "clojurized"
-(minizinc 
- (clj2mnz
-  (let [nc (m/int 3)     
+(m/minizinc 
+ (m/clj2mnz
+  (let [nc (m/int 'nc 3)     
         wa (m/variable (m/-- 1 nc))
         nt (m/variable (m/-- 1 nc))
         sa (m/variable (m/-- 1 nc))
@@ -22,14 +20,14 @@
         nsw (m/variable (m/-- 1 nc))
         v (m/variable (m/-- 1 nc))
         t (m/variable (m/-- 1 nc))]
-    (m/constraint (!= wa nt))
-    (m/constraint (!= wa sa))
-    (m/constraint (!= nt sa))
-    (m/constraint (!= nt q))
-    (m/constraint (!= sa q))
-    (m/constraint (!= sa nsw))
-    (m/constraint (!= sa v))
-    (m/constraint (!= nsw v))
+    (m/constraint (m/!= wa nt))
+    (m/constraint (m/!= wa sa))
+    (m/constraint (m/!= nt sa))
+    (m/constraint (m/!= nt q))
+    (m/constraint (m/!= sa q))
+    (m/constraint (m/!= sa nsw))
+    (m/constraint (m/!= sa v))
+    (m/constraint (m/!= nsw v))
     (m/solve :satisfy)
     (m/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t})
     ))
@@ -42,14 +40,14 @@
 
 ;; Colouring Australia using nc colours
 ;; version using Clojure abstraction means
-(minizinc 
- (clj2mnz
-  (let [nc (m/int 3)
+(m/minizinc 
+ (m/clj2mnz
+  (let [nc (m/int 'nc 3)
         states (zipmap [:wa :nt :sa :q :nsw :v :t]
                        (take 7 (repeatedly #(m/variable (m/-- 1 nc)))))]
     ;; enforce that lazy map is actually computed with doall
     (doall (map (fn [[s1 s2]] 
-                  (m/constraint (!= (s1 states) (s2 states))))
+                  (m/constraint (m/!= (s1 states) (s2 states))))
                 [[:wa :nt]
                  [:wa :sa]
                  [:nt :sa]
@@ -72,8 +70,8 @@
 
 
 ;; Baking cakes for the school fete (tutorial p. 7)
-(minizinc 
- (clj2mnz
+(m/minizinc 
+ (m/clj2mnz
   (let [b (m/variable (m/-- 1 100))
         c (m/variable (m/-- 1 100))]
     ;; flour
