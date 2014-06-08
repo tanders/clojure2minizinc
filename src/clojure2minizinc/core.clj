@@ -720,10 +720,10 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 
 
 (defn map2minizinc 
-  "Utility function for creating simple data files (*.dzn files)"
+  "Utility function for creating data files (*.dzn files) that map keys (MiniZinc variable names) to values."
   [mzn-map]
   (apply str (map (fn [[key val]] (str (= key val) "; "))
-                  mzn-map)))
+                              mzn-map)))
 
 (comment
   (map2minizinc {:x 1 :y 2 :z 3})
