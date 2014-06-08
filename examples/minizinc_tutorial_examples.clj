@@ -104,27 +104,50 @@
 
 
 
+;; Baking cakes for the school fete -- version with datafile (tutorial p. 9)
+(m/minizinc 
+ (m/clj2mnz
+  (let [flour (m/int :flour)
+        banana (m/int :banana)
+        sugar (m/int :sugar)
+        butter (m/int :butter)
+        cocoa (m/int :cocoa)]
+    (m/constraint (m/assert (m/>= flour 0) "Amount of flour must not be negative"))
+    (m/constraint (m/assert (m/>= banana 0) "Amount of banana must not be negative"))
+    (m/constraint (m/assert (m/>= sugar 0) "Amount of sugar must not be negative"))
+    (m/constraint (m/assert (m/>= butter 0) "Amount of butter must not be negative"))
+    (m/constraint (m/assert (m/>= cocoa 0) "Amount of cocoa must not be negative"))
+    (let [b (m/variable (m/-- 1 100))
+          c (m/variable (m/-- 1 100))]
+      ;; flour
+      (m/constraint (m/<= (m/+ (m/* 250 b)
+                               (m/* 200 c))
+                          flour))
+      ;; bananas
+      (m/constraint (m/<= (m/* 2 b) banana))
+      ;; sugar
+      (m/constraint (m/<= (m/+ (m/* 75 b)
+                               (m/* 150 c))
+                          sugar))
+      ;; butter 
+      (m/constraint (m/<= (m/+ (m/* 100 b)
+                               (m/* 150 c))
+                          butter))
+      ;; cocoa
+      (m/constraint (m/<= (m/* 75 c) cocoa))
+      ;; maximise profit
+      (m/solve :maximize (m/+ (m/* 400 b) (m/* 450 c)))
+      (m/output-map {:banana-cakes b :chocolate-cakes c})
+      ;; (pprint/pprint *mzn-store*)
+      )))
+ ;; :data (map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500})
+ :data (m/map2minizinc {:flour -8000 :banana 11 :sugar 3000 :butter 1500 :cocoa 800})
+ ;; :print-mzn? true
+ ;; :num-solutions 3
+ ;; :all-solutions? true
+ )
+;; For :data (map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500})
+; => ({:banana-cakes 2, :chocolate-cakes 2})
+;; For :data (map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500})
+; => ({:banana-cakes 3, :chocolate-cakes 8})
 
-
-
-
-
-
-
-
-
-(comment
-;; Translated from Strasheela Pattern.oz
-;; Possible problem: not tail recursive
-(defn map-pairwise 
-  "Collects the result of applying the binary function f on all pairwise combinations of xs, i.e. [(f xs1 xs2) .. (f xs1 xsN) (f xs2 xs3) .. (f xsN-1 xsN)]"
-  [xs f]
-  (if (empty? xs) 
-    nil
-    (let [xs-rest (rest xs)]
-      (core/concat (map #(f (first xs) %) xs-rest)
-                   (map-pairwise xs-rest f)))))
-
-  (map-pairwise [1 2] list)
-  (map-pairwise [1 2 3 4] list)
-  )
