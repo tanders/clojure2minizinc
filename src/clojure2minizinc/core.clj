@@ -820,12 +820,18 @@ Options are
                             [])
                           [(fs/base-name mznfile)]
                           [:dir (fs/parent mznfile)])
-        dummy (pprint/pprint sh-args)
+        ;; dummy (pprint/pprint sh-args)
         result (apply shell/sh sh-args)]
+    ;; (pprint/pprint result)
     (if (core/= (:exit result) 0)
-      (map read-string
-           (clojure.string/split (:out result) #"(\n----------\n|==========\n)"))
-      (throw (Exception. (format "MiniZinc error: %s" (:err result)))))))
+      (do 
+        ;; TODO: this is not yet a clean solution
+        ;; In case there is an error as part of a warning then show that. How can I show a warning and still return the final result?
+        (if (core/not= (:err result) "")
+          (throw (Exception. (format "MiniZinc: %s" (:err result)))))
+        (map read-string
+             (clojure.string/split (:out result) #"(\n----------\n|==========\n)")))
+      (throw (Exception. (format "MiniZinc: %s" (:err result)))))))
 
 
 
