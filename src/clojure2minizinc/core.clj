@@ -826,23 +826,9 @@ Options are
       (output-map {:a a :b b})
       ;; (pprint/pprint *mzn-store*)
       ))
-   :print-mzn? true
+   ;; :print-mzn? true
    :num-solutions 3
    ;; :all-solutions? true
-   )
-
-  
-  ;; Idea for revised notation -- start all clojure2minizinc defs with underscore ()
-  ;; !! not working yet
-  (minizinc 
-   (clj2mnz
-    (let [a (variable (-- -1 1))
-          b (variable (-- -1 1))]
-      (constraint (!= a b))
-      (solve :satisfy)
-      (output-map {:a a :b b})
-      ;; (pprint/pprint *mzn-store*)
-      ))
    )
 
   
