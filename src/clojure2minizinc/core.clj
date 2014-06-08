@@ -8,15 +8,16 @@
 
 (ns clojure2minizinc.core
   ;; make explicit shadowing a range of core clojure functions etc
-  (:refer-clojure :exclude [> >= <= < = == -> + - * / mod assert concat min max int float or and not]) 
-  (:require [clojure.core :as core])
-  (:require [clojure.java.shell :as shell])
-  ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
-  (:require [clojure.pprint :as pprint])
-  ;; http://raynes.github.io/fs/  https://github.com/Raynes/fs
-  (:require [me.raynes.fs :as fs])
-  (:require [clojure.walk :as walk]) ;; not used yet
-  (:require [clojure.java.io :as io]) ;; only required for testing here
+  (:refer-clojure :exclude [> >= <= < = == != -> + - * / mod assert concat min max 
+                            int float and]) ; not or
+  (:require [clojure.core :as core]
+            [clojure.java.shell :as shell]
+            ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
+            [clojure.pprint :as pprint]
+            ;; http://raynes.github.io/fs/  https://github.com/Raynes/fs
+            [me.raynes.fs :as fs]
+            [clojure.walk :as walk] ;; not used yet
+            [clojure.java.io :as io]) ;; only required for testing here
   )
 
 ;; (require '[clojure2minizinc.core :as mzn])
