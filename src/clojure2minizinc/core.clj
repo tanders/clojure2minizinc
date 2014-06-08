@@ -117,9 +117,9 @@
 ;; More flexible, but more verbose: using keyword args. Even better: making key-args also an option.
 (defn- par   
   "Declares a parameter (quasi a constant) with the given type (a string, symbol or keyword; can be int, float, bool and 'set of int'), an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([param-type] (par param-type nil))
-  ([param-type init-value] (par param-type init-value (gensym (name param-type))))
-  ([param-type init-value var-name]
+  ([param-type] (par param-type (gensym (name param-type))))
+  ([param-type var-name] (par param-type var-name nil))
+  ([param-type var-name init-value]
      {:pre [(#{"int" "float" "bool" "set of int"} (name param-type))]}
      ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
      (tell-store
@@ -129,52 +129,54 @@
                (format "%s: %s;" (name param-type) (name var-name)))))))
 
 (comment
-  (:mzn-string (par :int 1 'x))
-  (par :int 1)
+  (:mzn-string (par :int 'x 1))
+  (par :int 'test 1)
   (par :int)
 
-  (par :float 1.0 'x)
-  (par :float 1.0)
+  (par :float 'x 1.0)
+  (par :float 'x)
   (par :float)
 
-  (par :bool 'true 'x)
-  (par :bool 'true)
+  (par :bool 'x 'true)
+  (par :bool 'x)
   (par :bool)
 
-  (par :set-of-int (.. 1 'max) 'MySet)
+  (par "set of int" 'MySet (-- 1 'max))
 )
 
 (defn int 
   "Declares an initeger parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :int)) 
-  ([init-value] (par :int init-value))
-  ([init-value var-name] (par :int init-value var-name)))
+  ([var-name] (par :int var-name))
+  ([var-name init-value] (par :int var-name init-value)))
 
 (defn float 
   "Declares a float parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :float)) 
-  ([init-value] (par :float init-value))
-  ([init-value var-name] (par :float init-value var-name)))
+  ([var-name] (par :float var-name))
+  ([var-name init-value] (par :float var-name init-value)))
 
 (defn bool 
   "Declares a bool parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :bool)) 
-  ([init-value] (par :bool init-value))
-  ([init-value var-name] (par :bool init-value var-name)))
+  ([var-name] (par :bool var-name))
+  ([var-name init-value] (par :bool var-name init-value)))
 
 (defn set-of-int
   "Declares a set of integers parameter (quasi a constant) with an optional init-value and optional name (a string, symbol or keyword, default is a gensym-ed name). The init value is a range, e.g., `(-- 1 10)` meaning the set contains all integers in the range. The default is nil, meaning no initialisation."
-  ([] (set-of-int nil)) 
-  ([init-value] (set-of-int init-value (gensym "Set")))
-  ([init-value var-name] (par "set of int" init-value var-name)))
+  ([] (set-of-int (gensym "Set"))) 
+  ([var-name] (set-of-int var-name nil))
+  ([var-name init-value] (par "set of int" var-name init-value)))
 
 (comment
   (int)
+  (int 'test)
+  (int 'test 3)
   (bool)
 
   (set-of-int)
-  (set-of-int (-- 1 10))
-  (set-of-int (-- 1 10) "MySet")
+  (set-of-int "MySet")
+  (set-of-int "MySet" (-- 1 10))
   )
 
 
