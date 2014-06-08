@@ -453,8 +453,6 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   "arcsine constraint")
 (def-unary-function asinh asinh
   "hyperbolic arcsine constraint")
-(def-unary-function assert assert
-  " function constraint")
 (def-unary-function atan atan
   "arctangent constraint")
 (def-unary-function atanh atanh
@@ -552,9 +550,22 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 
 (def-binary-function pow pow
   "power constraint")
+(defn assert 
+  "Constraint to guard against certain errors (e.g., to double-check input from data files).
 
+mz-expr      (string) a MiniZinc expression returning a Boolean value
+error-msg    (string) an error message printed in case mz-expr is false
+
+BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error message."
+  [mz-expr, error-msg]
+  (format "assert(%s, \"%s\")" (expr mz-expr) (expr error-msg)))
 
 (comment
+
+  ;; BUG: assert is still core/assert here, even though that has been excluded in ns macro
+  ;; assert seems to be not a special form, so I should be able to overwrite it
+  (print (assert (>= 'x 0) "some comment"))
+
   (def x (variable (-- -1 1) 'x))
   (def y (variable (-- -1 1) 'y))
 
