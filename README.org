@@ -23,7 +23,7 @@
 
 *** TODO A Minimal Example 
 
-    TODO: Revise: update if necessary (e.g., =clj2mnz= will likely be gone later, and explicit variable MiniZinc names will be optional. 
+    TODO: Revise: update if necessary (e.g., =clj2mnz= will likely be gone later). 
 
 #+begin_src clojure :results silent
 (minizinc 
