@@ -663,7 +663,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
    (str "output [\"{\", " 
         ;; BUG: of REPL? Strings containing parentheses can cause blocking.
         ;; waiting for a response at https://groups.google.com/forum/#!forum/clojure-tools
-        (apply str (doall (map (fn [[key val]] (str "\" " key " \"" ", show(" (:name val) "), ")) my-map))) 
+        (apply str (doall (map (fn [[key val]] (str "\" " key " \"" ", show(" (expr val) "), ")) my-map))) 
         "\"}\\n\"];")))
 
 (comment
