@@ -733,7 +733,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 (defn map2minizinc 
   "Utility function for creating data files (*.dzn files) that map keys (MiniZinc variable names) to values."
   [mzn-map]
-  (apply str (map (fn [[key val]] (str (= key val) "; "))
+  (apply str (map (fn [[key val]] (str (format "%s = %s" (expr key) (expr val)) "; "))
                               mzn-map)))
 
 (comment
