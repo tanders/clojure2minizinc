@@ -364,8 +364,6 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
      [arg1# arg2#]
      (format ~(str fn "(%s, %s)")  (expr arg1#) (expr arg2#))))
 
-(def-unary-operator not not 
-  "Logical not constraint")
 
 (def-unary-and-binary-operator + + 
   "+ constraint")
@@ -378,6 +376,10 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   "Logical implication constraint")
 (def-binary-operator <- <-
   "")
+;; core/not needed for Emacs interaction, and seemingly shadowing it breaks Emacs functionality (of AC?). Therefore alternative function name
+(def-unary-operator nega not 
+  "Logical negation constraint (not)")
+;; TMP: Testing: remove or to avoid problems with Emacs interaction
 (def-binary-operator or "\\/"
   "Logical or constraint")
 (def-binary-operator xor xor

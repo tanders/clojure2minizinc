@@ -78,6 +78,7 @@ constraint x + y != z;
      - =..= is =--=
      - =/\= is =and=
      - =\/= is =or=
+     - =not= is =nega=
 
 
 **** Temporary differences
