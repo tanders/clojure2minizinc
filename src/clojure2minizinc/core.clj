@@ -259,10 +259,10 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 
 ;; You cannot shadow special forms, and therefore a function cannot be called var
 (defn variable
-  "Declares a decision variable (int or float) with the given domain and an optional variable name (string, symbol or keyword)."
+  "Declares a decision variable (int or float) with the given domain (typically created with --) and an optional variable name (string, symbol or keyword). The domain can also be a 'type' declaration like :float for floating point variables without a domain declaration."
   ([dom] (variable dom (gensym "var")))
   ([dom var-name]
-     (tell-store (aVar. (name var-name) (format "var %s: %s;" dom (name var-name))))))
+     (tell-store (aVar. (name var-name) (format "var %s: %s;" (name dom) (name var-name))))))
 
 (comment
   (-- 1 3)
