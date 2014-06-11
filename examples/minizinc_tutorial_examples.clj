@@ -31,7 +31,7 @@
     (m/solve :satisfy)
     (m/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t})
     ))
- ;; :print-mzn? true
+ :print-mzn? true
  ;; :num-solutions 3
  ;; :all-solutions? true
  )
@@ -150,4 +150,33 @@
 ; => ({:banana-cakes 2, :chocolate-cakes 2})
 ;; For :data (map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500})
 ; => ({:banana-cakes 3, :chocolate-cakes 8})
+
+
+;; Float domain constraints
+;; Model for determining relationships between a 1 year loan repaying every quarter, p. 11
+(m/minizinc 
+ (m/clj2mnz
+  (let [r (m/variable :float 'r) ; quarterly repayment
+        p (m/variable :float 'p) ; principal initially borrowed
+        i (m/variable (m/-- 0.0 10.0) 'i) ; interest rate
+        ;; intermediate variables 
+        b1 (m/variable :float 'b1) ; balance after one quarter
+        b2 (m/variable :float 'b2) ; balance after two quarters
+        b3 (m/variable :float 'b3) ; balance after three quarters
+        b4 (m/variable :float 'b4)] ; balance owing at end
+    (m/constraint (m/= b1 (m/- (m/* p (m/+ 1.0 i)) r)))
+    (m/constraint (m/= b2 (m/- (m/* b1 (m/+ 1.0 i)) r)))
+    (m/constraint (m/= b3 (m/- (m/* b2 (m/+ 1.0 i)) r)))
+    (m/constraint (m/= b4 (m/- (m/* b3 (m/+ 1.0 i)) r)))
+    (m/solve :satisfy)
+    ;; TODO: revise m/output-map -- no parentheses. What about parentheses around expressions at values?
+    (m/output-map {:borrowing p :interest-rate (m/* i 100.0)
+                   :repayment-per-quarter r
+                   :owing-at-end b4})))
+ :print-mzn? true
+ ;; :data (m/map2minizinc {:i 0.04 :p 1000.0 :r 260.0})
+ ;; :data (m/map2minizinc {:i 0.04 :p 1000.0 :b4 0.0})
+ :data (m/map2minizinc {:i 0.04 :r 250.0 :b4 0.0})
+ :solver "mzn-g12mip")
+
 
