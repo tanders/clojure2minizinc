@@ -336,7 +336,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   `(defn ~op-name
      ~doc-string
      [lh# rh#]
-     (format ~(str "%s " operation " %s") (expr lh#) (expr rh#))))
+     (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#))))
 
 (defmacro ^:private def-unary-and-binary-operator
   "Defines a function that outputs the code for a MiniZinc unary and binary operator."
@@ -346,7 +346,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
      ([arg#]
         (format ~(str operation " %s") (expr arg#)))
      ([lh# rh#]
-        (format ~(str "%s " operation " %s") (expr lh#) (expr rh#)))))
+        (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#)))))
 
 (defmacro ^:private def-unary-function
   "Defines a function that outputs the code for a MiniZinc function."
