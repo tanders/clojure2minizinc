@@ -9,7 +9,7 @@
 (ns clojure2minizinc.core
   ;; make explicit shadowing a range of core clojure functions etc
   (:refer-clojure :exclude [> >= <= < = == != -> + - * / mod assert concat min max 
-                            int float and]) ; not or
+                            int float and nth]) ; not or
   (:require [clojure.core :as core]
             [clojure.java.shell :as shell]
             ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
@@ -238,6 +238,28 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   (literal-array (int) (int) (int))
   (print (literal-array (list (int) (int)) (list (int) (int))))
   )
+
+
+
+;; TODO: 
+;; array element accessor
+
+(defn nth 
+  "Accesses the array element at the given index, or indices in case of a multi-dimensional array"
+  [my-array & indices]
+  (format "%s[%s]" (expr my-array) (apply str (interpose ", " (map expr indices)))))
+
+(comment
+  (def a (array (-- 0 10) :int))
+  (nth a 1)
+  (nth a 1 2)
+  )
+
+
+;; foreach loop
+
+
+
 
 ;;;
 ;;; Creating MiniZinc vars
