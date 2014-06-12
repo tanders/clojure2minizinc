@@ -190,8 +190,8 @@ Arguments are
 param-type: The type of the variables contained in the array (a string, symbol or keyword; can be int, float, bool, string and \"set of int\").
 index-set: The explicitly declared indices of the array. Either an integer range (declared with function --), a set variable initialised to an integer range, or for multi-dimensional arrays a list of integer ranges and set variables.
 var-name: an optional name for the array (a string, symbol or keyword) Default is a gensym-ed name."
-  ([param-type index-set] (array param-type index-set (gensym (str (name param-type) "_array"))))
-  ([param-type index-set var-name]
+  ([index-set param-type] (array index-set param-type (gensym (str (name param-type) "_array"))))
+  ([index-set param-type var-name]
      {:pre [(#{"int" "float" "bool" "string" "set of int"} (name param-type))]}
      ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
      (tell-store
@@ -217,11 +217,11 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 
 
 (comment
-  (array :bool (-- 0 10))
-  (array :int (-- 0 10) "test") ;"array[0..10] of var int: test;"
+  (array (-- 0 10) :bool)
+  (array (-- 0 10) :int "test") ;"array[0..10] of var int: test;"
 
-  (array :int (set-of-int (-- 1 10)))
-  (array :int (list (-- 0 10) (-- 0 10) (set-of-int (-- 1 10))))
+  (array (set-of-int (-- 1 10)) :int)
+  (array (list (-- 0 10) (-- 0 10) (set-of-int (-- 1 10))) :int)
   )
 
 
