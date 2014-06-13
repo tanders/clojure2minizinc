@@ -874,6 +874,7 @@ Options are
 
 :mzn            (string) a MiniZinc program, which can be created with other functions of clojure2minizinc wrapped into clj2mnz
 :print-mzn?     (boolean) whether or not to print resulting MiniZinc program (for debugging)
+:print-mzn?     (boolean) whether or not to print the result output by MiniZinc directly instead of reading it into a Clojure value (e.g., for debugging). Prints the map resulting from clojure.java.shell/sh.
 :solver         (string) solver to call
 :mznfile        (string or file) MiniZinc file path to generate and use in the background
 :data           (string) Content for a MiniZinc data file (*.dzn file). Can conveniently be created with map2minizinc 
@@ -883,11 +884,13 @@ Options are
 "
   [mzn & {:keys [solver mznfile data
                  print-mzn?
+                 print-solution? 
                  num-solutions all-solutions?] 
           :or {solver *fd-solver*
                mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)
                data false
                print-mzn? false
+               print-solution? false
                num-solutions 1
                all-solutions? false}}]
   ;; (println "mzn:" mzn "\nmznfile:" mznfile "\nsolver:" solver)
@@ -908,7 +911,8 @@ Options are
                           [:dir (fs/parent mznfile)])
         ;; dummy (pprint/pprint sh-args)
         result (apply shell/sh sh-args)]
-    ;; (pprint/pprint result)
+    (if print-solution?
+    (pprint/pprint result)
     (if (core/= (:exit result) 0)
       (do 
         ;; TODO: this is not yet a clean solution
@@ -917,7 +921,7 @@ Options are
           (throw (Exception. (format "MiniZinc: %s" (:err result)))))
         (map read-string
              (clojure.string/split (:out result) #"(\n----------\n|==========\n)")))
-      (throw (Exception. (format "MiniZinc: %s" (:err result)))))))
+      (throw (Exception. (format "MiniZinc: %s" (:err result))))))))
 
 
 
