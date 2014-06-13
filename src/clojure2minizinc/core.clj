@@ -744,41 +744,50 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
         "\"}\\n\"];")))
 
 (comment
-  (def x (variable (domain 1 3) 'x))
-  (def y (variable (domain 4 6) 'y))
+  (def x (variable (-- 1 3) 'x))
+  (def y (variable (-- 4 6) 'y))
   (print (output-map {:x x :y y}))
+  )
 
-  (str "output [\"{\", " 
-               (apply str (doall (map (fn [[key val]] (str "\" " key " \"" ", show(" (:name val) "), ")) {:x x :y y}))) 
-               "\"}\\n\"];")
+(defn output-vector
+  "Expects a vector of MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure vector for Clojure to read."
+  [my-vec]
+  (tell-store 
+   (str "output [\"[\", " 
+        ;; BUG: of REPL? Strings containing parentheses can cause blocking.
+        ;; waiting for a response at https://groups.google.com/forum/#!forum/clojure-tools
+        (apply str (interpose ", " (map (fn [x] (format "show(%s)" (expr x))) my-vec))) 
+        " \"]\\n\"];")))
 
-  (apply str '("\" :x \", show(x), " "\" :y \", show(y), "))
-  (apply str '("show(x)" " bar"))
+(comment
+  (def x (variable (-- 1 3) 'x))
+  (def y (variable (-- 4 6) 'y))
+  (print (output-vector [x y]))
+  )
 
-  ;; string with parenthesis blocks str? 
-  (apply str '(")" " bar"))
+(defn output-var 
+  "Outputs a single MiniZinc variable. For example, a one-dimensional MiniZinc array can be read into a Clojure vector directly."
+  [my-var]
+  (tell-store (format "output [ show(%s) ];" (expr my-var))))
 
-  ;; BUG: in Clojure? Strings containing parentheses can cause problems?
-  ;; This works in a plain lein repl, so possibly the bug is in CIDER? 
-  (str "(")
-  (str ")")
+;; TODO: output for multi-dimensional vector
 
-  (. "test" (toString))
-  (. "(" (toString)) ;; blocks
-  (. ")" (toString))
+;; TODO: make this somehow more smart by allowing for vars etc
+;; e.g., at least allow for any number of args
+(defn output 
+  "Expects an output definition (a string) and turns it into an output statement (surround by brackets etc.)"
+  [mzn-string]
+  (tell-store (format "output [ %s ];" (expr mzn-string)))) ; \"\\n\"
 
-  ; even evaluating only string containing parentheses causes problems -- seemingly blocks the repl
-  (def parString "()")
-
-  ")"
-
+(comment
+  (print (output "x = show(a)"))
   )
 
 (comment
 ;; TODO: finish definition
 ;; TODO: then revise definition such that it always results in a string expressing a clojure value such as a map.
 ;; Idea: input is also a map, where the values at keys are variables, or some other clojure data structure containing variables. This data structure is then expressed as a string.
-(defn output
+(defn output-clj
   "Output items are for nicely presenting the results of the model execution. Output expects any number of strings or variables."
   [arg]
   arg)
