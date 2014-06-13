@@ -271,14 +271,15 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
             (= (nth a j) 0))))
   )
 
+;; TODO: allow for only a single expression, and not a body of multiple expressions? If multiple, they would need to be separated, e.g., by a semicolon?
 (defmacro forall
   "MiniZinc looping. decls are pairs of range declarations <name> <domain>.
 
 Example:
-(let [a (array (-- 0 10) :int)]
+`(let [a (array (-- 0 10) :int)]
   (forall [i (-- 0 10)]
           (= (nth a i) 0)))
-"
+`"
   {:forms '[(forall [range-decls*] exprs*)]}
   [range-decls & body]
   (let [var-val-pairs (partition 2 range-decls)]
@@ -390,11 +391,10 @@ Example:
 ;;; Constraints
 ;;;
 
-;; TODO: add doc string 
 (defn constraint 
-  ""
-  [c]
-  (tell-store (format "constraint %s;" (expr c))))
+  "Expects a constraint expression (a string) and turns it into a constraint statement."
+  [constraint-expr]
+  (tell-store (format "constraint %s;" (expr constraint-expr))))
 
 (defmacro ^:private def-unary-operator
   "Defines a function that outputs the code for a MiniZinc unary operator."
