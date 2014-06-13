@@ -240,10 +240,6 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   )
 
 
-
-;; TODO: 
-;; array element accessor
-
 (defn nth 
   "Accesses the array element at the given index, or indices in case of a multi-dimensional array"
   [my-array & indices]
@@ -256,7 +252,63 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   )
 
 
-;; foreach loop
+;; Consider to later turn this into a local function with letfn
+(defn- forall-format 
+  "Aux for forall"
+  [vars & body]
+  (format "forall(%s)(%s)" 
+          (apply str (interpose ", " (map :mzn-string vars))) 
+          (apply str body)))
+
+(comment
+  (let [a (array (-- 0 10) :int)
+        i (aVar. (name 'i) (format "%s in %s" (name 'i) (-- 1 10)))
+        j (aVar. (name 'j) (format "%s in %s" (name 'j) (-- 1 10)))]
+    (print (forall-format 
+            (list i j)
+            ;; (= (nth a i) 0)
+            (= (nth a j) 0))))
+  )
+
+(defmacro forall
+  "MiniZinc looping. decls are pairs of range declarations <name> <domain>.
+
+Example:
+(let [a (array (-- 0 10) :int)]
+  (forall [i (-- 0 10)]
+          (= (nth a i) 0)))
+"
+  {:forms '[(forall [range-decls*] exprs*)]}
+  [range-decls & body]
+  (let [var-val-pairs (partition 2 range-decls)]
+    `(let ~(vec (mapcat (fn [[var-name range]]
+                          (list var-name `(aVar. ~(name var-name) (format "%s in %s" ~(name var-name) ~range))))
+                        var-val-pairs))
+       (forall-format 
+        ~(cons 'list (map first var-val-pairs))
+        ~@body))))
+
+
+(comment
+  (def a (array (-- 0 10) :int))
+  (print (forall [i (-- 0 10)]
+                 (= (nth a i) 0)))
+  ;; => "forall(i in 0..10)(a[i] = 0; a[i+1] = 0)"  
+
+  ;; a only 1 dimensional, but for test this is sufficient :)
+  (print (forall [i (-- 0 10)
+                  j (-- 0 10)]
+                 (= (nth a i j) 0)))
+
+  (print 
+   (let [x 1
+         a (array (-- 0 10) :int)]
+     (forall [i (-- 0 10)
+              j (-- -1 x)]
+             (= (nth a i) 0)
+             (= (nth a j) 0))))
+  )
+
 
 
 
