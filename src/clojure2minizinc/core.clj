@@ -252,8 +252,9 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   )
 
 
-;; Consider to later turn this into a local function with letfn
-(defn- forall-format 
+;; Consider to later turn this into a local function with letfn, but that makes testing more difficult
+;; Aux functions for macros need to be public, hm...
+(defn forall-format 
   "Aux for forall"
   [vars & body]
   (format "forall(%s)(%s)" 
