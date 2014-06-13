@@ -734,7 +734,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 ;; ??? TODO: replace by more general variant that supports arbitrary Clojure data strutures.
 ;; NOTE: “fancy” output can be (very) slow (http://web.it.kth.se/~cschulte/events/SweConsNet-2012/hakan.pdf)
 (defn output-map
-  "[TMP function] Expects a map containing MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure map for Clojure to read."
+  "Expects a map containing MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure map for Clojure to read."
   [my-map]
   (tell-store 
    (str "output [\"{\", " 
