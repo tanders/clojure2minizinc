@@ -180,3 +180,71 @@
  :solver "mzn-g12mip")
 
 
+
+;; TODO: finish def
+;; TODO: def some m/output-array
+;; laplace, p. 15f 
+(m/minizinc 
+ (m/clj2mnz
+  (let [w (m/int 'w 4)
+        h (m/int 'h 4)
+        ;; array decl
+        t (m/array (list (m/-- 0 w) (m/-- 0 h)) :float 't)
+        left (m/variable :float 'left)
+        right (m/variable :float 'right)
+        top (m/variable :float 'top)
+        bottom (m/variable :float 'bottom)]
+    ;; Laplace equation
+    ;; Each internal temp. is average of its neighbours
+    (m/constraint 
+     (m/forall [i (m/-- 1 (m/- w 1))
+                j (m/-- 1 (m/- h 1))]
+               (m/= (m/* 4.0 (m/nth t i j))
+                    ;; TODO: generalise binary operators like +, -, *, / 
+                    ;; to support an arbitrary number of args 
+                    (m/+ (m/nth t (m/- i 1) j)
+                         (m/+ (m/nth t i (m/- j 1))
+                              (m/+ (m/nth t (m/+ i 1) j)
+                                   (m/nth t i (m/+ j 1))))))))
+    ;; edge constraints
+    (m/constraint (m/forall [i (m/-- 1 (m/- w 1))]
+                            (m/= (m/nth t i 0) left)))
+    (m/constraint (m/forall [i (m/-- 1 (m/- w 1))]
+                            (m/= (m/nth t i h) right)))
+    (m/constraint (m/forall [j (m/-- 1 (m/- h 1))]
+                            (m/= (m/nth t 0 j) top)))
+    (m/constraint (m/forall [j (m/-- 1 (m/- h 1))]
+                            (m/= (m/nth t w j) bottom)))
+    ;; corner constraints
+    (m/constraint (m/= (m/nth t 0 0) 0.0))
+    (m/constraint (m/= (m/nth t 0 h) 0.0))
+    (m/constraint (m/= (m/nth t w 0) 0.0))
+    (m/constraint (m/= (m/nth t w h) 0.0))
+    (m/constraint (m/= left 0.0))
+    (m/constraint (m/= right 0.0))
+    (m/constraint (m/= top 100.0))
+    (m/constraint (m/= bottom 0.0))
+    (m/solve :satisfy)
+    ;; TODO: revise with a better version of m/output
+    (m/output "show_float(6, 2, t[i,j]) ++
+if j == h then \"\\n\" else \" \" endif |
+i in 0..w, j in 0..h")
+;; (m/output "show(t[i,j]) ++
+;; if j == h then \" | \" else \" \" endif |
+;; i in 0..w, j in 0..h")
+;; ;; next version not working (tried to output nested Clojure vectors)
+;; (m/output "\"[\" show(t[i,j]) ++
+;; if j == h then \"][\" else \" \" endif |
+;; i in 0..w, j in 0..h \"]\"")
+;;     (m/output "show_float(6, 2, t[i,j]) |
+;; i in 0..w, j in 0..h")
+    ;; (m/output "show(t[0,j]) ++ \" \" | j in 0..h")
+    ;; (m/output "show(t)")
+    ;; (m/output-var t)
+    ))
+ :solver "mzn-g12mip"
+ :print-mzn? true
+ :print-solution? true
+ ;; :num-solutions 3
+)
+
