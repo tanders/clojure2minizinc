@@ -9,7 +9,7 @@
 (ns clojure2minizinc.core
   ;; make explicit shadowing a range of core clojure functions etc
   (:refer-clojure :exclude [> >= <= < = == != -> + - * / mod assert concat min max 
-                            int float and nth]) ; not or
+                            int float and or nth]) ; not
   (:require [clojure.core :as core]
             [clojure.java.shell :as shell]
             ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
