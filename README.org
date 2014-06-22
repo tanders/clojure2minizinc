@@ -1,5 +1,3 @@
-<title>My Title</title>
-
 * clojure2minizinc
 
 ** Summary
