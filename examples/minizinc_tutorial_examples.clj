@@ -1,4 +1,4 @@
-(ns clojure2minizinc.examples
+(ns clojure2minizinc.tutorial
   (:require [clojure2minizinc.core :as mz] ; 
             ;; [clojure.java.shell :as shell]
             [clojure.pprint :as pprint])
