@@ -4,6 +4,10 @@
 
 ;; TODO: Add some examples (in extra files) -- just start with examples from MiniZinc tutorial 
 
+;; TODO: revise with FlatZinc spec at http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
+;; - Document all basic constraints with that spec
+;; - ! Add support for search annotations as documented in the spec (but allow for more than given there)
+;; - DOuble-check all param and var declarations are there etc.
 
 
 (ns clojure2minizinc.core
@@ -251,7 +255,6 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   (nth a 1 2)
   )
 
-
 ;; Consider to later turn this into a local function with letfn, but that makes testing more difficult
 ;; Aux functions for macros need to be public, hm...
 (defn forall-format 
@@ -271,6 +274,11 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
             (= (nth a j) 0))))
   )
 
+
+;; !! TODO: This definition is far away still from the flexibility of the true MiniZinc forall, which allows to declare multiple vars together, have "list generators" etc. 
+;; One example: 
+;; forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
+;; 
 ;; TODO: allow for only a single expression, and not a body of multiple expressions? If multiple, they would need to be separated, e.g., by a semicolon?
 (defmacro forall
   "MiniZinc looping. decls are pairs of range declarations <name> <domain>.
