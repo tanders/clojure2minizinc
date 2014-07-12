@@ -1,4 +1,4 @@
-; TODO: break into multiple namespaces for clarification, e.g., for integer, set and float domains and core defs.
+                                        ; TODO: break into multiple namespaces for clarification, e.g., for integer, set and float domains and core defs.
 
 ;; TODO: ? Add support for arrays
 
@@ -71,18 +71,28 @@
 ;;; (I could perhaps only use strings, but more additional explicit information could be helpful later)
 ;;;
 
+
+;; TODO: define a factory function so that you can avoid using the low-level automatically generated constructor aVar.
 (defrecord aVar [name mzn-string])
+(defn make-aVar 
+  "Returns an aVar record."
+  [name mzn-string]
+  (aVar. name mzn-string))
 (defn aVar? 
-  "Returns true if x is aVar."
+  "Returns true if x is aVar record."
   [x]
   (core/= (type x) clojure2minizinc.core.aVar))
 
 (comment
-  (def myVar (aVar. 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
+  (def myVar (make-aVar 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
   (:name myVar)
   (:mzn-string myVar)
   (aVar? myVar)
-)
+
+  (map->aVar {:name 'test :mzn-string "hi there"})
+  (->aVar 'test "hi there")
+  )
+
 
 (defn- expr
   "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.)."
@@ -91,17 +101,17 @@
   (cond (aVar? x) (:name x)
         (core/or (string? x)
                  (number? x)) x
-        (core/or (keyword? x)
-                 (symbol? x)) (name x)
-                 ;; (some #(% x) literal-tests) x
-        :else (throw (Exception. 
-                      (pprint/cl-format nil
-                                        "expr: not allowed as literal MiniZinc expr: ~S of type ~S" 
-                                        x (type x))))))
+                 (core/or (keyword? x)
+                          (symbol? x)) (name x)
+                          ;; (some #(% x) literal-tests) x
+                          :else (throw (Exception. 
+                                        (pprint/cl-format nil
+                                                          "expr: not allowed as literal MiniZinc expr: ~S of type ~S" 
+                                                          x (type x))))))
 
 (comment
 
-  (def myVar (aVar. 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
+  (def myVar (make-aVar 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
 
   (expr "myVar")
   (expr myVar)
@@ -127,10 +137,10 @@
      {:pre [(#{"int" "float" "bool" "set of int"} (name param-type))]}
      ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
      (tell-store
-      (aVar. (name var-name) 
-             (if init-value
-               (format "%s: %s = %s;" (name param-type) (name var-name) init-value)
-               (format "%s: %s;" (name param-type) (name var-name)))))))
+      (make-aVar (name var-name) 
+                 (if init-value
+                   (format "%s: %s = %s;" (name param-type) (name var-name) init-value)
+                   (format "%s: %s;" (name param-type) (name var-name)))))))
 
 (comment
   (:mzn-string (par :int 'x 1))
@@ -146,7 +156,7 @@
   (par :bool)
 
   (par "set of int" 'MySet (-- 1 'max))
-)
+  )
 
 (defn int 
   "Declares an initeger parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
@@ -162,7 +172,7 @@
 
 (defn bool 
   "Declares a bool parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([] (par :bool)) 
+  ([] (par :bool)) make-aVar
   ([var-name] (par :bool var-name))
   ([var-name init-value] (par :bool var-name init-value)))
 
@@ -185,7 +195,8 @@
 
 
 ;; TODO: 
-;; array literal
+;; Add support for mapping: allow translation of MiniZinc array into Clojure collection etc. that can be processed by mapping etc. Values of Clojure collection will be MiniZinc code strings with accessor to the right MiniZinc array element, e.g., "t[1]"
+;; For such mapping support I need to store resulting array in new record similar to aVar but with an additional [attribute] that stores the one or multi-dimensional boundaries of the array as a (list of) pairs of integers
 (defn array   
   "Declares a one- or multi-dimensional array.
 
@@ -199,43 +210,44 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
      {:pre [(#{"int" "float" "bool" "string" "set of int"} (name param-type))]}
      ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
      (tell-store
-      (aVar. (name var-name) 
-             (format "array[%s] of var %s: %s;" 
-                     (cond (aVar? index-set) (:name index-set)
-                           (string? index-set) index-set
-                           (list? index-set) (apply str
-                                                    (interpose ", "
-                                                               (map #(cond (aVar? %) (:name %)
-                                                                           (string? %) %
-                                                                           :else (throw 
-                                                                                  (Exception. 
-                                                                                   (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
-                                                                                                     % (type %)))))
-                                                                    index-set)))
-                           :else (throw (Exception. 
-                                         (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
-                                                           index-set (type index-set)))))
-                     (name param-type) 
-                     (name var-name))))))
-
+      (make-aVar (name var-name) 
+                 (format "array[%s] of var %s: %s;" 
+                         (cond (aVar? index-set) (:name index-set)
+                               (string? index-set) index-set
+                               (list? index-set) (apply str
+                                                        (interpose ", "
+                                                                   (map #(cond (aVar? %) (:name %)
+                                                                               (string? %) %
+                                                                               :else (throw 
+                                                                                      (Exception. 
+                                                                                       (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
+                                                                                                         % (type %)))))
+                                                                        index-set)))
+                               :else (throw (Exception. 
+                                             (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
+                                                               index-set (type index-set)))))
+                         (name param-type) 
+                         (name var-name))))))
 
 
 (comment
   (array (-- 0 10) :bool)
   (array (-- 0 10) :int "test") ;"array[0..10] of var int: test;"
 
+  ;; Semi BUG: somewhat questionable: the [dimension] of the set (e.g., "1..10") is temporarily stored as aVar name to make it easily accessible for the array construction. Later the set-of-int is not used at all. Possibly better to completely avoid this potential cause of confusion, i.e., not to use a set for the array construction (or to clean up the internal use of sets here). 
   (array (set-of-int (-- 1 10)) :int)
   (array (list (-- 0 10) (-- 0 10) (set-of-int (-- 1 10))) :int)
   )
 
 
+;; No explicit support for mapping needed, as I already have the mappable clojure data structure as input to literal-array
 (defn literal-array 
   "Specifies a one- or two-dimensional array that contains the given MiniZinc expressions as elements. Two-dimensional arrays are defined by a list of expressions."
   [& exprs]
   (if (every? list? exprs)
     (str "[|" (apply str (flatten (interpose " | " (map (fn [sub-exprs]
-                                                        (interpose ", " (map expr sub-exprs)))
-                                                      exprs)))) "|]")    
+                                                          (interpose ", " (map expr sub-exprs)))
+                                                        exprs)))) "|]")    
     (format "[%s]" (apply str (interpose ", " (map expr exprs))))))
 
 (comment
@@ -266,8 +278,8 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 
 (comment
   (let [a (array (-- 0 10) :int)
-        i (aVar. (name 'i) (format "%s in %s" (name 'i) (-- 1 10)))
-        j (aVar. (name 'j) (format "%s in %s" (name 'j) (-- 1 10)))]
+        i (make-aVar (name 'i) (format "%s in %s" (name 'i) (-- 1 10)))
+        j (make-aVar (name 'j) (format "%s in %s" (name 'j) (-- 1 10)))]
     (print (forall-format 
             (list i j)
             ;; (= (nth a i) 0)
@@ -292,7 +304,7 @@ Example:
   [range-decls & body]
   (let [var-val-pairs (partition 2 range-decls)]
     `(let ~(vec (mapcat (fn [[var-name range]]
-                          (list var-name `(aVar. ~(name var-name) (format "%s in %s" ~(name var-name) ~range))))
+                          (list var-name `(make-aVar ~(name var-name) (format "%s in %s" ~(name var-name) ~range))))
                         var-val-pairs))
        (forall-format 
         ~(cons 'list (map first var-val-pairs))
@@ -322,7 +334,6 @@ Example:
 
 
 
-
 ;;;
 ;;; Creating MiniZinc vars
 ;;;
@@ -346,7 +357,7 @@ Example:
   "Declares a decision variable (int or float) with the given domain (typically created with --) and an optional variable name (string, symbol or keyword). The domain can also be a 'type' declaration like :float for floating point variables without a domain declaration."
   ([dom] (variable dom (gensym "var")))
   ([dom var-name]
-     (tell-store (aVar. (name var-name) (format "var %s: %s;" (name dom) (name var-name))))))
+     (tell-store (make-aVar (name var-name) (format "var %s: %s;" (name dom) (name var-name))))))
 
 (comment
   (-- 1 3)
@@ -792,13 +803,13 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
   )
 
 (comment
-;; TODO: finish definition
-;; TODO: then revise definition such that it always results in a string expressing a clojure value such as a map.
-;; Idea: input is also a map, where the values at keys are variables, or some other clojure data structure containing variables. This data structure is then expressed as a string.
-(defn output-clj
-  "Output items are for nicely presenting the results of the model execution. Output expects any number of strings or variables."
-  [arg]
-  arg)
+  ;; TODO: finish definition
+  ;; TODO: then revise definition such that it always results in a string expressing a clojure value such as a map.
+  ;; Idea: input is also a map, where the values at keys are variables, or some other clojure data structure containing variables. This data structure is then expressed as a string.
+  (defn output-clj
+    "Output items are for nicely presenting the results of the model execution. Output expects any number of strings or variables."
+    [arg]
+    arg)
 
   ;; TODO: old test
   (output "this" "is" "a" "test")
@@ -817,10 +828,10 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 
 
   (walk/walk #(if (aVar? %) 
-                  (:name %)
-                  %)
-               identity
-               {:x x :y y})
+                (:name %)
+                %)
+             identity
+             {:x x :y y})
   )
 
 
@@ -828,7 +839,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
   "Utility function for creating data files (*.dzn files) that map keys (MiniZinc variable names) to values."
   [mzn-map]
   (apply str (map (fn [[key val]] (str (format "%s = %s" (expr key) (expr val)) "; "))
-                              mzn-map)))
+                  mzn-map)))
 
 (comment
   (map2minizinc {:x 1 :y 2 :z 3})
@@ -908,28 +919,28 @@ Options are
   (spit mznfile mzn)
   ;; mznfile split into filename (base-name) and dirname (parent), so that shell/sh first moves into that dir, because otherwise I got errors from *fd-solver*
   (let [sh-args (core/concat [solver]
-                          [(if all-solutions?
-                             "--all-solutions"
-                             ;; I could not get long parameter names working 
-                             (format "-n%s" num-solutions))]
-                          (if data
-                            [(format "-D%s" data)]
-                            [])
-                          [(fs/base-name mznfile)]
-                          [:dir (fs/parent mznfile)])
+                             [(if all-solutions?
+                                "--all-solutions"
+                                ;; I could not get long parameter names working 
+                                (format "-n%s" num-solutions))]
+                             (if data
+                               [(format "-D%s" data)]
+                               [])
+                             [(fs/base-name mznfile)]
+                             [:dir (fs/parent mznfile)])
         ;; dummy (pprint/pprint sh-args)
         result (apply shell/sh sh-args)]
     (if print-solution?
-    (pprint/pprint result)
-    (if (core/= (:exit result) 0)
-      (do 
-        ;; TODO: this is not yet a clean solution
-        ;; In case there is an error as part of a warning then show that. How can I show a warning and still return the final result?
-        (if (core/not= (:err result) "")
-          (throw (Exception. (format "MiniZinc: %s" (:err result)))))
-        (map read-string
-             (clojure.string/split (:out result) #"(\n----------\n|==========\n)")))
-      (throw (Exception. (format "MiniZinc: %s" (:err result))))))))
+      (pprint/pprint result)
+      (if (core/= (:exit result) 0)
+        (do 
+          ;; TODO: this is not yet a clean solution
+          ;; In case there is an error as part of a warning then show that. How can I show a warning and still return the final result?
+          (if (core/not= (:err result) "")
+            (throw (Exception. (format "MiniZinc: %s" (:err result)))))
+          (map read-string
+               (clojure.string/split (:out result) #"(\n----------\n|==========\n)")))
+        (throw (Exception. (format "MiniZinc: %s" (:err result))))))))
 
 
 
@@ -983,7 +994,7 @@ solve satisfy;"
 
   ;; NB: string literals in MiniZinc must not contain linebreaks -- so do not resolve \n 
   (def aust-csp
-"int: nc = 3;
+    "int: nc = 3;
 
 var 1..nc: wa; var 1..nc: nt; var 1..nc: sa; var 1..nc: q;
 var 1..nc: nsw; var 1..nc: v; var 1..nc: t;
@@ -1004,37 +1015,37 @@ output [\"wa=\", show(wa), \"\t nt=\", show(nt),
 \"\t sa=\", show(sa), \"\\n\", \"q=\", show(q),
 \"\t nsw=\", show(nsw), \"\t v=\", show(v), \"\\n\",
 \"t=\", show(t), \"\\n\"];"
-)
+    )
   
   ;; (minizinc candles-csp)
 
   ;; (def candles-csp "include \"globals.mzn\"; 
-;; int: n = 7;
+  ;; int: n = 7;
 
-;; % decision variables
-;; array[1..n] of var 1..20: vars;
-;; % var 0..100: now          = sum(vars);  % number of candles this year
-;; var 0..100: now;  % number of candles this year
-;; var 0..100: twoyearsago  =  now - 2*n; % number of candles two years ago
+  ;; % decision variables
+  ;; array[1..n] of var 1..20: vars;
+  ;; % var 0..100: now          = sum(vars);  % number of candles this year
+  ;; var 0..100: now;  % number of candles this year
+  ;; var 0..100: twoyearsago  =  now - 2*n; % number of candles two years ago
 
-;; solve satisfy;
-;; % solve :: int_search(vars ++ [now, twoyearsago], first_fail, indomain_min, complete) satisfy;
+  ;; solve satisfy;
+  ;; % solve :: int_search(vars ++ [now, twoyearsago], first_fail, indomain_min, complete) satisfy;
 
-;; constraint
-;;    forall(i in 2..n) (
-;;       vars[i-1] = vars[i]+1 
-;;    )
-;;    /\\
-;;    twoyearsago*2 = now
-;;    /\\ 
-;;    now = sum(vars)
-;; ;
+  ;; constraint
+  ;;    forall(i in 2..n) (
+  ;;       vars[i-1] = vars[i]+1 
+  ;;    )
+  ;;    /\\
+  ;;    twoyearsago*2 = now
+  ;;    /\\ 
+  ;;    now = sum(vars)
+  ;; ;
 
-;; output
-;; [
-;;   \"{\" ++ \":vars \" ++ show(vars) ++ \"\\n\" ++
-;;   \":twoyearsago \" ++ show(twoyearsago) ++ \"\\n\" ++
-;;   \":now \" ++ show(now) ++ \"}\"
-;; ];")
+  ;; output
+  ;; [
+  ;;   \"{\" ++ \":vars \" ++ show(vars) ++ \"\\n\" ++
+  ;;   \":twoyearsago \" ++ show(twoyearsago) ++ \"\\n\" ++
+  ;;   \":now \" ++ show(now) ++ \"}\"
+  ;; ];")
 
-)
+  )
