@@ -72,10 +72,10 @@
 ;;;
 
 
-;; TODO: define a factory function so that you can avoid using the low-level automatically generated constructor aVar.
 (defrecord aVar [name mzn-string])
+;; NOTE: I would prefer making this a private function (and also aVar? make-anArray etc.), but it is required to be public (because used in macros?) 
 (defn make-aVar 
-  "Returns an aVar record."
+  "[Aux function] Returns an aVar record."
   [name mzn-string]
   (aVar. name mzn-string))
 (defn aVar? 
@@ -94,11 +94,46 @@
   )
 
 
+(defrecord anArray [name mzn-string boundaries])
+(defn ^:private index-set->boundaries 
+  "Retrieves the max and min of index-set. Example:
+(index-set->boundaries (-- 0 10)) ; > {:min 0 :max 10}"
+  [index-set]
+  (let [coll (map read-string (clojure.string/split index-set #"\.\."))]
+    {:min (core/nth coll 0) :max (core/nth coll 1)}))
+(defn make-anArray 
+  "[Aux function] Returns an anArray record."
+  [name mzn-string index-set]
+  ;; NOTE: no type-checking of index-set
+  (anArray. name mzn-string
+            (cond 
+             ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
+             (aVar? index-set) (index-set->boundaries (:name index-set))
+             (string? index-set) (index-set->boundaries index-set) 
+             (list? index-set) (map #(index-set->boundaries
+                                      (cond 
+                                       ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
+                                       (aVar? %) (:name %)
+                                       (string? %) %)) 
+                                    index-set))))
+(defn anArray? 
+  "Returns true if x is anArray."
+  [x]
+  (core/= (type x) clojure2minizinc.core.anArray))
+
+(comment
+  ;; access boundaries of given index-set
+  (index-set->boundaries (-- 0 10))
+  (make-anArray 'test "this is a test" (list (-- 0 10) (-- 0 10))) 
+  )
+
+
+
 (defn- expr
   "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.)."
   [x]
   ;; (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
-  (cond (aVar? x) (:name x)
+  (cond (core/or (aVar? x) (anArray? x)) (:name x)
         (core/or (string? x)
                  (number? x)) x
                  (core/or (keyword? x)
@@ -172,7 +207,7 @@
 
 (defn bool 
   "Declares a bool parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
-  ([] (par :bool)) make-aVar
+  ([] (par :bool)) 
   ([var-name] (par :bool var-name))
   ([var-name init-value] (par :bool var-name init-value)))
 
@@ -210,24 +245,30 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
      {:pre [(#{"int" "float" "bool" "string" "set of int"} (name param-type))]}
      ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
      (tell-store
-      (make-aVar (name var-name) 
-                 (format "array[%s] of var %s: %s;" 
-                         (cond (aVar? index-set) (:name index-set)
-                               (string? index-set) index-set
-                               (list? index-set) (apply str
-                                                        (interpose ", "
-                                                                   (map #(cond (aVar? %) (:name %)
-                                                                               (string? %) %
-                                                                               :else (throw 
-                                                                                      (Exception. 
-                                                                                       (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
-                                                                                                         % (type %)))))
-                                                                        index-set)))
-                               :else (throw (Exception. 
-                                             (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
-                                                               index-set (type index-set)))))
-                         (name param-type) 
-                         (name var-name))))))
+      (make-anArray 
+       (name var-name) 
+       (format "array[%s] of var %s: %s;" 
+               (cond 
+                ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
+                (aVar? index-set) (:name index-set)
+                (string? index-set) index-set
+                (list? index-set) (apply str
+                                         (interpose ", "
+                                                    (map #(cond 
+                                                           ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
+                                                           (aVar? %) (:name %)
+                                                           (string? %) %
+                                                           :else (throw 
+                                                                  (Exception. 
+                                                                   (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
+                                                                                     % (type %)))))
+                                                         index-set)))
+                :else (throw (Exception. 
+                              (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
+                                                index-set (type index-set)))))
+               (name param-type) 
+               (name var-name))
+       index-set))))
 
 
 (comment
@@ -235,6 +276,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   (array (-- 0 10) :int "test") ;"array[0..10] of var int: test;"
 
   ;; Semi BUG: somewhat questionable: the [dimension] of the set (e.g., "1..10") is temporarily stored as aVar name to make it easily accessible for the array construction. Later the set-of-int is not used at all. Possibly better to completely avoid this potential cause of confusion, i.e., not to use a set for the array construction (or to clean up the internal use of sets here). 
+  ;; Fixing in cond of functions array and make-anArray
   (array (set-of-int (-- 1 10)) :int)
   (array (list (-- 0 10) (-- 0 10) (set-of-int (-- 1 10))) :int)
   )
@@ -860,7 +902,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
      ~@constraints
      ;; TODO: map is lazy -- make sure dynamic scope is not left
      (apply str (doall (map (fn [x#]  ; x# results in unique gensym
-                              (str (cond (aVar? x#)
+                              (str (cond (core/or (aVar? x#) (anArray? x#))
                                          (:mzn-string x#)
                                          (string? x#) x#
                                          :else (throw (Exception. (pprint/cl-format nil "~S not supported. MiniZinc statements must be strings or variables defined with function clojure2minizinc.core/variable." x#)))) 
