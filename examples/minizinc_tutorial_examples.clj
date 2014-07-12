@@ -140,16 +140,14 @@
       (mz/output-map {:banana-cakes b :chocolate-cakes c})
       ;; (pprint/pprint *mzn-store*)
       )))
- ;; :data (map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500})
- :data (mz/map2minizinc {:flour -8000 :banana 11 :sugar 3000 :butter 1500 :cocoa 800})
+ :data (mz/map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500})
+ ;; :data (mz/map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500})
  ;; :print-mzn? true
  ;; :num-solutions 3
  ;; :all-solutions? true
  )
 ;; For :data (map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500})
                                         ; => ({:banana-cakes 2, :chocolate-cakes 2})
-;; For :data (map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500})
-                                        ; => ({:banana-cakes 3, :chocolate-cakes 8})
 
 
 ;; Float domain constraints
@@ -182,8 +180,8 @@
 
 
 ;; TODO: finish def
-;; TODO: def some m/output-array
-;; laplace, p. 15f 
+;; TODO: def some mz/output-array
+;; Example laplace, Tutorial p. 15f 
 ;; print-table copied from http://clojure.github.io/clojure/clojure.pprint-api.html
 (defn print-table [column-width aseq]
   (binding [*out* (pprint/get-pretty-writer *out*)]
@@ -250,4 +248,4 @@
       ;; :print-solution? true
       ;; :num-solutions 3
       )))))
-
+;; Outputs nil -- solution printed (arranged as table)
