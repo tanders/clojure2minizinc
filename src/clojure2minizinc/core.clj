@@ -20,9 +20,12 @@
             [clojure.pprint :as pprint]
             ;; http://raynes.github.io/fs/  https://github.com/Raynes/fs
             [me.raynes.fs :as fs]
-            [clojure.walk :as walk] ;; not used yet
-            [clojure.java.io :as io]) ;; only required for testing here
-  )
+            ;; [clojure.walk :as walk] ;; not used yet
+            [clojure.java.io :as io] ;; only required for testing here
+            ;; https://github.com/clojure/math.combinatorics/
+            ;; https://clojure.github.io/math.combinatorics/
+            [clojure.math.combinatorics :as combi]
+            ))
 
 ;; (require '[clojure2minizinc.core :as mzn])
 
@@ -297,7 +300,6 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   (print (literal-array (list (int) (int)) (list (int) (int))))
   )
 
-
 (defn nth 
   "Accesses the array element at the given index, or indices in case of a multi-dimensional array"
   [my-array & indices]
@@ -309,10 +311,38 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   (nth a 1 2)
   )
 
+(defn array->clj-list
+  "Transforms a one or more dimensional MiniZinc array into a Clojure list (of MiniZinc code strings representing the array elements), so that MiniZinc functions can  be applied to individual MiniZinc elements (e.g., by mapping)."
+  [my-array]
+  (let [bounds (:boundaries my-array)]
+    (cond 
+     ;; multi-dimensional array
+     (seq? bounds) (map (fn [args] (apply nth my-array args))
+                        (apply combi/cartesian-product
+                               (map (fn [bnds] (range (:min bnds) (core/+ 1 (:max bnds))))
+                                    bounds)))
+     ;; one-dimensional array
+     (map? bounds) (map (fn [i] (nth my-array i))
+                        (range (:min bounds) (core/+ 1 (:max bounds)))))))
+
+(comment
+  (array->clj-list (array (-- 2 4) :bool))
+  (array->clj-list (array (list (-- 0 10) (-- 2 4)) :bool))  
+
+  ;; Higher-order programming in MiniZinc
+  ;; mapping a MiniZinc record, applying some constraint to each of its elements :)
+  (map (fn [element] (constraint (< (+ element 1) 10)))
+       (array->clj-list (array (-- 1 3) :bool)))
+  ;; not working yet -- + not yet defined for arbitrary number of arguments
+  (apply + (map (fn [element] (+ element 1))
+                (array->clj-list (array (-- 1 3) :bool))))
+  
+  )
+
 ;; Consider to later turn this into a local function with letfn, but that makes testing more difficult
 ;; Aux functions for macros need to be public, hm...
 (defn forall-format 
-  "Aux for forall"
+  "[Aux for forall]"
   [vars & body]
   (format "forall(%s)(%s)" 
           (apply str (interpose ", " (map :mzn-string vars))) 
