@@ -508,7 +508,7 @@ Example:
      [lh# rh#]
      (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#))))
 
-(defmacro ^:private def-unary-and-binary-operator
+(defmacro ^:private def-unary-and-n-ary-operator
   "Defines a function that outputs the code for a MiniZinc unary and binary operator."
   [op-name operation doc-string]
   `(defn ~op-name
@@ -516,7 +516,9 @@ Example:
      ([arg#]
         (format ~(str operation " %s") (expr arg#)))
      ([lh# rh#]
-        (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#)))))
+        (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#)))
+     ([arg1# arg2# & args#]
+        (reduce ~op-name arg1# (cons arg2# args#)))))
 
 (defmacro ^:private def-unary-function
   "Defines a function that outputs the code for a MiniZinc function."
@@ -534,10 +536,20 @@ Example:
      [arg1# arg2#]
      (format ~(str fn "(%s, %s)")  (expr arg1#) (expr arg2#))))
 
+(defmacro ^:private def-n-ary-function
+  "Defines a function that outputs the code for a MiniZinc function."
+  [fn-name fn doc-string]
+  `(defn ~fn-name
+     ~doc-string
+     ([arg1# arg2#]
+        (format ~(str fn "(%s, %s)")  (expr arg1#) (expr arg2#)))
+     ([arg1# arg2# & args#]
+        (reduce ~fn-name arg1# (cons arg2# args#)))))
 
-(def-unary-and-binary-operator + + 
+
+(def-unary-and-n-ary-operator + + 
   "+ constraint")
-(def-unary-and-binary-operator - -
+(def-unary-and-n-ary-operator - -
   "- constraint")
 
 (def-binary-operator <-> <->
@@ -549,25 +561,24 @@ Example:
 ;; core/not needed for Emacs interaction, and seemingly shadowing it breaks Emacs functionality (of AC?). Therefore alternative function name
 (def-unary-operator nega not 
   "Logical negation constraint (not)")
-;; TMP: Testing: remove or to avoid problems with Emacs interaction
-(def-binary-operator or "\\/"
+(def-n-ary-function or "\\/"
   "Logical or constraint")
 (def-binary-operator xor xor
   "Logical and constraint")
-(def-binary-operator and "/\\"
+(def-n-ary-function and "/\\"
   "Logical xor constraint")
 ;; TODO: document briefly all below constraints
-(def-binary-operator < <
+(def-n-ary-function < <
   " constraint")
-(def-binary-operator > >
+(def-n-ary-function > >
   " constraint")
-(def-binary-operator <= <=
+(def-n-ary-function <= <=
   " constraint")
-(def-binary-operator >= >=
+(def-n-ary-function >= >=
   " constraint")
-(def-binary-operator = =
+(def-n-ary-function = =
   " constraint")
-(def-binary-operator == ==
+(def-n-ary-function == ==
   " constraint")
 (def-binary-operator != !=
   "Not equal constraint")
@@ -585,13 +596,13 @@ Example:
   " constraint")
 (def-binary-operator intersect intersect
   " constraint")
-(def-binary-operator ++ ++
+(def-n-ary-function ++ ++
   "Concatenates strings and arrays.")
-(def-binary-operator * *
+(def-n-ary-function * *
   " constraint")
-(def-binary-operator / /
+(def-n-ary-function / /
   " constraint")
-(def-binary-operator div div
+(def-n-ary-function div div
   " constraint")
 (def-binary-operator mod mod
   " constraint")
@@ -685,9 +696,9 @@ Example:
   "logarithm base 2 constraint")
 (def-unary-function log10 log10
   "logarithm base 10 constraint")
-(def-unary-function min min
+(def-n-ary-function min min
   " function constraint")
-(def-unary-function max max
+(def-n-ary-function max max
   " function constraint")
 (def-unary-function product product
   " function constraint")
