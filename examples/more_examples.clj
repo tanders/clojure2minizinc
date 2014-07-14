@@ -1,4 +1,4 @@
-(ns clojure2minizinc.mapping_examples
+(ns clojure2minizinc.more_examples
   (:require [clojure2minizinc.core :as mz]  
             ;; [clojure.java.shell :as shell]
             ;; [clojure.pprint :as pprint]
