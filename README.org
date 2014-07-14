@@ -26,16 +26,17 @@
 
 *** TODO A Minimal Example 
 
-    TODO: Revise: update if necessary (e.g., =clj2mnz= will likely be gone later). 
-
 #+begin_src clojure :results silent
-(minizinc 
-   (clj2mnz
-    (let [a (variable (-- -1 1)) 
-          b (variable (-- -1 1))]
-      (constraint (!= a b))
-      (solve :satisfy)
-      (output-map {:a a :b b})))
+(ns clojure2minizinc.more_examples
+  (:require [clojure2minizinc.core :as mz]))  
+
+(mz/minizinc 
+   (mz/clj2mnz
+    (let [a (mz/variable (mz/-- -1 1)) 
+          b (mz/variable (mz/-- -1 1))]
+      (mz/constraint (mz/!= a b))
+      (mz/solve :satisfy)
+      (mz/output-map {:a a :b b})))
    :num-solutions 3
    ;; :all-solutions? true
    )
@@ -44,8 +45,11 @@
     Results in =({:a 0, :b -1} {:a 1, :b -1} {:a -1, :b 0})=.
     
     Generates in the background this MiniZinc code and calls solver with it
+
+    *TODO: add code*
     
-    Note that this library overwrites many standard Clojure functions. You may want to use the library with a namespace prefix.
+    Note that this library overwrites many standard Clojure functions. You may want to use the library with a namespace prefix as in the example above.
+
 
 *** Further Reading 
 
@@ -96,11 +100,21 @@ constraint x + y != z;
 
     *TODO* Demo example
 
+    clojure2minizinc also allows for higher-order programming, such as mapping of MiniZinc records translated into Clojure sequences. 
+
+#+begin_src clojure :results silent
+(map (fn [element] (mz/constraint (mz/< (mz/+ element 1) 10)))
+     (mz/array->clj-seq (mz/array (mz/-- 1 3) :bool)))
+#+end_src
+
+
     In addition, most Clojure functionality is available for defining MiniZinc models. For example, auto-completion and documentation of your editor will help you (standard MiniZinc editors do not support anything like that).
 
     combination with any other Clojure [features]
     IO
     GUI
+    
+    
 
 
 *** TODO Limitations compared to standard Clojure programming 
