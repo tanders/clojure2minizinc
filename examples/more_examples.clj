@@ -7,7 +7,6 @@
 ;; Higher-order programming in MiniZinc
 
 ;; mapping a MiniZinc record, applying some constraint to each of its elements :)
-(map (fn [element] (constraint (< (+ element 1) 10)))
-     (array->clj-list (array (-- 1 3) :bool)))
-
+(map (fn [element] (mz/constraint (mz/< (mz/+ element 1) 10)))
+     (mz/array->clj-seq (mz/array (mz/-- 1 3) :bool)))
 
