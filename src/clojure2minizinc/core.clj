@@ -311,8 +311,12 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
   (nth a 1 2)
   )
 
-(defn array->clj-list
-  "Transforms a one or more dimensional MiniZinc array into a Clojure list (of MiniZinc code strings representing the array elements), so that MiniZinc functions can  be applied to individual MiniZinc elements (e.g., by mapping)."
+;; TODO: 
+;; - Should return nested sequence for multi-dimensional array. (see BUG report in doc below)
+(defn array->clj-seq
+  "Transforms a one or more dimensional MiniZinc array into a Clojure list (of MiniZinc code strings representing the array elements), so that MiniZinc functions can  be applied to individual MiniZinc elements (e.g., by mapping).
+
+BUG: multi-dimensional array should return nested sequence to clearly highlight the dimensions. Currently, simply  flat sequence with all elements (the cartesian product is returned)."
   [my-array]
   (let [bounds (:boundaries my-array)]
     (cond 
@@ -326,16 +330,16 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
                         (range (:min bounds) (core/+ 1 (:max bounds)))))))
 
 (comment
-  (array->clj-list (array (-- 2 4) :bool))
-  (array->clj-list (array (list (-- 0 10) (-- 2 4)) :bool))  
+  (array->clj-seq (array (-- 2 4) :bool))
+  (array->clj-seq (array (list (-- 0 10) (-- 2 4)) :bool))  
 
   ;; Higher-order programming in MiniZinc
   ;; mapping a MiniZinc record, applying some constraint to each of its elements :)
   (map (fn [element] (constraint (< (+ element 1) 10)))
-       (array->clj-list (array (-- 1 3) :bool)))
+       (array->clj-seq (array (-- 1 3) :bool)))
   ;; not working yet -- + not yet defined for arbitrary number of arguments
   (apply + (map (fn [element] (+ element 1))
-                (array->clj-list (array (-- 1 3) :bool))))
+                (array->clj-seq (array (-- 1 3) :bool))))
   
   )
 
