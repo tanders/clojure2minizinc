@@ -1005,15 +1005,14 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 
 Options are
 
-:mzn            (string) a MiniZinc program, which can be created with other functions of clojure2minizinc wrapped into clj2mnz
-:print-mzn?     (boolean) whether or not to print resulting MiniZinc program (for debugging)
-:print-solution?     (boolean) whether or not to print the result output by MiniZinc directly instead of reading it into a Clojure value (e.g., for debugging). Prints the map resulting from clojure.java.shell/sh.
-:solver         (string) solver to call
-:mznfile        (string or file) MiniZinc file path to generate and use in the background
-:data           (string) Content for a MiniZinc data file (*.dzn file). Can conveniently be created with map2minizinc 
-
-:num-solutions  (int) An upper bound on the number of solutions to output
-:all-solutions  (boolean) If true, return all solutions
+:mzn             (string) a MiniZinc program, which can be created with other functions of clojure2minizinc wrapped into clj2mnz
+:print-mzn?      (boolean) whether or not to print resulting MiniZinc program (for debugging)
+:print-solution? (boolean) whether or not to print the result output by MiniZinc directly instead of reading it into a Clojure value (e.g., for debugging). Prints the map resulting from clojure.java.shell/sh.
+:solver          (string) solver to call
+:mznfile         (string or file) MiniZinc file path to generate and use in the background
+:data            (string) Content for a MiniZinc data file (*.dzn file). Can conveniently be created with map2minizinc 
+:num-solutions   (int) An upper bound on the number of solutions to output
+:all-solutions   (boolean) If true, return all solutions
 "
   [mzn & {:keys [solver mznfile data
                  print-mzn?
