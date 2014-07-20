@@ -428,12 +428,25 @@ Example:
   (-- 0 myInt)
   )
 
-;; You cannot shadow special forms, and therefore a function cannot be called var
+;; You cannot shadow special forms, and therefore a function cannot be called var. Thus use function name "variable", even though MiniZinc keyword is "var".
+;; TODO: allow also to define set of int var, see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf p. 4
 (defn variable
-  "Declares a decision variable (int or float) with the given domain (typically created with --) and an optional variable name (string, symbol or keyword). The domain can also be a 'type' declaration like :float for floating point variables without a domain declaration."
+  "Declares a decision variable (int or float) with the given domain, and an optional variable name (string, symbol or keyword).
+
+Examples:
+(variable :bool) ;; create a Boolean variable 
+(variable :int)  ;; create an integer variable with maximum supported domain size 
+(variable (-- 1 10)) ;; create integer variable with domain [1, 10]
+(variable (-- 1.0 10.0)) ;; create float variable with domain [1.0, 10.0]
+(variable '(1 3 6 8)) ;; create an integer variable with the domain {1, 3, 6, 8}
+"
   ([dom] (variable dom (gensym "var")))
   ([dom var-name]
-     (tell-store (make-aVar (name var-name) (format "var %s: %s;" (name dom) (name var-name))))))
+     (let [dom-string (if (seq? dom)
+                        (str "{" (apply str (interpose ", " dom)) "}")
+                        (name dom))
+           name-string (name var-name)]
+       (tell-store (make-aVar name-string (format "var %s: %s;" dom-string name-string))))))
 
 (comment
   (-- 1 3)
@@ -442,7 +455,12 @@ Example:
     (variable (-- 1 3) 'x))
   (binding [*mzn-store* ()]
     (variable (-- 1 3) :x))
+
+  (variable :bool)
   (variable (-- 1 3))
+  (variable (-- 1.0 3.0))
+  ;; specify domain as list of ints
+  (variable '(1 3 6 8))
   )
 
 ;; TMP: test
