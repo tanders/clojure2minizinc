@@ -27,7 +27,7 @@
 *** TODO A Minimal Example 
 
 #+begin_src clojure :results silent
-(ns clojure2minizinc.more_examples
+(ns clojure2minizinc.examples
   (:require [clojure2minizinc.core :as mz]))  
 
 (mz/minizinc 
