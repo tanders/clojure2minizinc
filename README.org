@@ -61,7 +61,7 @@
 
 *** Code similarity
 
-   In clojure2minizinc all code is expressed by standard Lisp S-expressions. Most MiniZinc operators, functions etc. are called exactly the same in clojure2minizinc. For example the following two code snippets show a MiniZinc code line and the corresponding clojure2minizinc 
+   In clojure2minizinc all code is expressed by standard Lisp S-expressions. Most MiniZinc operators, functions etc. are called exactly the same in clojure2minizinc. For example the following two code snippets show a MiniZinc code line and the corresponding clojure2minizinc (without namespace prefixes).
 
 #+begin_src minizinc :results silent
 constraint x + y != z;
