@@ -1,4 +1,4 @@
-                                        ; TODO: break into multiple namespaces for clarification, e.g., for integer, set and float domains and core defs.
+;; TODO: break into multiple namespaces for clarification, e.g., for integer, set and float domains and core defs.
 
 ;; TODO: ? Add support for arrays
 
@@ -41,6 +41,7 @@
   "mzn-g12fd")
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Defining the store for storing all information about a CSP
 ;;;
@@ -69,9 +70,11 @@
     )
   )
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Data structure definitions 
-;;; (I could perhaps only use strings, but more additional explicit information could be helpful later)
+;;; (I could perhaps only use strings, but additional explicit information important for certain types)
 ;;;
 
 
@@ -133,7 +136,7 @@
 
 
 (defn- expr
-  "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.)."
+  "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar or similar record, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.)."
   [x]
   ;; (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
   (cond (core/or (aVar? x) (anArray? x)) (:name x)
@@ -161,8 +164,10 @@
   (expr 'x)
   )
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; Creating MiniZinc parameters (quasi constants)
+;;; MiniZinc parameters (quasi constants)
 ;;;
 
 ;; BUG: I may need to declare a parameter with an explicitly given name, but not initialisation -- initialisation happens in init file. This case is more important than being able to initialise a variable without giving it a name - giving it a name unnecessarily does not hurt too much (but is inconvenient). By contrast, initialising it unnecessarily makes initialisation in datafile impossible. 
@@ -216,7 +221,6 @@
 
 
 
-;; TODO: literal-array
 ;; see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf p. 4
 ;; TODO: add distinction between parameter and variable declaration
 ;; etc -- in short, cover all type-inst variants in the flatzinc-spec, see link above
@@ -429,8 +433,9 @@ Example:
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; Creating MiniZinc vars
+;;; MiniZinc vars
 ;;;
 
 ;; TODO: find out whether there is a way in MiniZinc to restrict the domain of an integer to only a given list of integers (i.e., "cut holes" into the domain)
@@ -519,8 +524,10 @@ Examples:
   (include (io/as-file "test2.mzn"))
   )
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; Constraints
+;;; Constraints -- aux defs
 ;;;
 
 (defn constraint 
@@ -592,6 +599,11 @@ Examples:
      ([arg1# arg2# & args#]
         (reduce ~fn-name arg1# (cons arg2# args#)))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Constraint defs
+;;;
 
 (def-unary-and-n-ary-operator + + 
   "+ constraint")
@@ -852,6 +864,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Solver
 ;;;
@@ -874,6 +887,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Output
 ;;;
@@ -979,6 +993,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
   )
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Communicating with MiniZinc 
 ;;;
