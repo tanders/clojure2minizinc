@@ -239,6 +239,42 @@
   (set-of-int)
   (set-of-int "MySet")
   (set-of-int "MySet" (-- 1 10))
+  (set-of-int "MySet" (literal-set-of-int 1 3 5))
+  )
+
+;; Possibly rename to literal-set
+(defn literal-set-of-int 
+  "Specifies a set of explicitly given integers (can be MiniZinc expressions) as elements."
+  [& exprs]
+  (format "{%s}" (apply str (interpose ", " (map expr exprs)))))
+
+(comment
+  (literal-set-of-int 1 2 3)
+  )
+
+
+
+;; Musing: revision of array
+;; 
+;; Arguments in MiniZinc directly
+;; - index-set
+;; - type-inst: which can be a wide range of forms
+;;   Required information
+;;   - Whether or not variable
+;;   - type-inst of contained vars
+;;   TODO: need to revise type-inst defs that all necessary information is available
+;; - optional name
+;; - optional init value 
+;;   TODO: need to add that arg (using literal-array)
+;; 
+;; "BUG:" Unfinished: ideas how to declare type-inst
+;; which one to use?
+(comment
+  ;; Cannot use current fn variable to mark variables (fn variable implicitly tells store new variable)
+  (array (-- 0 10) (variable (-- 1 3)))
+  ;; Actually, cannot use`--` to mark variables either (MiniZinc/FlatZinc allows to specify int in range that way)
+  (array (-- 0 10) (-- 1 3))  
+  ;; set vars still missing altogether -- I need some approach that would support them as well
   )
 
 (defn array   
