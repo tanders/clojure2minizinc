@@ -214,6 +214,12 @@
   ([var-name] (par :bool var-name))
   ([var-name init-value] (par :bool var-name init-value)))
 
+
+
+;; TODO: literal-array
+;; see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf p. 4
+;; TODO: add distinction between parameter and variable declaration
+;; etc -- in short, cover all type-inst variants in the flatzinc-spec, see link above
 (defn set-of-int
   "Declares a set of integers parameter (quasi a constant) with an optional init-value and optional name (a string, symbol or keyword, default is a gensym-ed name). The init value is a range, e.g., `(-- 1 10)` meaning the set contains all integers in the range. The default is nil, meaning no initialisation."
   ([] (set-of-int (gensym "Set"))) 
@@ -231,26 +237,25 @@
   (set-of-int "MySet" (-- 1 10))
   )
 
-
-;; TODO: 
-;; Add support for mapping: allow translation of MiniZinc array into Clojure collection etc. that can be processed by mapping etc. Values of Clojure collection will be MiniZinc code strings with accessor to the right MiniZinc array element, e.g., "t[1]"
-;; For such mapping support I need to store resulting array in new record similar to aVar but with an additional [attribute] that stores the one or multi-dimensional boundaries of the array as a (list of) pairs of integers
 (defn array   
   "Declares a one- or multi-dimensional array.
 
-Arguments are
+Arguments
 
-param-type: The type of the variables contained in the array (a string, symbol or keyword; can be int, float, bool, string and \"set of int\").
 index-set: The explicitly declared indices of the array. Either an integer range (declared with function --), a set variable initialised to an integer range, or for multi-dimensional arrays a list of integer ranges and set variables.
-var-name: an optional name for the array (a string, symbol or keyword) Default is a gensym-ed name."
-  ([index-set param-type] (array index-set param-type (gensym (str (name param-type) "_array"))))
-  ([index-set param-type var-name]
-     {:pre [(#{"int" "float" "bool" "string" "set of int"} (name param-type))]}
-     ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
+type-inst: Specifies the parameter type or variable domain 
+The type of the variables contained in the array (a string, symbol or keyword; can be int, float, bool, string and \"set of int\").
+var-name: an optional name for the array (a string, symbol or keyword) Default is a gensym-ed name.
+"
+  ([index-set type-inst] (array index-set type-inst (gensym (str (name type-inst) "_array"))))
+  ([index-set type-inst var-name]
+     ;; {:pre [(#{"int" "float" "bool" "string" "set of int"} (name type-inst))]}
+     ;; (println (pprint/cl-format nil "type-inst: ~S, init-value: ~S, var-name ~S" type-inst init-value var-name))
      (tell-store
       (make-anArray 
        (name var-name) 
        (format "array[%s] of var %s: %s;" 
+               ;; index-set
                (cond 
                 ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
                 (aVar? index-set) (:name index-set)
@@ -269,14 +274,28 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
                 :else (throw (Exception. 
                               (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
                                                 index-set (type index-set)))))
-               (name param-type) 
+               ;; type-inst etc
+               ;; If variable (declared by domain) use keyword "var", otherwise (declared by domain) omit "var"
+               ;; TODO: how is an array of set vars declared  
+               ;; see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf p. 4
+               (if 
+                   ;; TODO: test for domain spec... 
+                   ;; ? Test string for pattern <num>..<num> ?
+                   (throw (Exception. "unifinished definition: array"))
+                   (format "var %s" type-inst)
+                 ;; parameter domain
+                 (name type-inst))
                (name var-name))
        index-set))))
 
 
 (comment
   (array (-- 0 10) :bool)
-  (array (-- 0 10) :int "test") ;"array[0..10] of var int: test;"
+  (array (-- 0 10) :int 'test) ;"array[0..10] of var int: test;"
+
+  ;; which one to use?
+  (array (-- 0 10) (variable (-- 1 3)))
+  (array (-- 0 10) (-- 1 3))
 
   ;; Semi BUG: somewhat questionable: the [dimension] of the set (e.g., "1..10") is temporarily stored as aVar name to make it easily accessible for the array construction. Later the set-of-int is not used at all. Possibly better to completely avoid this potential cause of confusion, i.e., not to use a set for the array construction (or to clean up the internal use of sets here). 
   ;; Fixing in cond of functions array and make-anArray
