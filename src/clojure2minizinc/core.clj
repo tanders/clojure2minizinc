@@ -224,7 +224,7 @@
 ;; see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf p. 4
 ;; TODO: add distinction between parameter and variable declaration
 ;; etc -- in short, cover all type-inst variants in the flatzinc-spec, see link above
-(defn set-of-int
+(defn set
   "Declares a set of integers parameter (quasi a constant) with an optional init-value and optional name (a string, symbol or keyword, default is a gensym-ed name). The init value is a range, e.g., `(-- 1 10)` meaning the set contains all integers in the range. The default is nil, meaning no initialisation."
   ([] (set-of-int (gensym "Set"))) 
   ([var-name] (set-of-int var-name nil))
@@ -242,8 +242,7 @@
   (set-of-int "MySet" (literal-set-of-int 1 3 5))
   )
 
-;; Possibly rename to literal-set
-(defn literal-set-of-int 
+(defn literal-set
   "Specifies a set of explicitly given integers (can be MiniZinc expressions) as elements."
   [& exprs]
   (format "{%s}" (apply str (interpose ", " (map expr exprs)))))
