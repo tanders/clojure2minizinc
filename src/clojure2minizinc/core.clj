@@ -490,41 +490,46 @@ Example:
   (-- 1.0 3.0)
   )
 
-
-;; TODO: turn into local fn with scope surrounding fn variable
-(defn- mk-dom-string [dom]
-  (cond (seq? dom) (str "{" (apply str (interpose ", " dom)) "}")
-        (vector? dom) (let [[dom-name dom-spec] dom]
-                        (case dom-name
-                          :set (str "set of " (mk-dom-string dom-spec))
-                          :int (mk-dom-string dom-spec)
-                          :float (mk-dom-string dom-spec)))
-        :else (name dom)))
 ;; I cannot shadow special forms, and therefore a function cannot be called var. Thus use function name "variable", even though MiniZinc keyword is "var".
-(defn variable
-  "Declares a decision variable (bool, int, float, or set of int) with the given domain, and an optional variable name (string, symbol or keyword). 
+(letfn [(mk-dom-string [type-inst]
+          {:pre [(if (vector? type-inst) 
+                   ((first type-inst) #{:set :int :float})
+                   true)]}
+          (cond (seq? type-inst) (str "{" (apply str (interpose ", " type-inst)) "}")
+                (vector? type-inst) (let [[dom-name dom-spec] type-inst]
+                                      (case dom-name
+                                        :set (str "set of " (mk-dom-string dom-spec))
+                                        :int (mk-dom-string dom-spec)
+                                        :float (mk-dom-string dom-spec)))
+                :else (name type-inst)))]
+  (defn variable
+    "Declares a decision variable (bool, int, float, or set of int) with the given domain, and an optional variable name (string, symbol or keyword). 
 
 Examples:
-(variable :bool)             ; a Boolean variable (can only be declared this way)
+`(variable :bool)             ; a Boolean variable (no further domain specification supported)
 (variable :int)              ; an integer variable with maximum supported domain size 
-(variable (-- 1 10))         ; an integer variable with domain [1, 10]
+(variable (-- -1 10))        ; an integer variable with domain [-1, 10]
+(variable '(1 3 6 8))        ; an integer variable with the domain {1, 3, 6, 8}
 (variable (-- 1.0 10.0))     ; a float variable with domain [1.0, 10.0]
 (variable '(1 3 6 8))        ; an integer variable with the domain {1, 3, 6, 8}
 (variable [:set (-- 1 3)])   ; a set of integers with the given domain
 (variable [:set '(1 3 6 8)]) ; a set of integers with the given domain
-(variable (-- 1 10) 'x)      ; an integer variable explicitly named x
-"
-  ([dom] (variable dom (gensym "var")))
-  ([dom var-name]
-     (let [dom-string (mk-dom-string dom)
-           name-string (name var-name)]
-       (tell-store (make-aVar name-string (format "var %s: %s;" dom-string name-string))))))
+(variable [:int (-- 1 3)])   ; same as (variable (-- -1 10))
+(variable (-- 1 10) 'x)      ; an integer variable named x (instead of an automatically assigned name)
+`"
+    ([type-inst] (variable type-inst (gensym "var")))
+    ([type-inst var-name]
+       (let [dom-string (mk-dom-string type-inst)
+             name-string (name var-name)]
+         (tell-store (make-aVar name-string (format "var %s: %s;" dom-string name-string)))))))
+
+    
 
 (comment
-  (mk-dom-string :bool)
-  (mk-dom-string (-- 1 3))
-  (mk-dom-string [:set '(1 3 6 8)])
-  (mk-dom-string [:int '(1 3 6 8)])
+  ;; (mk-dom-string :bool)
+  ;; (mk-dom-string (-- 1 3))
+  ;; (mk-dom-string [:set '(1 3 6 8)])
+  ;; (mk-dom-string [:int '(1 3 6 8)])
   
   (binding [*mzn-store* ()]
     (variable (-- 1 3) 'x))
