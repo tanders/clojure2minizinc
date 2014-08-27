@@ -374,7 +374,7 @@ var-name: an optional name for the array (a string, symbol or keyword) Default i
 (defn array->clj-seq
   "Transforms a one or more dimensional MiniZinc array into a Clojure list (of MiniZinc code strings representing the array elements), so that MiniZinc functions can  be applied to individual MiniZinc elements (e.g., by mapping).
 
-BUG: multi-dimensional array should return nested sequence to clearly highlight the dimensions. Currently, simply  flat sequence with all elements (the cartesian product is returned)."
+BUG: multi-dimensional array should return nested sequence to clearly highlight the dimensions. Currently, simply a flat sequence with all elements (the cartesian product) is returned."
   [my-array]
   (let [bounds (:boundaries my-array)]
     (cond 
