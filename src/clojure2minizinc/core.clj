@@ -401,9 +401,15 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
   
   )
 
-;; Consider to later turn this into a local function with letfn, but that makes testing more difficult
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Aggregation functions for arithmetic arrays are
+;;
+
+;; TODO: later turn this into a local function with letfn, but that makes testing more difficult
 ;; Aux functions for macros need to be public, hm...
-(defn forall-format 
+(defn- forall-format 
   "[Aux for forall]"
   [vars & body]
   (format "forall(%s)(%s)" 
@@ -433,7 +439,9 @@ Example:
 `(let [a (array (-- 0 10) :int)]
   (forall [i (-- 0 10)]
           (= (nth a i) 0)))
-`"
+`
+
+BUG: Only subset of MiniZinc's `forall` syntax supported yet. In particular, no list and set comprehensions supported yet."
   {:forms '[(forall [range-decls*] exprs*)]}
   [range-decls & body]
   (let [var-val-pairs (partition 2 range-decls)]
@@ -446,10 +454,10 @@ Example:
 
 
 (comment
-  (def a (array (-- 0 10) :int))
-  (print (forall [i (-- 0 10)]
+  (def a (array (-- 1 10) :int 'a))
+  (print (forall [i (-- 1 10)]
                  (= (nth a i) 0)))
-  ;; => "forall(i in 0..10)(a[i] = 0; a[i+1] = 0)"  
+  ;; => "forall(i in 1..10)((a[i] = 0))"    
 
   ;; a only 1 dimensional, but for test this is sufficient :)
   (print (forall [i (-- 0 10)
@@ -466,7 +474,81 @@ Example:
   )
 
 
+(comment
+  
+  ;; TODO: define missing aggregation functions for arithmetic arrays with their full syntax
+  ;; See MiniZinc tutorial p. 23 and surrounding pages
+  ;; arg vectors below are only sketch, and may not be what is needed in the end for full syntax
+  ;; All these macros and forall are very similar -- likely I need to define general case only once and then customise...
+  (defmacro exists
+    ""
+    {:forms '[(forall [range-decls*] exprs*)]}
+    [range-decls & body]
+    ...)
 
+  (defmacro xorall
+    ""
+    {:forms '[(forall [range-decls*] exprs*)]}
+    [range-decls & body]
+    ...)
+
+  (defmacro iffall
+    ""
+    {:forms '[(forall [range-decls*] exprs*)]}
+    [range-decls & body]
+    ...)
+
+  (defmacro sum
+    ""
+    {:forms '[(forall [range-decls*] exprs*)]}
+    [range-decls & body]
+    ...)
+
+  (defmacro product
+    ""
+    {:forms '[(forall [range-decls*] exprs*)]}
+    [range-decls & body]
+    ...)
+
+  (defmacro min
+    ""
+    {:forms '[(forall [range-decls*] exprs*)]}
+    [range-decls & body]
+    ...)
+
+  (defmacro max
+    ""
+    {:forms '[(forall [range-decls*] exprs*)]}
+    [range-decls & body]
+    ...)
+
+  )
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Conditional Expressions
+;;;
+
+(comment
+  ;; TODO: define `if`, but under different name
+  ;; (if is a special form)
+
+;; CompilerException java.lang.RuntimeException: No such var: core/if, 
+;; compiling:(/private/var/folders/c_/14td248n5xd5wjbmrhldmwl00000gq/T/form-init6276176329836054569.clj:1:1) 
+  
+  )
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Local Variables
+;;;
+
+(comment
+  ;; TODO: define `let`, but under different name
+  ;; (let is a special form)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
