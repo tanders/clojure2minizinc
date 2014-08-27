@@ -632,6 +632,7 @@ Examples:
   ;; for completeness/consistency, but contains superflous information
   (variable [:int '(1 3 6 8)])
   (variable [:float (-- 1.0 3.0)])
+  (variable [:bla (-- 1.0 3.0)]) ; causes exception
   ;; (variable [:bool]) ;; not possible!
   ;; alternative notation -- more clean solution -- can be defined when notation above is supported
   (set-variable (-- 1 3))
