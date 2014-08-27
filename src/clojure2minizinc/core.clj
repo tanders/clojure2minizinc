@@ -432,6 +432,7 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;; forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
 ;; 
 ;; TODO: allow for only a single expression, and not a body of multiple expressions? If multiple, they would need to be separated, e.g., by a semicolon?
+;; TODO: allow for List and Set Comprehensions, see MiniZinc tutorial p. 20
 (defmacro forall
   "MiniZinc looping. decls are pairs of range declarations <name> <domain>.
 
