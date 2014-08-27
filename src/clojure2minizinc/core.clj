@@ -13,7 +13,7 @@
 (ns clojure2minizinc.core
   ;; make explicit shadowing a range of core clojure functions etc
   (:refer-clojure :exclude [> >= <= < = == != -> + - * / mod assert concat min max 
-                            int float and or nth]) ; not
+                            int float set and or nth]) ; not
   (:require [clojure.core :as core]
             [clojure.java.shell :as shell]
             ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
@@ -226,8 +226,8 @@
 ;; etc -- in short, cover all type-inst variants in the flatzinc-spec, see link above
 (defn set
   "Declares a set of integers parameter (quasi a constant) with an optional init-value and optional name (a string, symbol or keyword, default is a gensym-ed name). The init value is a range, e.g., `(-- 1 10)` meaning the set contains all integers in the range. The default is nil, meaning no initialisation."
-  ([] (set-of-int (gensym "Set"))) 
-  ([var-name] (set-of-int var-name nil))
+  ([] (set (gensym "Set"))) 
+  ([var-name] (set var-name nil))
   ([var-name init-value] (par "set of int" var-name init-value)))
 
 (comment
