@@ -175,15 +175,15 @@
 (defn- par   
   "Declares a parameter (quasi a constant) with the given type (a string, symbol or keyword; can be int, float, bool and 'set of int'), an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
   ([param-type] (par param-type (gensym (name param-type))))
-  ([param-type var-name] (par param-type var-name nil))
-  ([param-type var-name init-value]
+  ([param-type par-name] (par param-type par-name nil))
+  ([param-type par-name init-value]
      {:pre [(#{"int" "float" "bool" "set of int"} (name param-type))]}
-     ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, var-name ~S" param-type init-value var-name))
+     ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, par-name ~S" param-type init-value par-name))
      (tell-store
-      (make-aVar (name var-name) 
+      (make-aVar (name par-name) 
                  (if init-value
-                   (format "%s: %s = %s;" (name param-type) (name var-name) init-value)
-                   (format "%s: %s;" (name param-type) (name var-name)))))))
+                   (format "%s: %s = %s;" (name param-type) (name par-name) init-value)
+                   (format "%s: %s;" (name param-type) (name par-name)))))))
 
 (comment
   (:mzn-string (par :int 'x 1))
@@ -204,20 +204,20 @@
 (defn int 
   "Declares an initeger parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :int)) 
-  ([var-name] (par :int var-name))
-  ([var-name init-value] (par :int var-name init-value)))
+  ([par-name] (par :int par-name))
+  ([par-name init-value] (par :int par-name init-value)))
 
 (defn float 
   "Declares a float parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :float)) 
-  ([var-name] (par :float var-name))
-  ([var-name init-value] (par :float var-name init-value)))
+  ([par-name] (par :float par-name))
+  ([par-name init-value] (par :float par-name init-value)))
 
 (defn bool 
   "Declares a bool parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :bool)) 
-  ([var-name] (par :bool var-name))
-  ([var-name init-value] (par :bool var-name init-value)))
+  ([par-name] (par :bool par-name))
+  ([par-name init-value] (par :bool par-name init-value)))
 
 
 
@@ -227,8 +227,8 @@
 (defn set
   "Declares a set of integers parameter (quasi a constant) with an optional init-value and optional name (a string, symbol or keyword, default is a gensym-ed name). The init value is a range, e.g., `(-- 1 10)` meaning the set contains all integers in the range. The default is nil, meaning no initialisation."
   ([] (set (gensym "Set"))) 
-  ([var-name] (set var-name nil))
-  ([var-name init-value] (par "set of int" var-name init-value)))
+  ([par-name] (set par-name nil))
+  ([par-name init-value] (par "set of int" par-name init-value)))
 
 (comment
   (int)
