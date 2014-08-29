@@ -38,7 +38,7 @@
 ;;   "/Applications/minizinc-1.6/bin/mzn2fzn")
 ;; TODO: Find out -- use def or defvar? And does def support a doc string?
 (def ^:dynamic *fd-solver* "Path to constraint solver for finite domain (integers)" 
-  "mzn-g12fd")
+  "minizinc")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1202,18 +1202,21 @@ Options are
 :data            (string) Content for a MiniZinc data file (*.dzn file). Can conveniently be created with map2minizinc 
 :num-solutions   (int) An upper bound on the number of solutions to output
 :all-solutions   (boolean) If true, return all solutions
+:options         (collection of strings) Arbitrary options given to the solver in UNIX shell syntax, e.g., [\"-a\"] for all solutions.
 "
   [mzn & {:keys [solver mznfile data
                  print-mzn?
                  print-solution? 
-                 num-solutions all-solutions?] 
+                 num-solutions all-solutions?
+                 options] 
           :or {solver *fd-solver*
                mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)
                data false
                print-mzn? false
                print-solution? false
                num-solutions 1
-               all-solutions? false}}]
+               all-solutions? false
+               options []}}]
   ;; (println "mzn:" mzn "\nmznfile:" mznfile "\nsolver:" solver)
   (when print-mzn? (println mzn))
   ;; TMP: 
