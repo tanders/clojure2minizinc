@@ -41,55 +41,194 @@ For example, a clojure2minizinc program is defined in a Clojure namespace. The f
 
 * Basic Modelling in MiniZinc
 
-#+begin_src clojure 
-(mz/minizinc 
- (mz/clj2mnz
-  (let [nc (mz/int 'nc 3)     
-        wa (mz/variable (mz/-- 1 nc))
-        nt (mz/variable (mz/-- 1 nc))
-        sa (mz/variable (mz/-- 1 nc))
-        q (mz/variable (mz/-- 1 nc))
-        nsw (mz/variable (mz/-- 1 nc))
-        v (mz/variable (mz/-- 1 nc))
-        t (mz/variable (mz/-- 1 nc))]
-    (mz/constraint (mz/!= wa nt))
-    (mz/constraint (mz/!= wa sa))
-    (mz/constraint (mz/!= nt sa))
-    (mz/constraint (mz/!= nt q))
-    (mz/constraint (mz/!= sa q))
-    (mz/constraint (mz/!= sa nsw))
-    (mz/constraint (mz/!= sa v))
-    (mz/constraint (mz/!= nsw v))
-    (mz/solve :satisfy)
-    (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t})
-    ))
- :print-mzn? true
- ;; :num-solutions 3
- ;; :all-solutions? true
- )
+The first example defines a map-colouring of Australia. The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]], p. 3ff, motivates and explains this model. (This tutorial assumes that you read the MiniZinc tutorial alongside.) 
+
+Notice that most functions in this example are in the =mz= namespace, but the variables (and an int) of the model are stored with the standard Clojure =let= form -- clojure2minizinc allows to store MiniZinc variables in arbitrary Clojure data structures.
+
+#+CAPTION: Dummy caption
+#+NAME: code:aust
+#+begin_src clojure :results silent
+(def aust
+  (mz/clj2mnz
+   (let [nc (mz/int 'nc 3)              ; number of colours
+         wa (mz/variable (mz/-- 1 nc))  ; 7 variables for 7 states
+         nt (mz/variable (mz/-- 1 nc))
+         sa (mz/variable (mz/-- 1 nc))
+         q (mz/variable (mz/-- 1 nc))
+         nsw (mz/variable (mz/-- 1 nc))
+         v (mz/variable (mz/-- 1 nc))
+         t (mz/variable (mz/-- 1 nc))]
+     (mz/constraint (mz/!= wa nt))
+     (mz/constraint (mz/!= wa sa))
+     (mz/constraint (mz/!= nt sa))
+     (mz/constraint (mz/!= nt q))
+     (mz/constraint (mz/!= sa q))
+     (mz/constraint (mz/!= sa nsw))
+     (mz/constraint (mz/!= sa v))
+     (mz/constraint (mz/!= nsw v))
+     (mz/solve :satisfy)
+     (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t}))))
 #+end_src
 
-#+RESULTS:
-| :wa | 1 | :nt | 2 | :sa | 3 | :q | 1 | :nsw | 2 | :v | 1 | :t | 1 |
+We can solve this MiniZinc model as follows.
 
+#+begin_src clojure :results silent
+(mz/minizinc aust)
+#+end_src
 
-It returns the following result.
+It returns the following result. Different numbers encode different colours on the map for the Australian states.
 
   =({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1})=
 
+In this example, a solution is wrapped in a Clojure map. You can ask for multiple solutions, if you like. 
+
+#+begin_src clojure :results silent
+(mz/minizinc aust :num-solutions 3)
+#+end_src
+
+  =({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1} {:wa 2, :nt 1, :sa 3, :q 2, :nsw 2, :v 1, :t 1} {:wa 1, :nt 3, :sa 2, :q 1, :nsw 3, :v 1, :t 1})=
+
+
+The var =aust= binds a string created by the model above. This string is shown below (without surrounding double-quotes for simplicity). 
+
+#+begin_example
+int: nc = 3;
+var 1..nc: var4570;
+var 1..nc: var4571;
+var 1..nc: var4572;
+var 1..nc: var4573;
+var 1..nc: var4574;
+var 1..nc: var4575;
+var 1..nc: var4576;
+constraint (var4570 != var4571);
+constraint (var4570 != var4572);
+constraint (var4571 != var4572);
+constraint (var4571 != var4573);
+constraint (var4572 != var4573);
+constraint (var4572 != var4574);
+constraint (var4572 != var4575);
+constraint (var4574 != var4575);
+solve satisfy;
+output ["{", " :wa ", show(var4570), " :nt ", show(var4571), " :sa ", show(var4572), " :q ", show(var4573), " :nsw ", show(var4574), " :v ", show(var4575), " :t ", show(var4576), "}\n"];
+#+end_example
+
+The string contains the generated MiniZinc code. Note the similarity between the model in Clojure and in MiniZinc. clojure2minizinc aims to be very similar to MiniZinc itself, so that the MiniZinc documentation can also document clojure2minizinc. Nevertheless, some differences are unavoidable. Obviously, clojure2minizinc uses Clojure syntax, and some functions names are illegal in Clojure (e.g., =var= is a special form, and clojure2minizinc must define the function =variable= instead).
+
+The generated code is almost exactly the same as the MiniZinc model =aust.mzn= shown in Figure 2 of the tutorial, p. 4. The main difference is that the variable names in the code above are generated automatically (the names may look slightly different when you run this code). The function =mz/variable= simply does not know that its result is stored in a symbol by =let=, and thus does not know its name. If you are only interested in the Clojure code, this poses no problem, as you do not need to read the automatically generated MiniZinc variables.  
+
+If you want better readable MiniZinc code, just explicitly tell =mz/variable= (or its friends like =mz/int=) your variable name. 
+
+#+begin_src clojure :results silent
+(mz/variable (mz/-- 1 10) 'x)
+#+end_src
+
+
+
+
+
+
+
+
+#+begin_src clojure
+
+#+end_src
+
+
+#+begin_src clojure 
+
+#+end_src
+
+
+#+begin_src clojure 
+
+#+end_src
 
 
 
 #+begin_src clojure 
-(+ 1 2 3)
+
 #+end_src
 
-#+begin_src clojure 
-(+ 1 2 3)
-#+end_src
 
 
 #+begin_src clojure 
-(+ 1 2 3)
+
 #+end_src
-  
+
+#+begin_src clojure
+
+#+end_src
+
+
+* Similarity and differences between MiniZinc and clojure2minizinc
+
+  Definitions in clojure2minizinc can be very similar to MiniZinc code. This sections lists important differences.
+
+
+** Code similarity
+
+   In clojure2minizinc all code is expressed by standard Lisp S-expressions. Most MiniZinc operators, functions etc. are called exactly the same in clojure2minizinc. For example the following two code snippets show a MiniZinc code line and the corresponding clojure2minizinc (without namespace prefixes).
+
+#+begin_src minizinc :results silent
+constraint x + y != z;
+#+end_src
+
+#+begin_src clojure :results silent
+(constraint (!= (+ x y) z))
+#+end_src
+
+   Because of this similarity of code, the main documentation of clojure2minizinc is actually the MiniZinc documentation. For example, the [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]] is also a useful documentation for this library. 
+
+   *TODO* add links to further MiniZinc documentation
+
+
+** Exceptions to the similarity
+
+   There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure due to certain restrictions of Clojure. These are listed below (first MiniZinc, then the corresponding Clojure function name of this library).
+
+   *TODO* full (short) list of different function names: 
+    - =var= is =variable=
+    - =..= is =--=
+    - =/\= is =and=
+    - =\/= is =or=
+    - =not= is =nega=
+    - =forall= syntax is "clojurized"
+
+
+*** Temporary differences
+
+    An equivalent for the MiniZinc =output= does not exist, use =output-map= instead.
+
+
+** Going beyond MiniZinc limitations
+    
+    clojure2minizinc allows to do a number of things that are impossible in plain MiniZinc. Particular important is the fact that decision variables can be stored in arbitrary Clojure data structures, and then constraints be applied to these data structures. MiniZinc does not see the Clojure data structure, but it may help to express information about the constraint problem to model (e.g., to express how certain variables are related).  
+
+    *TODO* Demo example
+
+    clojure2minizinc also allows for higher-order programming, such as mapping of MiniZinc records translated into Clojure sequences. 
+
+#+begin_src clojure :results silent
+(map (fn [element] (mz/constraint (mz/< (mz/+ element 1) 10)))
+     (mz/array->clj-seq (mz/array (mz/-- 1 3) :bool)))
+#+end_src
+
+
+    In addition, most Clojure functionality is available for defining MiniZinc models. For example, auto-completion and documentation of your editor will help you (standard MiniZinc editors do not support anything like that).
+
+    combination with any other Clojure [features]
+    IO
+    GUI
+    
+    
+
+
+** TODO Limitations compared to standard Clojure programming 
+
+    Constraint programming provides a very high level of abstraction for the programmer. However, this strength comes with a certain price. In particular, 
+...
+
+software using constraint programming is harder to debug.
+ 
+
+
