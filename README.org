@@ -5,11 +5,31 @@
    A Clojure library designed to solve constraint satisfaction problems (CSP). It generates [[www.minizinc.org][MiniZinc]] code from Clojure code, that is very similar to the corresponding MiniZinc code. The generated MiniZinc program is then solved by one of the MiniZinc solvers available (e.g., see http://www.minizinc.org/software.html), and the result is read back into Clojure.
 
 
+** Related Work
+
+*** Clojure: core.logic
+# Existing Clojure Constraint Systems
+
+In the Clojure community there already exists an interest in Constraint Programming (and the related Logic Programming paradigm), and solvers have been developed for Clojure.
+
+[[https://github.com/clojure/core.logic][core.logic]] implements logic and constraint programming facilities from scratch directly in Clojure. More specifically, it implements [[http://minikanren.org][miniKanren]] and some of its extensions, e.g., [[https://github.com/calvis/cKanren][cKanren]] for Constraint Logic Programming. For example, according to the [[https://github.com/clojure/core.logic/wiki/Features][documentation of core.logic]], it currently implements about 10 constraints on integers (arithmetic operations, comparisons, and the global constraint =distinct=).  
+
+By contrast, clojure2minizinc provides an interface to a range of existing state-of-the-art constraint solvers. For example, in addition to constraints over integers (and many more constraints), it supports constraints over floats, sets, and reified constraints (i.e., the truth value of constraints can in turned be constrained, e.g., by logic relations such as implication or equivalence). Also, compared with the classical approach of Constraint Logic Programming implemented by cKanren, over the last twenty years the Constraint Programming community developed many techniques to greatly speed up the search process, which are implemented in state-of-the-art constraint solvers.
+
+However, MiniZinc is not a Logic Programming language. For example, it does not provide unification of arbitrary terms (in contrast to equality constraints). 
+
+
+*** C++: libmzn
+
+  A project with similar goals as clojure2minizinc is [[http://cp2013.a4cp.org/sites/default/files/uploads/cospel2013_submission_7.pdf][libmzn]], which provides a C++ interface to MiniZinc. It is planned to be released as part of MiniZinc 2.0. 
+
+
 ** TODO What is MiniZinc and why clojure2minizinc?
 
    
    More information, in particular many MiniZinc-related links (e.g., to various solvers) can be found at
    http://www.hakank.org/minizinc/
+
 
 ** TODO Installation 
 
@@ -54,7 +74,7 @@
 *** Further Reading 
 
 
-** Similarity  and differences between MiniZinc and its Clojure complement
+** Similarity  and differences between MiniZinc and clojure2minizinc
 
    Definitions in clojure2minizinc can be very similar to MiniZinc code. This sections lists important differences.
 
@@ -138,3 +158,5 @@ software using constraint programming is harder to debug.
 Copyright © 2014 Torsten Anders
 
 Distributed under the GNU General Public License.
+
+
