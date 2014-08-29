@@ -1,0 +1,95 @@
+# -*- mode: org; nrepl-buffer-ns: "clojure2minizinc.tutorial"; -*-
+
+#+TITLE: A Tutorial Introducing =clojure2minizinc=
+#+AUTHOR: Torsten Anders
+
+# NOTE: title and author ignored in GitHub rendering and also when translating with PanDoc to Markdown
+
+# Doc: see http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-clojure.html
+# Within org buffer start cider: M-x cider-jack-in RET
+
+#+PROPERTY: header-args:clojure  :session *clojure-1*
+
+* Motivation 
+
+The present [[http://clojure.org/][Clojure]] library clojure2minizinc provides a MiniZinc interface for Clojure. [[http://www.minizinc.org/][MiniZinc]] is a domain-specific language (DSL) for modelling constraint satisfaction and optimisation problems (CSP) over Boolean, integer, real number, and set variables. 
+
+MiniZinc has the potential to become the lingua franca of the Constraint Programming community. For developers of existing constraint solvers it is rather easy to define a MiniZinc interface for their solvers, [[http://www.minizinc.org/software.html][several state-of-the-art solvers already support MiniZinc]] via the simpler language FlatZinc (even more solvers listed [[http://www.hakank.org/minizinc/][here]]), and they compete in a yearly [[http://www.minizinc.org/challenge.html][MiniZinc Challenge]].  
+
+
+** Advantages over using MiniZinc directly
+
+In clojure2minizinc, CSPs can be defined directly in Clojure in a way very similar to MiniZinc. MiniZinc (and its constraint solvers, including 3rd-party solvers) do the actual work in the background, and the result is read back into Clojure. 
+
+Because using clojure2minizinc can be so close to using MiniZinc itself, this tutorial complements the [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]]: its examples are translated into Clojure here. Even the same headlines are used, so that both tutorials can be read in parallel. In addition to the translated examples, this tutorial primarily explains the differences between clojure2minizinc and MiniZinc.
+
+
+Additionally, facilities of Clojure can be used for defining CSPs, and for processing the results.
+
+MiniZinc is a highly specialised language and relatively small language. It lacks many features of standard programming languages. clojure2minizinc marries MiniZinc with Clojure and that way many concepts of general purpose languages (in the guise of their Clojure implementation) can be used for a MiniZinc program.
+
+For example, a clojure2minizinc program is defined in a Clojure namespace. The following code block defines a namespace for this tutorial, and loads clojure2minizinc definitions under the alias =mz= (for MiniZinc).
+
+#+begin_src clojure :results silent
+(ns clojure2minizinc.tutorial
+  (:require [clojure2minizinc.core :as mz] ; 
+            [clojure.pprint :as pprint]))
+#+end_src
+
+
+
+
+* Basic Modelling in MiniZinc
+
+#+begin_src clojure 
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [nc (mz/int 'nc 3)     
+        wa (mz/variable (mz/-- 1 nc))
+        nt (mz/variable (mz/-- 1 nc))
+        sa (mz/variable (mz/-- 1 nc))
+        q (mz/variable (mz/-- 1 nc))
+        nsw (mz/variable (mz/-- 1 nc))
+        v (mz/variable (mz/-- 1 nc))
+        t (mz/variable (mz/-- 1 nc))]
+    (mz/constraint (mz/!= wa nt))
+    (mz/constraint (mz/!= wa sa))
+    (mz/constraint (mz/!= nt sa))
+    (mz/constraint (mz/!= nt q))
+    (mz/constraint (mz/!= sa q))
+    (mz/constraint (mz/!= sa nsw))
+    (mz/constraint (mz/!= sa v))
+    (mz/constraint (mz/!= nsw v))
+    (mz/solve :satisfy)
+    (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t})
+    ))
+ :print-mzn? true
+ ;; :num-solutions 3
+ ;; :all-solutions? true
+ )
+#+end_src
+
+#+RESULTS:
+| :wa | 1 | :nt | 2 | :sa | 3 | :q | 1 | :nsw | 2 | :v | 1 | :t | 1 |
+
+
+It returns the following result.
+
+  =({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1})=
+
+
+
+
+#+begin_src clojure 
+(+ 1 2 3)
+#+end_src
+
+#+begin_src clojure 
+(+ 1 2 3)
+#+end_src
+
+
+#+begin_src clojure 
+(+ 1 2 3)
+#+end_src
+  
