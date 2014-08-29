@@ -5,25 +5,6 @@
    A Clojure library designed to solve constraint satisfaction problems (CSP). It generates [[www.minizinc.org][MiniZinc]] code from Clojure code, that is very similar to the corresponding MiniZinc code. The generated MiniZinc program is then solved by one of the MiniZinc solvers available (e.g., see http://www.minizinc.org/software.html), and the result is read back into Clojure.
 
 
-** Related Work
-
-*** Clojure: core.logic
-# Existing Clojure Constraint Systems
-
-In the Clojure community there already exists an interest in Constraint Programming (and the related Logic Programming paradigm), and solvers have been developed for Clojure.
-
-[[https://github.com/clojure/core.logic][core.logic]] implements logic and constraint programming facilities from scratch directly in Clojure. More specifically, it implements [[http://minikanren.org][miniKanren]] and some of its extensions, e.g., [[https://github.com/calvis/cKanren][cKanren]] for Constraint Logic Programming. For example, according to the [[https://github.com/clojure/core.logic/wiki/Features][documentation of core.logic]], it currently implements about 10 constraints on integers (arithmetic operations, comparisons, and the global constraint =distinct=).  
-
-By contrast, clojure2minizinc provides an interface to a range of existing state-of-the-art constraint solvers. For example, in addition to constraints over integers (and many more constraints), it supports constraints over floats, sets, and reified constraints (i.e., the truth value of constraints can in turned be constrained, e.g., by logic relations such as implication or equivalence). Also, compared with the classical approach of Constraint Logic Programming implemented by cKanren, over the last twenty years the Constraint Programming community developed many techniques to greatly speed up the search process, which are implemented in state-of-the-art constraint solvers.
-
-However, MiniZinc is not a Logic Programming language. For example, it does not provide unification of arbitrary terms (in contrast to equality constraints). 
-
-
-*** C++: libmzn
-
-  A project with similar goals as clojure2minizinc is [[http://cp2013.a4cp.org/sites/default/files/uploads/cospel2013_submission_7.pdf][libmzn]], which provides a C++ interface to MiniZinc. It is planned to be released as part of MiniZinc 2.0. 
-
-
 ** TODO What is MiniZinc and why clojure2minizinc?
 
    
@@ -74,83 +55,30 @@ However, MiniZinc is not a Logic Programming language. For example, it does not 
 *** Further Reading 
 
 
-** Similarity  and differences between MiniZinc and clojure2minizinc
-
-   Definitions in clojure2minizinc can be very similar to MiniZinc code. This sections lists important differences.
-
-
-*** Code similarity
-
-   In clojure2minizinc all code is expressed by standard Lisp S-expressions. Most MiniZinc operators, functions etc. are called exactly the same in clojure2minizinc. For example the following two code snippets show a MiniZinc code line and the corresponding clojure2minizinc (without namespace prefixes).
-
-#+begin_src minizinc :results silent
-constraint x + y != z;
-#+end_src
-
-#+begin_src clojure :results silent
-(constraint (!= (+ x y) z))
-#+end_src
-
-   Because of this similarity of code, the main documentation of clojure2minizinc is actually the MiniZinc documentation. For example, the [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]] is also a useful documentation for this library. 
-
-   *TODO* add links to further MiniZinc documentation
-
-
-*** Exceptions to the similarity
-
-    There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure due to certain restrictions of Clojure. These are listed below (first MiniZinc, then the corresponding Clojure function name of this library).
-
-    *TODO* full (short) list of different function names: 
-     - =var= is =variable=
-     - =..= is =--=
-     - =/\= is =and=
-     - =\/= is =or=
-     - =not= is =nega=
-     - =forall= syntax is "clojurized"
-
-
-**** Temporary differences
-
-     An equivalent for the MiniZinc =output= does not exist, use =output-map= instead.
-
-
-*** Going beyond MiniZinc limitations
-    
-    clojure2minizinc allows to do a number of things that are impossible in plain MiniZinc. Particular important is the fact that decision variables can be stored in arbitrary Clojure data structures, and then constraints be applied to these data structures. MiniZinc does not see the Clojure data structure, but it may help to express information about the constraint problem to model (e.g., to express how certain variables are related).  
-
-    *TODO* Demo example
-
-    clojure2minizinc also allows for higher-order programming, such as mapping of MiniZinc records translated into Clojure sequences. 
-
-#+begin_src clojure :results silent
-(map (fn [element] (mz/constraint (mz/< (mz/+ element 1) 10)))
-     (mz/array->clj-seq (mz/array (mz/-- 1 3) :bool)))
-#+end_src
-
-
-    In addition, most Clojure functionality is available for defining MiniZinc models. For example, auto-completion and documentation of your editor will help you (standard MiniZinc editors do not support anything like that).
-
-    combination with any other Clojure [features]
-    IO
-    GUI
-    
-    
-
-
-*** TODO Limitations compared to standard Clojure programming 
-
-    Constraint programming provides a very high level of abstraction for the programmer. However, this strength comes with a certain price. In particular, 
-...
-
-software using constraint programming is harder to debug.
- 
-
-
 ** Design 
 
    Most Clojure functions simply generate a string with the corresponding MiniZinc code. So, this library is very easy to extend to support not only the full feature set of MiniZinc, but also MiniZinc extensions proposed by various research projects.
 
    The downside is that debugging the Clojure programs is somewhat difficult. For example, error messages by MiniZinc refer to line numbers of the generated MiniZinc code. However, constraint problem debuggers are not too helpful anyway. A useful technique is usually to disable all constraints for testing and then by and by enabling them again. 
+
+
+** Related Work
+
+*** Clojure: core.logic
+# Existing Clojure Constraint Systems
+
+In the Clojure community there already exists an interest in Constraint Programming (and the related Logic Programming paradigm), and solvers have been developed for Clojure.
+
+[[https://github.com/clojure/core.logic][core.logic]] implements logic and constraint programming facilities from scratch directly in Clojure. More specifically, it implements [[http://minikanren.org][miniKanren]] and some of its extensions, e.g., [[https://github.com/calvis/cKanren][cKanren]] for Constraint Logic Programming. For example, according to the [[https://github.com/clojure/core.logic/wiki/Features][documentation of core.logic]], it currently implements about 10 constraints on integers (arithmetic operations, comparisons, and the global constraint =distinct=).  
+
+By contrast, clojure2minizinc provides an interface to a range of existing state-of-the-art constraint solvers. For example, in addition to constraints over integers (and many more constraints), it supports constraints over floats, sets, and reified constraints (i.e., the truth value of constraints can in turned be constrained, e.g., by logic relations such as implication or equivalence). Also, compared with the classical approach of Constraint Logic Programming implemented by cKanren, over the last twenty years the Constraint Programming community developed many techniques to greatly speed up the search process, which are implemented in state-of-the-art constraint solvers.
+
+However, MiniZinc is not a Logic Programming language. For example, it does not provide unification of arbitrary terms (in contrast to equality constraints). 
+
+
+*** C++: libmzn
+
+  A project with similar goals as clojure2minizinc is [[http://cp2013.a4cp.org/sites/default/files/uploads/cospel2013_submission_7.pdf][libmzn]], which provides a C++ interface to MiniZinc. It is planned to be released as part of MiniZinc 2.0. 
  
 
 ** License
