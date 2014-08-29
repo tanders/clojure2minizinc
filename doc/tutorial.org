@@ -89,6 +89,23 @@ In this example, a solution is wrapped in a Clojure map. You can ask for multipl
   =; => ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1} {:wa 2, :nt 1, :sa 3, :q 2, :nsw 2, :v 1, :t 1} {:wa 1, :nt 3, :sa 2, :q 1, :nsw 3, :v 1, :t 1})=
 
 
+In fact, you can specify arbitrary options supported by the =minizinc= shell command. The next code line specifies to use (the FlatZinc interpreter of) [[http://www.gecode.org/flatzinc.html][Gecode]] (which must of could be installed). This solver won many [[http://www.minizinc.org/challenge.html][MiniZinc Challenges]] and is much more efficient than the solver that =minizinc= uses by default. For this simple model this makes no real difference (most time is spend on the [[http://ww2.cs.mu.oz.au/~sbrand/project/minizinc07.pdf][translation of MiniZinc to FlatZinc]] here), but for more complex problems the difference can be huge.   
+
+#+begin_src clojure 
+(mz/minizinc aust :options ["-f fzn-gecode"])
+#+end_src
+
+The solution happens to be different, because different solvers may use different search strategies, which can lead to different first solutions. (MiniZinc also allows to specify the search strategy, [[http://www.minizinc.org/workshop2011/mzn2011_submission_1.pdf][within certain bounds]]). 
+
+  =; => ({:wa 3, :nt 2, :sa 1, :q 3, :nsw 3, :v 2, :t 1})=  
+
+In the next call we ask Gecode to use 8 threads and/or cores for a parallel search. Again, this makes only a real difference for more complex problems. 
+
+#+begin_src clojure 
+(mz/minizinc aust :options ["-f fzn-gecode" "-p8"])
+#+end_src
+
+
 *** The Resulting MiniZinc Code
 
 The var =aust= binds a string created by the model above. This string is shown below (without surrounding double-quotes for simplicity). 
@@ -123,6 +140,8 @@ If you want better readable MiniZinc code, just explicitly tell =mz/variable= (o
 #+begin_src clojure 
 (mz/variable (mz/-- 1 10) 'x)
 #+end_src
+
+The integer parameter of the model (=nc=) has been explicitly named this way (the optional name for the integer parameter is given before its optional initialisation value).
 
 
 *** Storing Variables in Other Data Structures 
@@ -184,18 +203,20 @@ The optimal solution are two cakes of each kind.
 
 ** Datafiles and Assertions
 
-In the previous example, the amount of each ingredient was fixed in the model. MiniZinc supports parameterising models, usually with MiniZinc data files. 
+In the previous example, the amount of each ingredient was fixed in the model. MiniZinc supports parameterising models, where MiniZinc parameters or variables are declared but not further initialised. Values for this parameters/variables are specified outside of the model to the solver, usually with MiniZinc data files (see MiniZinc tutorial, p. 8ff). 
 
 The clojure2minizinc version of the parameterised model is shown below. Again, please see the MiniZinc tutorial (p. 8ff) for an explanation of this model. 
+
+Note that we must specify explicit names for the parameters of a parameterised model (here =flour=, =banana=, =sugar=, and so forth), so that these names are the same as in the parameter file (i.e., automatically generated names would not work).
 
 #+begin_src clojure
 (def cakes2
   (mz/clj2mnz
-   (let [flour (mz/int :flour)
-         banana (mz/int :banana)
-         sugar (mz/int :sugar)
-         butter (mz/int :butter)
-         cocoa (mz/int :cocoa)]
+   (let [flour (mz/int 'flour)
+         banana (mz/int 'banana)
+         sugar (mz/int 'sugar)
+         butter (mz/int 'butter)
+         cocoa (mz/int 'cocoa)]
      (mz/constraint (mz/assert (mz/>= flour 0) "Amount of flour must not be negative"))
      (mz/constraint (mz/assert (mz/>= banana 0) "Amount of banana must not be negative"))
      (mz/constraint (mz/assert (mz/>= sugar 0) "Amount of sugar must not be negative"))
@@ -243,12 +264,72 @@ Different amounts have a different optimal result.
 
   =; =>  ({:banana-cakes 3, :chocolate-cakes 8})=
 
-#+RESULTS:
 
+** Real Number Solving
+
+The next example demonstrates constraint programming on "real numbers" (floating point variables). The example models the repayment of a loan with interest over four quarters (see MiniZinc tutorial, p. 11ff).
+
+The model is also parameterised -- values for variables =r=, =p= and so forth can be specified to the solver. Remember that we must specify explicit names for these variables (they should not be named automatically).
+
+# TODO: revise m/output-map -- no parentheses. What about parentheses around expressions at values?
+#+begin_src clojure 
+(def loan
+  (mz/clj2mnz
+   (let [r (mz/variable :float 'r)           ; quarterly repayment
+         p (mz/variable :float 'p)           ; principal initially borrowed
+         i (mz/variable (mz/-- 0.0 10.0) 'i) ; interest rate
+         ;; intermediate variables 
+         b1 (mz/variable :float 'b1)         ; balance after one quarter
+         b2 (mz/variable :float 'b2)         ; balance after two quarters
+         b3 (mz/variable :float 'b3)         ; balance after three quarters
+         b4 (mz/variable :float 'b4)]        ; balance owing at end
+     (mz/constraint (mz/= b1 (mz/- (mz/* p (mz/+ 1.0 i)) r)))
+     (mz/constraint (mz/= b2 (mz/- (mz/* b1 (mz/+ 1.0 i)) r)))
+     (mz/constraint (mz/= b3 (mz/- (mz/* b2 (mz/+ 1.0 i)) r)))
+     (mz/constraint (mz/= b4 (mz/- (mz/* b3 (mz/+ 1.0 i)) r)))
+     (mz/solve :satisfy)
+     (mz/output-map {:borrowing p :interest-rate (mz/* i 100.0)
+                     :repayment-per-quarter r
+                     :owing-at-end b4}))))
+#+end_src
+
+The default MiniZinc solver (=mzn-g12fd=) does not support floating point variables, so we can use Gecode again. A solution is shown below the solver call.
 
 #+begin_src clojure 
-
+(mz/minizinc loan :options ["-f fzn-gecode"] 
+  :data (mz/map2minizinc {:i 0.04 :p 1000.0 :r 260.0}))
 #+end_src
+
+  =; => ({:borrowing 1000.0, :interest-rate 4.00000000000001, :repayment-per-quarter 260.0, :owing-at-end 65.7779200000003})=
+
+In constraint programming any variable can be quasi input or output of the algorithm. Instead of setting the values for =r=, =p= and =i= in the solver call, we can set the values for other variables. By setting =b4= to 0 we specify that the loan is fully payed back after four quarters.
+
+#+begin_src clojure 
+(mz/minizinc loan :options ["-f fzn-gecode"] 
+  :data (mz/map2minizinc {:i 0.04 :p 1000.0 :b4 0.0}))
+#+end_src
+
+  =; => ({:borrowing 1000.0, :interest-rate 4.00000000000001, :repayment-per-quarter 275.490045364803, :owing-at-end 0.0})=
+
+Here are again other variables set before the search.
+
+#+begin_src clojure 
+(mz/minizinc loan :options ["-f fzn-gecode"] 
+  :data (mz/map2minizinc {:i 0.04 :r 250.0 :b4 0.0}))
+#+end_src
+
+  =; => ({:borrowing 907.473806064214, :interest-rate 4.00000000000001, :repayment-per-quarter 250.0, :owing-at-end 0.0})=
+
+
+If you do not have Gecode installed, you can also use the solver =mzn-g12mip=, which comes with MiniZinc. The result happens to be slightly different.
+
+#+begin_src clojure 
+(mz/minizinc loan :solver "mzn-g12mip"
+  :data (mz/map2minizinc {:i 0.04 :r 250.0 :b4 0.0}))
+#+end_src
+
+  =; => ({:borrowing 907.4738060642132, :interest-rate 4.0, :repayment-per-quarter 250.0, :owing-at-end 0.0})=
+
 
 
 
