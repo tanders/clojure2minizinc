@@ -1,7 +1,7 @@
-# -*- mode: org; nrepl-buffer-ns: "clojure2minizinc.tutorial"; -*-
-
 #+TITLE: A Tutorial Introducing =clojure2minizinc=
 #+AUTHOR: Torsten Anders
+
+#+PROPERTY: header-args :results silent
 
 # NOTE: title and author ignored in GitHub rendering and also when translating with PanDoc to Markdown
 
@@ -41,13 +41,13 @@ For example, a clojure2minizinc program is defined in a Clojure namespace. The f
 
 * Basic Modelling in MiniZinc
 
+** Our First Example
+
 The first example defines a map-colouring of Australia. The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]], p. 3ff, motivates and explains this model. (This tutorial assumes that you read the MiniZinc tutorial alongside.) 
 
-Notice that most functions in this example are in the =mz= namespace, but the variables (and an int) of the model are stored with the standard Clojure =let= form -- clojure2minizinc allows to store MiniZinc variables in arbitrary Clojure data structures.
+Notice that most functions in this example are in the =mz= namespace, but the decision variables (and an int) of the model are stored with the standard Clojure =let= form -- clojure2minizinc allows to store MiniZinc variables and parameters (constants) in arbitrary Clojure data structures.
 
-#+CAPTION: Dummy caption
-#+NAME: code:aust
-#+begin_src clojure :results silent
+#+begin_src clojure 
 (def aust
   (mz/clj2mnz
    (let [nc (mz/int 'nc 3)              ; number of colours
@@ -72,22 +72,24 @@ Notice that most functions in this example are in the =mz= namespace, but the va
 
 We can solve this MiniZinc model as follows.
 
-#+begin_src clojure :results silent
+#+begin_src clojure 
 (mz/minizinc aust)
 #+end_src
 
 It returns the following result. Different numbers encode different colours on the map for the Australian states.
 
-  =({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1})=
+  =; => ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1})=
 
 In this example, a solution is wrapped in a Clojure map. You can ask for multiple solutions, if you like. 
 
-#+begin_src clojure :results silent
+#+begin_src clojure 
 (mz/minizinc aust :num-solutions 3)
 #+end_src
 
-  =({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1} {:wa 2, :nt 1, :sa 3, :q 2, :nsw 2, :v 1, :t 1} {:wa 1, :nt 3, :sa 2, :q 1, :nsw 3, :v 1, :t 1})=
+  =; => ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1} {:wa 2, :nt 1, :sa 3, :q 2, :nsw 2, :v 1, :t 1} {:wa 1, :nt 3, :sa 2, :q 1, :nsw 3, :v 1, :t 1})=
 
+
+*** The Resulting MiniZinc Code
 
 The var =aust= binds a string created by the model above. This string is shown below (without surrounding double-quotes for simplicity). 
 
@@ -116,51 +118,156 @@ The string contains the generated MiniZinc code. Note the similarity between the
 
 The generated code is almost exactly the same as the MiniZinc model =aust.mzn= shown in Figure 2 of the tutorial, p. 4. The main difference is that the variable names in the code above are generated automatically (the names may look slightly different when you run this code). The function =mz/variable= simply does not know that its result is stored in a symbol by =let=, and thus does not know its name. If you are only interested in the Clojure code, this poses no problem, as you do not need to read the automatically generated MiniZinc variables.  
 
-If you want better readable MiniZinc code, just explicitly tell =mz/variable= (or its friends like =mz/int=) your variable name. 
+If you want better readable MiniZinc code, just explicitly tell =mz/variable= (or its friends like =mz/int=) your MiniZinc variable name. 
 
-#+begin_src clojure :results silent
+#+begin_src clojure 
 (mz/variable (mz/-- 1 10) 'x)
 #+end_src
 
 
+*** Storing Variables in Other Data Structures 
+
+As mentioned above, clojure2minizinc can store MiniZinc variables and parameters in arbitrary Clojure data structures. The following example stores the variables for the colours of Australian states in a map. The same inequality constraints are applied by mapping over pairs of keywords representing these inequalities somewhat more concisely. 
+
+#+begin_src clojure 
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [nc (mz/int 'nc 3)
+        states (zipmap [:wa :nt :sa :q :nsw :v :t]
+                       (take 7 (repeatedly #(mz/variable (mz/-- 1 nc)))))]
+    (doall (map (fn [[s1 s2]] 
+                  (mz/constraint (mz/!= (s1 states) (s2 states))))
+                [[:wa :nt] [:wa :sa] [:nt :sa] [:nt :q] [:sa :q] [:sa :nsw] [:sa :v] [:nsw :v]]))
+    (mz/solve :satisfy)
+    (mz/output-map states))))
+#+end_src
+
+The resulting MiniZinc code is basically the same, and thus also the result.
+
+
+** An Arithmetic Optimisation Example
+
+The MiniZinc tutorial, p. 6ff, continues with an optimisation example, that computes the number of banana (=b=) and chocolate (=c=) cakes to bake for maximum profit given the recipes for these cakes, the amount of ingredients, and the price at which each cake can be sold. 
+
+The corresponding clojure2minizinc code is shown below. Please see the MiniZinc tutorial for an explanation of this model. 
+
+#+begin_src clojure
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [b (mz/variable (mz/-- 1 100))
+        c (mz/variable (mz/-- 1 100))]
+    ;; flour
+    (mz/constraint (mz/<= (mz/+ (mz/* 250 b)
+                                (mz/* 200 c))
+                          4000))
+    ;; bananas
+    (mz/constraint (mz/<= (mz/* 2 b) 6))
+    ;; sugar
+    (mz/constraint (mz/<= (mz/+ (mz/* 75 b)
+                                (mz/* 150 c))
+                          2000))
+    ;; butter 
+    (mz/constraint (mz/<= (mz/+ (mz/* 100 b)
+                                (mz/* 150 c))
+                          500))
+    ;; cocoa
+    (mz/constraint (mz/<= (mz/* 75 c) 500))
+    ;; maximise profit
+    (mz/solve :maximize (mz/+ (mz/* 400 b) (mz/* 450 c)))
+    (mz/output-map {:banana-cakes b :chocolate-cakes c}))))
+#+end_src
+
+The optimal solution are two cakes of each kind. 
+
+  =; => ({:banana-cakes 2, :chocolate-cakes 2})=
+
+
+** Datafiles and Assertions
+
+In the previous example, the amount of each ingredient was fixed in the model. MiniZinc supports parameterising models, usually with MiniZinc data files. 
+
+The clojure2minizinc version of the parameterised model is shown below. Again, please see the MiniZinc tutorial (p. 8ff) for an explanation of this model. 
+
+#+begin_src clojure
+(def cakes2
+  (mz/clj2mnz
+   (let [flour (mz/int :flour)
+         banana (mz/int :banana)
+         sugar (mz/int :sugar)
+         butter (mz/int :butter)
+         cocoa (mz/int :cocoa)]
+     (mz/constraint (mz/assert (mz/>= flour 0) "Amount of flour must not be negative"))
+     (mz/constraint (mz/assert (mz/>= banana 0) "Amount of banana must not be negative"))
+     (mz/constraint (mz/assert (mz/>= sugar 0) "Amount of sugar must not be negative"))
+     (mz/constraint (mz/assert (mz/>= butter 0) "Amount of butter must not be negative"))
+     (mz/constraint (mz/assert (mz/>= cocoa 0) "Amount of cocoa must not be negative"))
+     (let [b (mz/variable (mz/-- 1 100))
+           c (mz/variable (mz/-- 1 100))]
+       ;; flour
+       (mz/constraint (mz/<= (mz/+ (mz/* 250 b)
+                                   (mz/* 200 c))
+                             flour))
+       ;; bananas
+       (mz/constraint (mz/<= (mz/* 2 b) banana))
+       ;; sugar
+       (mz/constraint (mz/<= (mz/+ (mz/* 75 b)
+                                   (mz/* 150 c))
+                             sugar))
+       ;; butter 
+       (mz/constraint (mz/<= (mz/+ (mz/* 100 b)
+                                   (mz/* 150 c))
+                             butter))
+       ;; cocoa
+       (mz/constraint (mz/<= (mz/* 75 c) cocoa))
+       ;; maximise profit
+       (mz/solve :maximize (mz/+ (mz/* 400 b) (mz/* 450 c)))
+       (mz/output-map {:banana-cakes b :chocolate-cakes c})))))
+#+end_src
+
+
+In clojure2minizinc, the parameters for a model are given directly to the solver. The code below specifies the same amounts of ingredients for the cakes as the original example, and therefore the result is the same. 
+
+#+begin_src clojure 
+(mz/minizinc cakes2
+  :data (mz/map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500}))
+#+end_src
+
+  =; => ({:banana-cakes 2, :chocolate-cakes 2})=
+
+Different amounts have a different optimal result.
+
+#+begin_src clojure 
+(mz/minizinc cakes2
+  :data (mz/map2minizinc {:flour 8000 :banana 11 :sugar 3000 :butter 1500 :cocoa 800}))
+#+end_src
+
+  =; =>  ({:banana-cakes 3, :chocolate-cakes 8})=
+
+#+RESULTS:
+
+
+#+begin_src clojure 
+
+#+end_src
 
 
 
+#+begin_src clojure 
+
+#+end_src
 
 
+
+#+begin_src clojure 
+
+#+end_src
 
 #+begin_src clojure
 
 #+end_src
 
 
-#+begin_src clojure 
-
-#+end_src
-
-
-#+begin_src clojure 
-
-#+end_src
-
-
-
-#+begin_src clojure 
-
-#+end_src
-
-
-
-#+begin_src clojure 
-
-#+end_src
-
-#+begin_src clojure
-
-#+end_src
-
-
-* Similarity and differences between MiniZinc and clojure2minizinc
+* COMMENT Similarity and differences between MiniZinc and clojure2minizinc
 
   Definitions in clojure2minizinc can be very similar to MiniZinc code. This sections lists important differences.
 
