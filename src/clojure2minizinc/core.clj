@@ -13,7 +13,7 @@
 (ns clojure2minizinc.core
   ;; make explicit shadowing a range of core clojure functions etc
   (:refer-clojure :exclude [> >= <= < = == != -> + - * / mod assert concat min max 
-                            int float set and or nth]) ; not
+                            int float set and or not nth]) 
   (:require [clojure.core :as core]
             [clojure.java.shell :as shell]
             ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
@@ -775,9 +775,8 @@ Examples:
   "Logical implication constraint")
 (def-binary-operator <- <-
   "")
-;; core/not needed for Emacs interaction, and seemingly shadowing it breaks Emacs functionality (of AC?). Therefore alternative function name
-(def-unary-operator nega not 
-  "Logical negation constraint (not)")
+(def-unary-operator not not 
+  "Logical negation constraint")
 (def-binary-and-n-ary-operator or "\\/"
   "Logical or constraint")
 (def-binary-operator xor xor
