@@ -433,10 +433,8 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;; Aggregation functions for arithmetic arrays are
 ;;
 
-;; TODO: later turn this into a local function with letfn, but that makes testing more difficult
-;; Aux functions for macros need to be public, hm...
-(defn- forall-format 
-  "[Aux for forall]"
+(defn forall-format 
+  "[Aux for forall] This function is only public, because it is needed in a public macro/"
   [vars & body]
   (format "forall(%s)(%s)" 
           (apply str (interpose ", " (map :mzn-string vars))) 
