@@ -2,64 +2,55 @@
 
 ** Summary
 
-   A Clojure library designed to solve constraint satisfaction problems (CSP). It generates [[www.minizinc.org][MiniZinc]] code from Clojure code, that is very similar to the corresponding MiniZinc code. The generated MiniZinc program is then solved by one of the MiniZinc solvers available (e.g., see http://www.minizinc.org/software.html), and the result is read back into Clojure.
+   /clojure2minizinc/ provides an interface between state-of-the-art constraint solvers (via [[www.minizinc.org][MiniZinc]]) and a very high-level programming language with excellent abstraction capabilities, [[http://clojure.org][Clojure]]. The clojure2minizinc user models in Clojure constraint satisfaction or optimisation problems over Boolean, integer, real number, and/or set variables. clojure2minizinc translates them into MiniZinc, they are solved in the background by [[http://www.minizinc.org/software.html][a compatible solver]], and the result is read back into Clojure. clojure2minizinc code can be very similar to the corresponding MiniZinc code, but in addition the full power of Clojure is at hand. 
 
 
-** TODO What is MiniZinc and why clojure2minizinc?
+** Installation 
 
-   
-   More information, in particular many MiniZinc-related links (e.g., to various solvers) can be found at
-   http://www.hakank.org/minizinc/
+*** Installation of MiniZinc tools
 
-
-** TODO Installation 
-
-   - Installation of MiniZinc tools
      - Install the [[http://www.minizinc.org/g12distrib.html][G12 MiniZinc Distribution]] (includes translation of MiniZinc to intermediate simpler format FlatZinc, which is understood by many solvers, but also ready-to-use solvers)
-     - Additional solvers (optional), e.g., see FlatZinc Implementations at http://www.minizinc.org/software.html
 
-   - Installation of this library
-     TODO: get installation with =lein= working
+     - Optionally, install additional solvers. For example, see FlatZinc implementations at http://www.minizinc.org/software.html
 
 
-** TODO Usage 
+*** Installation of clojure2minizinc
+
+   Add this [[https://github.com/technomancy/leiningen][Leiningen]] dependency to your project:
+
+#+begin_src clojure :results silent
+[minizinc/clojure2minizinc "0.1.0-SNAPSHOT"]
+#+end_src
+
+# [![Clojars Project](http://clojars.org/minizinc/clojure2minizinc/latest-version.svg)](http://clojars.org/minizinc/clojure2minizinc)
 
 
-*** TODO A Minimal Example 
+** Usage: A Minimal Example 
+
+   The following model declares two decision variables =a= and =b=, both with the domain /[-1 .. 1]/, and constraints them to be different.  
 
 #+begin_src clojure :results silent
 (ns clojure2minizinc.examples
   (:require [clojure2minizinc.core :as mz]))  
 
 (mz/minizinc 
-   (mz/clj2mnz
-    (let [a (mz/variable (mz/-- -1 1)) 
-          b (mz/variable (mz/-- -1 1))]
-      (mz/constraint (mz/!= a b))
-      (mz/solve :satisfy)
-      (mz/output-map {:a a :b b})))
-   :num-solutions 3
-   ;; :all-solutions? true
-   )
+ (mz/clj2mnz
+  (let [a (mz/variable (mz/-- -1 1)) 
+        b (mz/variable (mz/-- -1 1))]
+    (mz/constraint (mz/!= a b))
+    (mz/solve :satisfy)
+    (mz/output-map {:a a :b b})))
+ :num-solutions 3)
 #+end_src
 
-    Results in =({:a 0, :b -1} {:a 1, :b -1} {:a -1, :b 0})=.
-    
-    Generates in the background this MiniZinc code and calls solver with it
+   The model asks for three solutions, and the default solver outputs the following.
 
-    *TODO: add code*
-    
-    Note that this library overwrites many standard Clojure functions. You may want to use the library with a namespace prefix as in the example above.
+   =; => ({:a 0, :b -1} {:a 1, :b -1} {:a -1, :b 0})=
 
 
-*** Further Reading 
-
-
-** Design 
-
-   Most Clojure functions simply generate a string with the corresponding MiniZinc code. So, this library is very easy to extend to support not only the full feature set of MiniZinc, but also MiniZinc extensions proposed by various research projects.
-
-   The downside is that debugging the Clojure programs is somewhat difficult. For example, error messages by MiniZinc refer to line numbers of the generated MiniZinc code. However, constraint problem debuggers are not too helpful anyway. A useful technique is usually to disable all constraints for testing and then by and by enabling them again. 
+** Documentation
+   
+   clojure2minizinc comes with a [[./doc/tutorial.org][tutorial]] and [[./doc/reference/][reference documentation]], which are both part of the source tree. 
 
 
 ** Related Work
@@ -81,10 +72,16 @@ However, MiniZinc is not a Logic Programming language. For example, it does not 
   A project with similar goals as clojure2minizinc is [[http://cp2013.a4cp.org/sites/default/files/uploads/cospel2013_submission_7.pdf][libmzn]], which provides a C++ interface to MiniZinc. It is planned to be released as part of MiniZinc 2.0. 
  
 
+** Contribute
+
+   Most clojure2minizinc functions simply generate a string with the corresponding MiniZinc code. So, this library is very easy to extend to support by and by the full feature set of MiniZinc, and also MiniZinc extensions proposed by various research projects.
+   
+   Your contribution is welcome! 
+   
+
 ** License
 
-Copyright © 2014 Torsten Anders
+   Distributed under the GNU General Public License.
 
-Distributed under the GNU General Public License.
-
+   Copyright © 2014 Torsten Anders
 
