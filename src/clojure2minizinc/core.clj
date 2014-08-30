@@ -221,6 +221,16 @@
 
 
 
+(defn literal-set
+  "Specifies a set of explicitly given integers (can be MiniZinc expressions) as elements."
+  [& exprs]
+  (format "{%s}" (apply str (interpose ", " (map expr exprs)))))
+
+(comment
+  (literal-set 1 2 3)
+  )
+
+
 ;; see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf p. 4
 ;; TODO: add distinction between parameter and variable declaration
 ;; etc -- in short, cover all type-inst variants in the flatzinc-spec, see link above
@@ -242,16 +252,23 @@
   (set-of-int "MySet" (literal-set-of-int 1 3 5))
   )
 
-(defn literal-set
-  "Specifies a set of explicitly given integers (can be MiniZinc expressions) as elements."
+
+
+;; No explicit support for mapping needed, as I already have the mappable clojure data structure as input to literal-array
+(defn literal-array 
+  "Specifies a one- or two-dimensional array that contains the given MiniZinc expressions as elements. Two-dimensional arrays are defined by a list of expressions."
   [& exprs]
-  (format "{%s}" (apply str (interpose ", " (map expr exprs)))))
+  (if (every? list? exprs)
+    (str "[|" (apply str (flatten (interpose " | " (map (fn [sub-exprs]
+                                                          (interpose ", " (map expr sub-exprs)))
+                                                        exprs)))) "|]")    
+    (format "[%s]" (apply str (interpose ", " (map expr exprs))))))
 
 (comment
-  (literal-set 1 2 3)
+  (literal-array (int) (int) (int))
+  (print (literal-array (list (int) (int)) (list (int) (int))))
+  (apply literal-array [(int) (int) (int)])
   )
-
-
 
 (defn- mk-type-inst-string [type-inst]
   ;; {:pre [(if (vector? type-inst) 
@@ -263,6 +280,7 @@
           (core/= :set type-inst) "set of"        
           (set? type-inst) (str "{" (apply str (interpose ", " type-inst)) "}")
           :else (name type-inst))))
+
 (comment
   (mk-type-inst-string :bool)
   (mk-type-inst-string (-- 1 3))
@@ -273,6 +291,7 @@
 
   (mk-type-inst-string [:int #{1 3 6 8}])
   )
+
 
 
 ;; Semi BUG: somewhat questionable: the [dimension] of the set (e.g., "1..10") is temporarily stored as aVar name to make it easily accessible for the array construction. Later the set-of-int is not used at all. Possibly better to completely avoid this potential cause of confusion, i.e., not to use a set for the array construction (or to clean up the internal use of sets here). 
@@ -364,21 +383,6 @@ Examples:
   )
 
 
-;; No explicit support for mapping needed, as I already have the mappable clojure data structure as input to literal-array
-(defn literal-array 
-  "Specifies a one- or two-dimensional array that contains the given MiniZinc expressions as elements. Two-dimensional arrays are defined by a list of expressions."
-  [& exprs]
-  (if (every? list? exprs)
-    (str "[|" (apply str (flatten (interpose " | " (map (fn [sub-exprs]
-                                                          (interpose ", " (map expr sub-exprs)))
-                                                        exprs)))) "|]")    
-    (format "[%s]" (apply str (interpose ", " (map expr exprs))))))
-
-(comment
-  (literal-array (int) (int) (int))
-  (print (literal-array (list (int) (int)) (list (int) (int))))
-  (apply literal-array [(int) (int) (int)])
-  )
 
 (defn nth 
   "Accesses the array element at the given index, or indices in case of a multi-dimensional array"
@@ -448,7 +452,6 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
             (= (nth a j) 0))))
   )
 
-
 ;; !! TODO: This definition is far away still from the flexibility of the true MiniZinc forall, which allows to declare multiple vars together, have "list generators" etc. 
 ;; One example: 
 ;; forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
@@ -494,6 +497,7 @@ BUG: Only subset of MiniZinc's `forall` syntax supported yet. In particular, no 
              (= (nth a i) 0)
              (= (nth a j) 0))))
   )
+
 
 
 (comment
