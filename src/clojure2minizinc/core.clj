@@ -275,7 +275,6 @@
   )
 
 
-;; TODO: optional arg for init value (using literal-array)
 ;; Semi BUG: somewhat questionable: the [dimension] of the set (e.g., "1..10") is temporarily stored as aVar name to make it easily accessible for the array construction. Later the set-of-int is not used at all. Possibly better to completely avoid this potential cause of confusion, i.e., not to use a set for the array construction (or to clean up the internal use of sets here). 
 (defn array   
   "Declares a one- or multi-dimensional array.
@@ -285,7 +284,8 @@ Arguments:
 - index-set: The explicitly declared indices of the array. Either an integer range (declared with function --), a set variable initialised to an integer range, or for multi-dimensional arrays a list of integer ranges and/or MiniZinc sets.
 - type-inst: Specifies the parameter type or variable domain 
 The type of the variables contained in the array (a string, symbol or keyword; can be int, float, bool, string and \"set of int\").
-- array-name: an optional name for the array (a string, symbol or keyword). Default is a \"gensym-ed\" name.
+- array-name (optional): a name for the array (a string, symbol or keyword). Default is a \"gensym-ed\" name.
+- init-value (optional): a vector of MiniZinc-supported values. Defaults to nil.
 
 Examples:
 
@@ -304,9 +304,14 @@ Examples:
     (array (-- 1 10) [:var :set #{1 3 5}]) ; array of set variables with domain   
 
     (array (list (-- 1 10) (-- 1 10))  [:var :int (-- 1 3)]) ; two-dimensional array of int variables
+
+    (array (-- 1 10) :int 'x)              ; array explicitly named x 
+
+    (array (-- 1 3) :int 'x [5 6 7])       ; array of ins with init value
 "
   ([index-set type-inst] (array index-set type-inst (gensym "array")))
-  ([index-set type-inst array-name]
+  ([index-set type-inst array-name] (array index-set type-inst array-name nil))
+  ([index-set type-inst array-name init-value]
      ;; {:pre [(#{"int" "float" "bool" "string" "set of int"} (name type-inst))]}
      ;; (println (pprint/cl-format nil "type-inst: ~S, init-value: ~S, array-name ~S" type-inst init-value array-name))
      (tell-store
@@ -333,7 +338,9 @@ Examples:
                               (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
                                                 index-set (type index-set)))))
                (mk-type-inst-string type-inst) ;; TODO: unfinished: only simple type-inst naming type supported
-               (name array-name))
+               (if init-value
+                 (str (name array-name) " = " (apply literal-array init-value))
+                 (name array-name)))
        index-set))))
 
 
@@ -352,6 +359,8 @@ Examples:
   (array (-- 1 10) [:var :set #{1 3 5}])
 
   (array (list (-- 1 10) (-- 1 10))  [:var :int (-- 1 3)])
+
+  (array (-- 1 3) :int 'x (literal-array 5 6 7)) 
   )
 
 
@@ -368,6 +377,7 @@ Examples:
 (comment
   (literal-array (int) (int) (int))
   (print (literal-array (list (int) (int)) (list (int) (int))))
+  (apply literal-array [(int) (int) (int)])
   )
 
 (defn nth 
