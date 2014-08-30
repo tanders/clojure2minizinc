@@ -1235,6 +1235,7 @@ Options are
                                 "--all-solutions"
                                 ;; I could not get long parameter names working 
                                 (format "-n%s" num-solutions))]
+                             options
                              (if data
                                [(format "-D%s" data)]
                                [])
