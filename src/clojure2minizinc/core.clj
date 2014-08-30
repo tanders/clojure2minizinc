@@ -589,17 +589,18 @@ BUG: Only subset of MiniZinc's `forall` syntax supported yet. In particular, no 
     "Declares a decision variable (bool, int, float, or set of int) with the given domain, and an optional variable name (string, symbol or keyword). 
 
 Examples:
-`(variable :bool)             ; a Boolean variable (no further domain specification supported)
-(variable :int)              ; an integer variable with maximum supported domain size 
-(variable (-- -1 10))        ; an integer variable with domain [-1, 10]
-(variable '(1 3 6 8))        ; an integer variable with the domain {1, 3, 6, 8}
-(variable (-- 1.0 10.0))     ; a float variable with domain [1.0, 10.0]
-(variable '(1 3 6 8))        ; an integer variable with the domain {1, 3, 6, 8}
-(variable [:set (-- 1 3)])   ; a set of integers with the given domain
-(variable [:set '(1 3 6 8)]) ; a set of integers with the given domain
-(variable [:int (-- 1 3)])   ; same as (variable (-- -1 10))
-(variable (-- 1 10) 'x)      ; an integer variable named x (instead of an automatically assigned name)
-`"
+
+    (variable :bool)             ; a Boolean variable (no further domain specification supported)
+    (variable :int)              ; an integer variable with maximum supported domain size 
+    (variable (-- -1 10))        ; an integer variable with domain [-1, 10]
+    (variable '(1 3 6 8))        ; an integer variable with the domain {1, 3, 6, 8}
+    (variable (-- 1.0 10.0))     ; a float variable with domain [1.0, 10.0]
+    (variable '(1 3 6 8))        ; an integer variable with the domain {1, 3, 6, 8}
+    (variable [:set (-- 1 3)])   ; a set of integers with the given domain
+    (variable [:set '(1 3 6 8)]) ; a set of integers with the given domain
+    (variable [:int (-- 1 3)])   ; same as (variable (-- -1 10))
+    (variable (-- 1 10) 'x)      ; an integer variable named x (instead of an automatically assigned name)
+"
     ([type-inst] (variable type-inst (gensym "var")))
     ([type-inst var-name]
        (let [dom-string (mk-dom-string type-inst)
@@ -1189,20 +1190,21 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 
 ;; ?? TODO: incorporate clj2mnz into minizinc (turning minizinc into a macro)? Perhaps having it separate is a good idea? Makes call more structured. 
 ;; TODO: Add solver arguments: parallel (unrecognized for mzn-g12fd), random-seed, solver-backend, flatzinc-flags (?), keep-files, ... 
+;; TODO: consider removing arg :print-mzn? -- this is the string that is given as argument...
 (defn minizinc 
   "Calls a MiniZinc solver on a given MiniZinc program and returns a list of one or more solutions.
 
 Options are
 
-:mzn             (string) a MiniZinc program, which can be created with other functions of clojure2minizinc wrapped into clj2mnz
-:print-mzn?      (boolean) whether or not to print resulting MiniZinc program (for debugging)
-:print-solution? (boolean) whether or not to print the result output by MiniZinc directly instead of reading it into a Clojure value (e.g., for debugging). Prints the map resulting from clojure.java.shell/sh.
-:solver          (string) solver to call
-:mznfile         (string or file) MiniZinc file path to generate and use in the background
-:data            (string) Content for a MiniZinc data file (*.dzn file). Can conveniently be created with map2minizinc 
-:num-solutions   (int) An upper bound on the number of solutions to output
-:all-solutions   (boolean) If true, return all solutions
-:options         (collection of strings) Arbitrary options given to the solver in UNIX shell syntax, e.g., [\"-a\"] for all solutions.
+- :mzn             (string) a MiniZinc program, which can be created with other functions of clojure2minizinc wrapped into clj2mnz
+- :print-mzn?      (boolean) whether or not to print resulting MiniZinc program (for debugging)
+- :print-solution? (boolean) whether or not to print the result output by MiniZinc directly instead of reading it into a Clojure value (e.g., for debugging). Prints the map resulting from clojure.java.shell/sh.
+- :solver          (string) solver to call
+- :mznfile         (string or file) MiniZinc file path to generate and use in the background
+- :data            (string) Content for a MiniZinc data file (*.dzn file). Can conveniently be created with map2minizinc 
+- :num-solutions   (int) An upper bound on the number of solutions to output
+- :all-solutions   (boolean) If true, return all solutions
+- :options         (collection of strings) Arbitrary options given to the solver in UNIX shell syntax, e.g., [\"-a\"] for all solutions.
 "
   [mzn & {:keys [solver mznfile data
                  print-mzn?
