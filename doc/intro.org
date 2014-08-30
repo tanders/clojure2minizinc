@@ -1,3 +1,0 @@
-* Introduction to clojure2minizinc
-
-TODO: write [[http://jacobian.org/writing/great-documentation/what-to-write/][great documentation]]
