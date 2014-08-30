@@ -1,4 +1,4 @@
-#+TITLE: A Tutorial Introducing =clojure2minizinc=
+#+TITLE: A =clojure2minizinc= Tutorial 
 #+AUTHOR: Torsten Anders
 
 #+PROPERTY: header-args :results silent
@@ -10,40 +10,33 @@
 
 #+PROPERTY: header-args:clojure  :session *clojure-1*
 
-* TODO Motivation 
+* Introduction 
 
-The present [[http://clojure.org/][Clojure]] library clojure2minizinc provides a MiniZinc interface for Clojure. [[http://www.minizinc.org/][MiniZinc]] is a domain-specific language (DSL) for modelling constraint satisfaction and optimisation problems (CSP) over Boolean, integer, real number, and set variables. 
+   The [[http://clojure.org/][Clojure]] library /clojure2minizinc/ provides an interface to MiniZinc. [[http://www.minizinc.org/][MiniZinc]] is a domain-specific language (DSL) for modelling constraint satisfaction and optimisation problems (CSP) over Boolean, integer, real number, and set variables. MiniZinc has the potential to become the lingua franca of the Constraint Programming community. For developers of existing constraint solvers it is rather easy to define a MiniZinc interface for their solvers, [[http://www.minizinc.org/software.html][several state-of-the-art solvers already support MiniZinc]] via the simpler language FlatZinc (even more solvers listed [[http://www.hakank.org/minizinc/][here]]), and they compete in a yearly [[http://www.minizinc.org/challenge.html][MiniZinc Challenge]]. More information on MiniZinc, in particular many related links can be found at http://www.hakank.org/minizinc/
 
-MiniZinc has the potential to become the lingua franca of the Constraint Programming community. For developers of existing constraint solvers it is rather easy to define a MiniZinc interface for their solvers, [[http://www.minizinc.org/software.html][several state-of-the-art solvers already support MiniZinc]] via the simpler language FlatZinc (even more solvers listed [[http://www.hakank.org/minizinc/][here]]), and they compete in a yearly [[http://www.minizinc.org/challenge.html][MiniZinc Challenge]].  
-
-
-** Advantages over using MiniZinc directly
-
-In clojure2minizinc, CSPs can be defined directly in Clojure in a way very similar to MiniZinc. MiniZinc (and its constraint solvers, including 3rd-party solvers) do the actual work in the background, and the result is read back into Clojure. 
-
-Because using clojure2minizinc can be so close to using MiniZinc itself, this tutorial complements the [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]]: its examples are translated into Clojure here. Even the same headlines are used, so that both tutorials can be read in parallel. In addition to the translated examples, this tutorial primarily explains the differences between clojure2minizinc and MiniZinc.
+   In clojure2minizinc, CSPs are defined directly in Clojure. MiniZinc (and its constraint solvers, including 3rd-party solvers) do the actual work in the background, and the result is read back into Clojure. clojure2minizinc code can be very close to MiniZinc code, and therefore this tutorial complements the [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]]: its examples are translated into Clojure here. In addition to the translated examples, this tutorial primarily explains the differences between clojure2minizinc and MiniZinc. It also discusses how the power of Clojure can complement what MiniZinc provides.
 
 
-Additionally, facilities of Clojure can be used for defining CSPs, and for processing the results.
+* Basic Modelling in MiniZinc
 
-MiniZinc is a highly specialised language and relatively small language. It lacks many features of standard programming languages. clojure2minizinc marries MiniZinc with Clojure and that way many concepts of general purpose languages (in the guise of their Clojure implementation) can be used for a MiniZinc program.
+** Defining a Namespace for the Tutorial
 
-For example, a clojure2minizinc program is defined in a Clojure namespace. The following code block defines a namespace for this tutorial, and loads clojure2minizinc definitions under the alias =mz= (for MiniZinc). 
+   MiniZinc is a highly specialised and rather small language. It lacks many features of standard programming languages. clojure2minizinc marries MiniZinc with Clojure and that way many concepts of general purpose languages (in the guise of their Clojure implementation) can be used for a MiniZinc program.
+
+   For example, a clojure2minizinc program is defined in a Clojure namespace. The following code block defines a namespace for this tutorial. Note that clojure2minizinc "overwrites" many standard Clojure functions. You may want to use the library with a namespace prefix. The definitions below uses the alias =mz= (for MiniZinc). 
 
 #+begin_src clojure :results silent
 (ns clojure2minizinc.tutorial
   (:require [clojure2minizinc.core :as mz] ; 
             [clojure.pprint :as pprint]))
 #+end_src
+   
+   The library =clojure.pprint= will be needed later. We already add them here for convenience.
 
-
-
-
-* Basic Modelling in MiniZinc
 
 ** Our First Example (MiniZinc tutorial, p. 3ff)
 
-The first example defines a map-colouring of Australia. The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]], p. 3ff, motivates and explains this model. This tutorial assumes that you read the MiniZinc tutorial alongside.
+The first example defines a map-colouring of Australia. The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]], p. 3ff, motivates and explains this model. This tutorial assumes that you read the MiniZinc tutorial alongside. To help you with that, even the same headlines are used.
 
 Notice that most functions in this example are in the =mz= namespace, but the decision variables (and an int) of the model are stored with the standard Clojure =let= form -- clojure2minizinc allows to store MiniZinc variables and parameters (constants) in arbitrary Clojure data structures.
 
@@ -104,6 +97,10 @@ In the next call we ask Gecode to use 8 threads and/or cores for a parallel sear
 #+begin_src clojure 
 (mz/minizinc aust :options ["-f fzn-gecode" "-p8"])
 #+end_src
+
+For more information on solver options see the help screen of =minizinc=. Type at a terminal.
+
+  =$ minizinc --help=
 
 
 *** The Resulting MiniZinc Code
@@ -458,7 +455,6 @@ constraint x + y != z;
    | =\/=     | =or=                            |
    | =array=  | different syntax                |
    | =forall= | different syntax                |
-   # | =not=    | =nega=           |
 
 
 *** TODO Keep this Note Up To Date
@@ -475,7 +471,7 @@ constraint x + y != z;
 
 *** Integration in a General-Purpose Programming Language
      
-     clojure2minizinc allows you to do a number of things that are impossible (or at least much more difficult) in plain MiniZinc. MiniZinc is a highly specialised domain-specific language. clojure2minizinc is embedded in a general-purpose programming language and complements MiniZinc by standard programming features such as input/output, graphical user-interfaces, interfaces to the underlying operating system, and so forth. Basically, all Clojure and Java libraries are at your disposal when using clojure2minizinc. Also, the functionality of Clojure editors available for defining MiniZinc models. For example, auto-completion and documentation accessible in your editor will help you ([[http://www.minizinc.org/ide/index.html][MiniZinc editors]] do not support such functionality).
+    clojure2minizinc allows you to do a number of things that are impossible (or at least much more difficult) in plain MiniZinc. MiniZinc is a highly specialised domain-specific language. clojure2minizinc is embedded in a general-purpose programming language and complements MiniZinc by standard programming features such as input/output, graphical user-interfaces, interfaces to the underlying operating system, and so forth. Basically, all Clojure and Java libraries are at your disposal when using clojure2minizinc. Also, the functionality of Clojure editors available for defining MiniZinc models. For example, auto-completion and documentation accessible in your editor will help you ([[http://www.minizinc.org/ide/index.html][MiniZinc editors]] do not support such functionality).
 
      Perhaps most importantly, constraint problems can be created dynamically (before the search starts). For example, a constraint problem may depend on user input. Imagine a scheduling problem where different kinds of tasks to schedule are represented by different arrays, and depending on user input you may need a few additional arrays. While MiniZinc already provides some means for abstraction (predicates and functions), these are restricted in their capabilities. Adding a few global arrays is at least difficult: MiniZinc data structures cannot be nested, so the result of a function could at most be one array (but it could be multi-dimensional). By contrast, clojure2minizinc makes it easy to create constraint problems dynamically -- Lisps are very good at generating code on the fly.
 
@@ -523,5 +519,14 @@ constraint forall(i in 1..3)((x[i] + 1) < 10);
 
 ** Pitfalls of Constraint Programming Compared to Standard Clojure Programming 
 
-    Constraint programming provides a very high level of abstraction for the programmer. However, this strength comes with a certain price. In particular, software using constraint programming is harder to debug. Often it is necessary to carefully analyse a model in order to understand why it does not work as intended. A useful and easy debugging strategy is to disable a set of constraints and to enable them one by one again in order to find the problem.
+    Constraint programming provides a very high level of abstraction for the programmer. However, this strength comes with a certain price. In particular, software using constraint programming can be hard to debug. Even worse, error messages by MiniZinc currently refer to line numbers of the generated MiniZinc code, not the clojure2minizinc code. However, constraint problem debuggers are not too helpful anyway. Often it is necessary to carefully analyse a model in order to understand why it does not work as intended. 
+
+    A useful and easy debugging strategy is to disable a set of constraints and to enable them one by one again in order to find the problem. Another useful debugging aid is the search tree visualiser and interactive search tool =gist= provided by Gecode. It can be enabled with the =-mode= option. For more information see the [[http://www.gecode.org/doc-latest/MPG.pdf][Gecode tutorial]], p. 157ff. 
+
+#+begin_src clojure 
+(mz/minizinc aust :options ["-f fzn-gecode" "--fzn-flags '-mode gist'"])
+#+end_src    
+
+    *TODO: get code above working -- it works at the shell, but not yet in clojure2minizinc*
+
 
