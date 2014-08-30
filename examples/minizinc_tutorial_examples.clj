@@ -31,8 +31,8 @@
     (mz/solve :satisfy)
     (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t})
     ))
- :print-mzn? true
- ;; :num-solutions 3
+ ;; :print-mzn? true
+ :num-solutions 3
  ;; :all-solutions? true
  )
                                         ; => ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1})
@@ -191,8 +191,8 @@
         ;; (pprint/cl-format true "~4D~7,vT" col column-width))
       (prn))))
 ;; (print-table 1 (map #(vector % (* % %) (* % % %) %) (range 1 11)))
-(let [width 15
-      height 9]
+(let [width 5
+      height 5]
   (print-table 2
    (partition (+ 1 height)  ;; add one, because array boundaries are [0, height] etc.
     (first 
@@ -201,7 +201,7 @@
        (let [w (mz/int 'w width)
              h (mz/int 'h height)
              ;; array decl
-             t (mz/array (list (mz/-- 0 w) (mz/-- 0 h)) :float 't)
+             t (mz/array (list (mz/-- 0 w) (mz/-- 0 h)) [:var :float] 't)
              left (mz/variable :float 'left)
              right (mz/variable :float 'right)
              top (mz/variable :float 'top)
@@ -243,7 +243,8 @@
          ;; i in 0..w, j in 0..h")
          (mz/output-var t) ;; 2d-array output as flat 1d array -- formatting of result done by Clojure
          ))
-      :solver "mzn-g12mip"
+      :options ["-f fzn-gecode"]
+      ;; :solver "mzn-g12mip"
       ;; :print-mzn? true
       ;; :print-solution? true
       ;; :num-solutions 3
