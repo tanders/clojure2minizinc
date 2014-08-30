@@ -449,17 +449,16 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
   "MiniZinc looping. decls are pairs of range declarations <name> <domain>.
 
 Example:
-`(let [a (array (-- 0 10) :int)]
-  (forall [i (-- 0 10)]
-          (= (nth a i) 0)))
-`
+    (let [a (array (-- 0 10) :int)]
+      (forall [i (-- 0 10)]
+              (= (nth a i) 0)))
 
 BUG: Only subset of MiniZinc's `forall` syntax supported yet. In particular, no list and set comprehensions supported yet."
   {:forms '[(forall [range-decls*] exprs*)]}
   [range-decls & body]
   (let [var-val-pairs (partition 2 range-decls)]
-    `(let ~(vec (mapcat (fn [[var-name range]]
-                          (list var-name `(make-aVar ~(name var-name) (format "%s in %s" ~(name var-name) ~range))))
+    `(let ~(vec (mapcat (fn [[par-name range]]
+                          (list par-name `(make-aVar ~(name par-name) (format "%s in %s" ~(name par-name) ~range))))
                         var-val-pairs))
        (forall-format 
         ~(cons 'list (map first var-val-pairs))
