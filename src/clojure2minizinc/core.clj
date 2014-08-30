@@ -586,18 +586,7 @@ BUG: Only subset of MiniZinc's `forall` syntax supported yet. In particular, no 
   )
 
 ;; I cannot shadow special forms, and therefore a function cannot be called var. Thus use function name "variable", even though MiniZinc keyword is "var".
-(letfn [(mk-dom-string [type-inst]
-          {:pre [(if (vector? type-inst) 
-                   ((first type-inst) #{:set :int :float})
-                   true)]}
-          (cond (seq? type-inst) (str "{" (apply str (interpose ", " type-inst)) "}")
-                (vector? type-inst) (let [[dom-name dom-spec] type-inst]
-                                      (case dom-name
-                                        :set (str "set of " (mk-dom-string dom-spec))
-                                        :int (mk-dom-string dom-spec)
-                                        :float (mk-dom-string dom-spec)))
-                :else (name type-inst)))]
-  (defn variable
+(defn variable
     "Declares a decision variable (bool, int, float, or set of int) with the given domain, and an optional variable name (string, symbol or keyword). 
 
 Examples:
