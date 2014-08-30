@@ -248,66 +248,19 @@
   (format "{%s}" (apply str (interpose ", " (map expr exprs)))))
 
 (comment
-  (literal-set-of-int 1 2 3)
-  )
-
-
-
-;; Musing: revision of array
-;; 
-;; Arguments in MiniZinc directly
-;; - index-set
-;; - type-inst: which can be a wide range of forms
-;;   Required information
-;;   - Whether or not variable
-;;   - type-inst of contained vars
-;;   TODO: need to revise type-inst defs that all necessary information is available
-;; - optional name
-;; - optional init value 
-;;   TODO: need to add that arg (using literal-array)
-;; 
-;; "BUG:" Unfinished: ideas how to declare type-inst
-;; which one to use?
-;;
-;; TODO: Possible workaround: have extra fn array-variable for declaring arrays with variables
-;;   Alternative workaround for vars: use multimethod with special arg combination to mark vars
-(comment
-  ;; Cannot use current fn variable to mark variables 
-  ;; - fn variable implicitly tells store new variable
-  ;; - current format not suitable: variable should be initialised in type-inst, not after var name
-  ;; - automatically generated var name unsuitable
-  ;; (array (-- 0 10) (variable (-- 1 3)))
-  ;; ;; Actually, cannot use`--` to mark variables either (MiniZinc/FlatZinc allows to specify int in range that way)
-  ;; (array (-- 0 10) (-- 1 3))  
-  ;; set vars still missing altogether -- I need some approach that would support them as well
-
-  ;; TODO: notation for arrays with vars
-  ;; BUG: not yet supported
-  ;; (array (-- 0 10) :var (-- 1 3))
-  ;; (array (-- 0 10) :var :set (-- 1 3))
-  ;; alternative notation -- more clean, because it keeps number of args, but less concise
-  ;; can be resolved by multimethod
-  (array (-- 0 10) [:set (-- 1 3)])
-  (array (-- 0 10) [:var (-- 1 3)])
-  (array (-- 0 10) [:var :set (-- 1 3)])
-  (array (-- 0 10) [:var :set '(1 3 5)])
-  ;; already OK for comparison
-  (array (-- 0 10) :bool)
-  (array (-- 0 10) (-- 1 3))
+  (literal-set 1 2 3)
   )
 
 
 
 (defn- mk-type-inst-string [type-inst]
   ;; {:pre [(if (vector? type-inst) 
-  ;;          ;; (keyword? (first type-inst))
   ;;          ((first type-inst) #{:var :set :int :float})
   ;;          true)]}
   (if (vector? type-inst)
-    (apply str (map mk-type-inst-string type-inst))
-    (cond (core/= :var type-inst) "var "
-          (core/= :set type-inst) "set of "        
-          ;; (every? number? type-inst) (str "{" (apply str (interpose ", " type-inst)) "}")
+    (apply str (interpose " " (map mk-type-inst-string type-inst)))
+    (cond (core/= :var type-inst) "var"
+          (core/= :set type-inst) "set of"        
           (set? type-inst) (str "{" (apply str (interpose ", " type-inst)) "}")
           :else (name type-inst))))
 (comment
@@ -317,52 +270,40 @@
   (mk-type-inst-string [:set (-- 1 3)])
   (mk-type-inst-string [:var #{1 3 5}])
   (mk-type-inst-string [:var :set #{1 3 5}])
+
+  (mk-type-inst-string [:int #{1 3 6 8}])
   )
-;; (defn- mk-type-inst-string [type-inst]
-;;   ;; {:pre [(if (vector? type-inst) 
-;;   ;;          ;; (keyword? (first type-inst))
-;;   ;;          ((first type-inst) #{:var :set :int :float})
-;;   ;;          true)]}
-;;   (if (coll? type-inst)
-;;     (cond (core/= :var (first type-inst)) (str "var " (mk-type-inst-string (next type-inst)))
-;;           (core/= :set (first type-inst)) (str "set of " (mk-type-inst-string (next type-inst)))        
-;;           (every? number? type-inst) (str "{" (apply str (interpose ", " type-inst)) "}"))
-;;     (name type-inst)))
-
- ;;        (vector? type-inst) (cond (
-        
-
- ;; (let [var-string (if-let [is-var? (some #{:var} type-inst)]
- ;;                                               (str "var " (mk-type-inst-string (next type-inst)))
- ;;                                               (mk-type-inst-string (next type-inst)))
- ;;                                  dom-string (if-let [my-dom (some #{:int :float} type-inst)]
- ;;                                               (mk-type-inst-string dom-spec)
- ;;                                               "")]
- ;;                                ;; [[dom-name dom-spec] type-inst]
- ;;                              (case dom-name
- ;;                                :set (str "set of " (mk-type-inst-string dom-spec))
- ;;                                :int (mk-type-inst-string dom-spec)
- ;;                                :float (mk-type-inst-string dom-spec))
- ;;                              ))
 
 
+;; TODO: optional arg for init value (using literal-array)
 ;; Semi BUG: somewhat questionable: the [dimension] of the set (e.g., "1..10") is temporarily stored as aVar name to make it easily accessible for the array construction. Later the set-of-int is not used at all. Possibly better to completely avoid this potential cause of confusion, i.e., not to use a set for the array construction (or to clean up the internal use of sets here). 
 (defn array   
   "Declares a one- or multi-dimensional array.
 
 Arguments:
 
-- index-set: The explicitly declared indices of the array. Either an integer range (declared with function --), a set variable initialised to an integer range, or for multi-dimensional arrays a list of integer ranges and/or set variables.
+- index-set: The explicitly declared indices of the array. Either an integer range (declared with function --), a set variable initialised to an integer range, or for multi-dimensional arrays a list of integer ranges and/or MiniZinc sets.
 - type-inst: Specifies the parameter type or variable domain 
 The type of the variables contained in the array (a string, symbol or keyword; can be int, float, bool, string and \"set of int\").
 - array-name: an optional name for the array (a string, symbol or keyword). Default is a \"gensym-ed\" name.
 
 Examples:
 
-    (array (-- 1 10) :bool)                     ; array of Boolean parameters at indices 1-10 (not decision variables!)
-    (array (-- 1 10) :int)                      ; array of integer parameters at indices 1-10
-    (array (-- 1 10) (-- -1 2))                 ; array of integer parameters in given range  
-    (array (-- 1 10) (-- 2.0 4.0))              ; array of float parameters in given range
+    (array (-- 1 10) :bool)               ; array of bools at indices 1-10 (not decision variables!)
+    (array (-- 1 10) :int)                ; array of ints at indices 1-10
+    (array (-- 1 10) [:set :int])         ; array of sets of integers
+    (array (-- 1 10) (-- -1 2))           ; array of integers in given range  
+    (array (-- 1 10) (-- 2.0 4.0))        ; array of floats in range
+    (array (-- 1 10) [:set (-- -1 2)])    ; array of subsets of set range
+
+    (array (-- 1 10) [:var :int])         ; array of int variables
+    (array (-- 1 10) [:var (-- 1 3)])     ; array of int variables with given domain
+    (array (-- 1 10) [:var #{1 3 5}])     ; array of int variables with given domain
+    (array (-- 1 10) [:var (-- 1.0 3.0)]) ; array of float variables with given domain
+    (array (-- 1 10) [:var :set (-- 1 3)]) ; array of set variables with domain
+    (array (-- 1 10) [:var :set #{1 3 5}]) ; array of set variables with domain   
+
+    (array (list (-- 1 10) (-- 1 10))  [:var :int (-- 1 3)]) ; two-dimensional array of int variables
 "
   ([index-set type-inst] (array index-set type-inst (gensym "array")))
   ([index-set type-inst array-name]
@@ -391,17 +332,6 @@ Examples:
                 :else (throw (Exception. 
                               (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
                                                 index-set (type index-set)))))
-               ;; type-inst etc
-               ;; If variable (declared by domain) use keyword "var", otherwise (declared by domain) omit "var"
-               ;; TODO: how is an array of set vars declared  
-               ;; see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf p. 4
-               ;; (if 
-               ;;     ;; TODO: test for domain spec... 
-               ;;     ;; ? Test string for pattern <num>..<num> ?
-               ;;     (throw (Exception. "unifinished definition: array"))
-               ;;     (format "var %s" type-inst)
-               ;;   ;; parameter domain
-               ;;   (name type-inst))
                (mk-type-inst-string type-inst) ;; TODO: unfinished: only simple type-inst naming type supported
                (name array-name))
        index-set))))
@@ -411,14 +341,17 @@ Examples:
   (array (-- 1 10) :bool)
   (array (-- 1 10) :int 'test) ;"array[0..10] of var int: test;"
   (array (-- 1 10) (-- 1 3))
-  (array (-- 1 10) #{1 3 5})
+  (array (-- 1 10) (-- 1.0 3.0))
   (array (-- 1 10) [:set :int])
   (array (-- 1 10) [:set (-- 1 3)])
   (array (-- 1 10) [:var :int])
   (array (-- 1 10) [:var (-- 1 3)])
+  (array (-- 1 10) [:var (-- 1.0 3.0)])
   (array (-- 1 10) [:var #{1 3 5}])
   (array (-- 1 10) [:var :set (-- 1 3)])
   (array (-- 1 10) [:var :set #{1 3 5}])
+
+  (array (list (-- 1 10) (-- 1 10))  [:var :int (-- 1 3)])
   )
 
 
@@ -672,28 +605,22 @@ Examples:
     (variable :bool)             ; a Boolean variable (no further domain specification supported)
     (variable :int)              ; an integer variable with maximum supported domain size 
     (variable (-- -1 10))        ; an integer variable with domain [-1, 10]
-    (variable '(1 3 6 8))        ; an integer variable with the domain {1, 3, 6, 8}
+    (variable #{1 3 6 8})        ; an integer variable with the domain {1, 3, 6, 8}
     (variable (-- 1.0 10.0))     ; a float variable with domain [1.0, 10.0]
-    (variable '(1 3 6 8))        ; an integer variable with the domain {1, 3, 6, 8}
-    (variable [:set (-- 1 3)])   ; a set of integers with the given domain
-    (variable [:set '(1 3 6 8)]) ; a set of integers with the given domain
+    (variable [:set (-- 1 3)])   ; a set of integers with the given domain (set is subset of domain)
+    (variable [:set #{1 3 6 8}]) ; a set of integers with the given domain (set is subset of domain)
     (variable [:int (-- 1 3)])   ; same as (variable (-- -1 10))
+
     (variable (-- 1 10) 'x)      ; an integer variable named x (instead of an automatically assigned name)
 "
     ([type-inst] (variable type-inst (gensym "var")))
     ([type-inst var-name]
-       (let [dom-string (mk-dom-string type-inst)
+       (let [dom-string (mk-type-inst-string type-inst)
              name-string (name var-name)]
-         (tell-store (make-aVar name-string (format "var %s: %s;" dom-string name-string)))))))
-
+         (tell-store (make-aVar name-string (format "var %s: %s;" dom-string name-string))))))
     
 
 (comment
-  ;; (mk-dom-string :bool)
-  ;; (mk-dom-string (-- 1 3))
-  ;; (mk-dom-string [:set '(1 3 6 8)])
-  ;; (mk-dom-string [:int '(1 3 6 8)])
-  
   (binding [*mzn-store* ()]
     (variable (-- 1 3) 'x))
   (binding [*mzn-store* ()]
@@ -708,16 +635,15 @@ Examples:
   ;; set variable
   (variable [:set (-- 1 3)])
   (variable [:set (-- 1 3)] 'mySet)
-  (variable [:set '(1 3 6 8)])
+  (variable [:set #{1 3 6 8}])
   ;; for completeness/consistency, but contains superflous information
-  (variable [:int '(1 3 6 8)])
+  (variable [:int #{1 3 6 8}])
   (variable [:float (-- 1.0 3.0)])
   (variable [:bla (-- 1.0 3.0)]) ; causes exception
-  ;; (variable [:bool]) ;; not possible!
   ;; alternative notation -- more clean solution -- can be defined when notation above is supported
   (set-variable (-- 1 3))
   (set-variable (-- 1 3) 'mySet)
-  (set-variable '(1 3 6 8))
+  (set-variable #{1 3 6 8})
   )
 
 
