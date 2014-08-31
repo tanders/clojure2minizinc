@@ -1,0 +1,13 @@
+# Tmp files
+*~
+.lein-*
+.nrepl-port
+
+# Compiled files
+*.jar
+*.class
+*.fzn
+target
+
+# System files
+.DS_Store

@@ -1,0 +1,532 @@
+#+TITLE: A =clojure2minizinc= Tutorial 
+#+AUTHOR: Torsten Anders
+
+#+PROPERTY: header-args :results silent
+
+# NOTE: title and author ignored in GitHub rendering and also when translating with PanDoc to Markdown
+
+# Doc: see http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-clojure.html
+# Within org buffer start cider: M-x cider-jack-in RET
+
+#+PROPERTY: header-args:clojure  :session *clojure-1*
+
+* Introduction 
+
+   The [[http://clojure.org/][Clojure]] library /clojure2minizinc/ provides an interface to MiniZinc. [[http://www.minizinc.org/][MiniZinc]] is a domain-specific language (DSL) for modelling constraint satisfaction and optimisation problems (CSP) over Boolean, integer, real number, and set variables. MiniZinc has the potential to become the lingua franca of the Constraint Programming community. For developers of existing constraint solvers it is rather easy to define a MiniZinc interface for their solvers, [[http://www.minizinc.org/software.html][several state-of-the-art solvers already support MiniZinc]] via the simpler language FlatZinc (even more solvers listed [[http://www.hakank.org/minizinc/][here]]), and they compete in a yearly [[http://www.minizinc.org/challenge.html][MiniZinc Challenge]]. More information on MiniZinc, in particular many related links can be found at http://www.hakank.org/minizinc/
+
+   In clojure2minizinc, CSPs are defined directly in Clojure. MiniZinc (and its constraint solvers, including 3rd-party solvers) do the actual work in the background, and the result is read back into Clojure. clojure2minizinc code can be very close to MiniZinc code, and therefore this tutorial complements the [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]]: its examples are translated into Clojure here. In addition to the translated examples, this tutorial primarily explains the differences between clojure2minizinc and MiniZinc. It also discusses how the power of Clojure can complement what MiniZinc provides.
+
+
+* Basic Modelling in MiniZinc
+
+** Defining a Namespace for the Tutorial
+
+   MiniZinc is a highly specialised and rather small language. It lacks many features of standard programming languages. clojure2minizinc marries MiniZinc with Clojure and that way many concepts of general purpose languages (in the guise of their Clojure implementation) can be used for a MiniZinc program.
+
+   For example, a clojure2minizinc program is defined in a Clojure namespace. The following code block defines a namespace for this tutorial. Note that clojure2minizinc "overwrites" many standard Clojure functions. You may want to use the library with a namespace prefix. The definitions below uses the alias =mz= (for MiniZinc). 
+
+#+begin_src clojure :results silent
+(ns clojure2minizinc.tutorial
+  (:require [clojure2minizinc.core :as mz] ; 
+            [clojure.pprint :as pprint]))
+#+end_src
+   
+   The library =clojure.pprint= will be needed later. We already add them here for convenience.
+
+
+** Our First Example (MiniZinc tutorial, p. 3ff)
+
+The first example defines a map-colouring of Australia. The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]], p. 3ff, motivates and explains this model. This tutorial assumes that you read the MiniZinc tutorial alongside. To help you with that, even the same headlines are used.
+
+Notice that most functions in this example are in the =mz= namespace, but the decision variables (and an int) of the model are stored with the standard Clojure =let= form -- clojure2minizinc allows to store MiniZinc variables and parameters (constants) in arbitrary Clojure data structures.
+
+#+begin_src clojure 
+(def aust
+  (mz/clj2mnz
+   (let [nc (mz/int 'nc 3)              ; number of colours
+         wa (mz/variable (mz/-- 1 nc))  ; 7 variables for 7 states
+         nt (mz/variable (mz/-- 1 nc))
+         sa (mz/variable (mz/-- 1 nc))
+         q (mz/variable (mz/-- 1 nc))
+         nsw (mz/variable (mz/-- 1 nc))
+         v (mz/variable (mz/-- 1 nc))
+         t (mz/variable (mz/-- 1 nc))]
+     (mz/constraint (mz/!= wa nt))
+     (mz/constraint (mz/!= wa sa))
+     (mz/constraint (mz/!= nt sa))
+     (mz/constraint (mz/!= nt q))
+     (mz/constraint (mz/!= sa q))
+     (mz/constraint (mz/!= sa nsw))
+     (mz/constraint (mz/!= sa v))
+     (mz/constraint (mz/!= nsw v))
+     (mz/solve :satisfy)
+     (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t}))))
+#+end_src
+
+We can solve this MiniZinc model as follows.
+
+#+begin_src clojure 
+(mz/minizinc aust)
+#+end_src
+
+It returns the following result. Different numbers encode different colours on the map for the Australian states.
+
+  =; => ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1})=
+
+In this example, a solution is wrapped in a Clojure map. You can ask for multiple solutions, if you like. 
+
+#+begin_src clojure 
+(mz/minizinc aust :num-solutions 3)
+#+end_src
+
+  =; => ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1} {:wa 2, :nt 1, :sa 3, :q 2, :nsw 2, :v 1, :t 1} {:wa 1, :nt 3, :sa 2, :q 1, :nsw 3, :v 1, :t 1})=
+
+
+In fact, you can specify arbitrary options supported by the =minizinc= shell command. The next code line specifies to use (the FlatZinc interpreter of) [[http://www.gecode.org/flatzinc.html][Gecode]] (which must of could be installed). This solver won many [[http://www.minizinc.org/challenge.html][MiniZinc Challenges]] and is much more efficient than the solver that =minizinc= uses by default. For this simple model this makes no real difference (most time is spend on the [[http://ww2.cs.mu.oz.au/~sbrand/project/minizinc07.pdf][translation of MiniZinc to FlatZinc]] here), but for more complex problems the difference can be huge.   
+
+#+begin_src clojure 
+(mz/minizinc aust :options ["-f fzn-gecode"])
+#+end_src
+
+The solution happens to be different, because different solvers may use different search strategies, which can lead to different first solutions. (MiniZinc also allows to specify the search strategy, [[http://www.minizinc.org/workshop2011/mzn2011_submission_1.pdf][within certain bounds]]). 
+
+  =; => ({:wa 3, :nt 2, :sa 1, :q 3, :nsw 3, :v 2, :t 1})=  
+
+In the next call we ask Gecode to use 8 threads and/or cores for a parallel search. Again, this makes only a real difference for more complex problems. 
+
+#+begin_src clojure 
+(mz/minizinc aust :options ["-f fzn-gecode" "-p8"])
+#+end_src
+
+For more information on solver options see the help screen of =minizinc=. Type at a terminal.
+
+  =$ minizinc --help=
+
+
+*** The Resulting MiniZinc Code
+
+The var =aust= binds a string created by the model above. This string is shown below (without surrounding double-quotes for simplicity). 
+
+#+begin_example
+int: nc = 3;
+var 1..nc: var4570;
+var 1..nc: var4571;
+var 1..nc: var4572;
+var 1..nc: var4573;
+var 1..nc: var4574;
+var 1..nc: var4575;
+var 1..nc: var4576;
+constraint (var4570 != var4571);
+constraint (var4570 != var4572);
+constraint (var4571 != var4572);
+constraint (var4571 != var4573);
+constraint (var4572 != var4573);
+constraint (var4572 != var4574);
+constraint (var4572 != var4575);
+constraint (var4574 != var4575);
+solve satisfy;
+output ["{", " :wa ", show(var4570), " :nt ", show(var4571), " :sa ", show(var4572), " :q ", show(var4573), " :nsw ", show(var4574), " :v ", show(var4575), " :t ", show(var4576), "}\n"];
+#+end_example
+
+The string contains the generated MiniZinc code. Note the similarity between the model in Clojure and in MiniZinc. clojure2minizinc aims to be very similar to MiniZinc itself, so that the MiniZinc documentation can also document clojure2minizinc. Nevertheless, some differences are unavoidable. Obviously, clojure2minizinc uses Clojure syntax, and some functions names are illegal in Clojure (e.g., =var= is a special form, and clojure2minizinc must define the function =variable= instead).
+
+The generated code is almost exactly the same as the MiniZinc model =aust.mzn= shown in Figure 2 of the tutorial, p. 4. The main difference is that the variable names in the code above are generated automatically (the names may look slightly different when you run this code). The function =mz/variable= simply does not know that its result is stored in a symbol by =let=, and thus does not know its name. If you are only interested in the Clojure code, this poses no problem, as you do not need to read the automatically generated MiniZinc variables. 
+
+If you want better readable MiniZinc code, just explicitly tell =mz/variable= (or its friends like =mz/int=) your MiniZinc variable name. 
+
+#+begin_src clojure 
+(mz/variable (mz/-- 1 10) 'x)
+#+end_src
+
+The integer parameter of the model (=nc=) has been explicitly named this way (the optional name for the integer parameter is given before its optional initialisation value).
+
+Section [[*Similarity%20and%20Differences%20between%20MiniZinc%20and%20clojure2minizinc][Similarity and Differences between MiniZinc and clojure2minizinc]] below details further differences between these two languages.
+
+
+*** Storing Variables in Other Data Structures 
+
+As mentioned above, clojure2minizinc can store MiniZinc variables and parameters in arbitrary Clojure data structures. The following example stores the variables for the colours of Australian states in a map. The same inequality constraints are applied by mapping over pairs of keywords representing these inequalities somewhat more concisely. 
+
+#+begin_src clojure 
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [nc (mz/int 'nc 3)
+        states (zipmap [:wa :nt :sa :q :nsw :v :t]
+                       (take 7 (repeatedly #(mz/variable (mz/-- 1 nc)))))]
+    (doall (map (fn [[s1 s2]] 
+                  (mz/constraint (mz/!= (s1 states) (s2 states))))
+                [[:wa :nt] [:wa :sa] [:nt :sa] [:nt :q] [:sa :q] [:sa :nsw] [:sa :v] [:nsw :v]]))
+    (mz/solve :satisfy)
+    (mz/output-map states))))
+#+end_src
+
+The resulting MiniZinc code is basically the same, and thus also the result.
+
+
+** An Arithmetic Optimisation Example (MiniZinc tutorial, p. 6ff)
+
+The MiniZinc tutorial continues with an optimisation example, that computes the number of banana (=b=) and chocolate (=c=) cakes to bake for maximum profit given the recipes for these cakes, the amount of ingredients, and the price at which each cake can be sold. 
+
+The corresponding clojure2minizinc code is shown below. Please see the MiniZinc tutorial for an explanation of this model. 
+
+#+begin_src clojure
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [b (mz/variable (mz/-- 1 100))
+        c (mz/variable (mz/-- 1 100))]
+    ;; flour
+    (mz/constraint (mz/<= (mz/+ (mz/* 250 b)
+                                (mz/* 200 c))
+                          4000))
+    ;; bananas
+    (mz/constraint (mz/<= (mz/* 2 b) 6))
+    ;; sugar
+    (mz/constraint (mz/<= (mz/+ (mz/* 75 b)
+                                (mz/* 150 c))
+                          2000))
+    ;; butter 
+    (mz/constraint (mz/<= (mz/+ (mz/* 100 b)
+                                (mz/* 150 c))
+                          500))
+    ;; cocoa
+    (mz/constraint (mz/<= (mz/* 75 c) 500))
+    ;; maximise profit
+    (mz/solve :maximize (mz/+ (mz/* 400 b) (mz/* 450 c)))
+    (mz/output-map {:banana-cakes b :chocolate-cakes c}))))
+#+end_src
+
+The optimal solution are two cakes of each kind. 
+
+  =; => ({:banana-cakes 2, :chocolate-cakes 2})=
+
+
+** Datafiles and Assertions (MiniZinc tutorial, p. 8ff)
+
+In the previous example, the amount of each ingredient was fixed in the model. MiniZinc supports parameterising models, where MiniZinc parameters or variables are declared but not further initialised. Values for this parameters/variables are specified outside of the model to the solver, usually with MiniZinc data files. 
+
+The clojure2minizinc version of the parameterised model is shown below. Again, please see the MiniZinc tutorial (p. 8ff) for an explanation of this model. 
+
+Note that we must specify explicit names for the parameters of a parameterised model (here =flour=, =banana=, =sugar=, and so forth), so that these names are the same as in the parameter file (i.e., automatically generated names would not work).
+
+#+begin_src clojure
+(def cakes2
+  (mz/clj2mnz
+   (let [flour (mz/int 'flour)
+         banana (mz/int 'banana)
+         sugar (mz/int 'sugar)
+         butter (mz/int 'butter)
+         cocoa (mz/int 'cocoa)]
+     (mz/constraint (mz/assert (mz/>= flour 0) "Amount of flour must not be negative"))
+     (mz/constraint (mz/assert (mz/>= banana 0) "Amount of banana must not be negative"))
+     (mz/constraint (mz/assert (mz/>= sugar 0) "Amount of sugar must not be negative"))
+     (mz/constraint (mz/assert (mz/>= butter 0) "Amount of butter must not be negative"))
+     (mz/constraint (mz/assert (mz/>= cocoa 0) "Amount of cocoa must not be negative"))
+     (let [b (mz/variable (mz/-- 1 100))
+           c (mz/variable (mz/-- 1 100))]
+       ;; flour
+       (mz/constraint (mz/<= (mz/+ (mz/* 250 b)
+                                   (mz/* 200 c))
+                             flour))
+       ;; bananas
+       (mz/constraint (mz/<= (mz/* 2 b) banana))
+       ;; sugar
+       (mz/constraint (mz/<= (mz/+ (mz/* 75 b)
+                                   (mz/* 150 c))
+                             sugar))
+       ;; butter 
+       (mz/constraint (mz/<= (mz/+ (mz/* 100 b)
+                                   (mz/* 150 c))
+                             butter))
+       ;; cocoa
+       (mz/constraint (mz/<= (mz/* 75 c) cocoa))
+       ;; maximise profit
+       (mz/solve :maximize (mz/+ (mz/* 400 b) (mz/* 450 c)))
+       (mz/output-map {:banana-cakes b :chocolate-cakes c})))))
+#+end_src
+
+
+In clojure2minizinc, the parameters for a model are given directly to the solver. The code below specifies the same amounts of ingredients for the cakes as the original example, and therefore the result is the same. 
+
+#+begin_src clojure 
+(mz/minizinc cakes2
+  :data (mz/map2minizinc {:flour 4000 :banana 6 :sugar 2000 :butter 500 :cocoa 500}))
+#+end_src
+
+  =; => ({:banana-cakes 2, :chocolate-cakes 2})=
+
+Different amounts have a different optimal result.
+
+#+begin_src clojure 
+(mz/minizinc cakes2
+  :data (mz/map2minizinc {:flour 8000 :banana 11 :sugar 3000 :butter 1500 :cocoa 800}))
+#+end_src
+
+  =; =>  ({:banana-cakes 3, :chocolate-cakes 8})=
+
+
+** Real Number Solving (MiniZinc tutorial, p. 11ff)
+
+The next example demonstrates constraint programming on "real numbers" (floating point variables). The example models the repayment of a loan with interest over four quarters.
+
+The model is also parameterised -- values for variables =r=, =p= and so forth can be specified to the solver. Remember that we must specify explicit names for these variables (they should not be named automatically).
+
+# TODO: revise m/output-map -- no parentheses. What about parentheses around expressions at values?
+#+begin_src clojure 
+(def loan
+  (mz/clj2mnz
+   (let [r (mz/variable :float 'r)           ; quarterly repayment
+         p (mz/variable :float 'p)           ; principal initially borrowed
+         i (mz/variable (mz/-- 0.0 10.0) 'i) ; interest rate
+         ;; intermediate variables 
+         b1 (mz/variable :float 'b1)         ; balance after one quarter
+         b2 (mz/variable :float 'b2)         ; balance after two quarters
+         b3 (mz/variable :float 'b3)         ; balance after three quarters
+         b4 (mz/variable :float 'b4)]        ; balance owing at end
+     (mz/constraint (mz/= b1 (mz/- (mz/* p (mz/+ 1.0 i)) r)))
+     (mz/constraint (mz/= b2 (mz/- (mz/* b1 (mz/+ 1.0 i)) r)))
+     (mz/constraint (mz/= b3 (mz/- (mz/* b2 (mz/+ 1.0 i)) r)))
+     (mz/constraint (mz/= b4 (mz/- (mz/* b3 (mz/+ 1.0 i)) r)))
+     (mz/solve :satisfy)
+     (mz/output-map {:borrowing p :interest-rate (mz/* i 100.0)
+                     :repayment-per-quarter r
+                     :owing-at-end b4}))))
+#+end_src
+
+The default MiniZinc solver (=mzn-g12fd=) does not support floating point variables, so we can use Gecode again. A solution is shown below the solver call.
+
+#+begin_src clojure 
+(mz/minizinc loan :options ["-f fzn-gecode"] 
+  :data (mz/map2minizinc {:i 0.04 :p 1000.0 :r 260.0}))
+#+end_src
+
+  =; => ({:borrowing 1000.0, :interest-rate 4.00000000000001, :repayment-per-quarter 260.0, :owing-at-end 65.7779200000003})=
+
+In constraint programming any variable can be quasi input or output of the algorithm. Instead of setting the values for =r=, =p= and =i= in the solver call, we can set the values for other variables. By setting =b4= to 0 we specify that the loan is fully payed back after four quarters.
+
+#+begin_src clojure 
+(mz/minizinc loan :options ["-f fzn-gecode"] 
+  :data (mz/map2minizinc {:i 0.04 :p 1000.0 :b4 0.0}))
+#+end_src
+
+  =; => ({:borrowing 1000.0, :interest-rate 4.00000000000001, :repayment-per-quarter 275.490045364803, :owing-at-end 0.0})=
+
+Here are again other variables set before the search.
+
+#+begin_src clojure 
+(mz/minizinc loan :options ["-f fzn-gecode"] 
+  :data (mz/map2minizinc {:i 0.04 :r 250.0 :b4 0.0}))
+#+end_src
+
+  =; => ({:borrowing 907.473806064214, :interest-rate 4.00000000000001, :repayment-per-quarter 250.0, :owing-at-end 0.0})=
+
+
+If you do not have Gecode installed, you can also use the solver =mzn-g12mip=, which comes with MiniZinc. The result happens to be slightly different.
+
+#+begin_src clojure 
+(mz/minizinc loan :solver "mzn-g12mip"
+  :data (mz/map2minizinc {:i 0.04 :r 250.0 :b4 0.0}))
+#+end_src
+
+  =; => ({:borrowing 907.4738060642132, :interest-rate 4.0, :repayment-per-quarter 250.0, :owing-at-end 0.0})=
+
+
+* More Complex Models
+
+** Arrays and Sets (MiniZinc tutorial, p. 15ff)
+
+This example demonstrates the use of a two-dimensional array of float variables. It models temperatures on a rectangular sheet of metal. The MiniZinc tutorial explains the details. 
+
+In order to make the result better comprehensible, we will print it in table form instead of just returning the result. We need an auxiliary function that prints a table. Lets use =print-table= that is shown as an example for =get-pretty-writer= at [[http://clojure.github.io/clojure/clojure.pprint-api.html][http://clojure.github.io]] (=print-table= is only slightly edited here). This function is the reason why we =require='d =clojure.pprint= in the name space definition above.
+
+#+begin_src clojure 
+(defn print-table [column-width aseq]
+  (binding [*out* (pprint/get-pretty-writer *out*)]
+    (doseq [row aseq]
+      (doseq [col row]
+        (pprint/cl-format true "~6,2F~7,vT" col column-width))
+      (prn))))
+#+end_src
+
+Now we can present the clojure2minizinc version of the Laplace model from the MiniZinc tutorial. 
+
+#+begin_src clojure 
+(let [width 5
+      height 5]
+  (print-table 2
+   (partition (+ 1 height)  ;; add one, because array boundaries are [0, height] etc.
+    (first 
+     (mz/minizinc 
+      (mz/clj2mnz
+       (let [w (mz/int 'w width)
+             h (mz/int 'h height)
+             ;; array decl
+             t (mz/array (list (mz/-- 0 w) (mz/-- 0 h)) [:var :float] 't)
+             left (mz/variable :float 'left)
+             right (mz/variable :float 'right)
+             top (mz/variable :float 'top)
+             bottom (mz/variable :float 'bottom)]
+         ;; Laplace equation
+         ;; Each internal temp. is average of its neighbours
+         (mz/constraint 
+          (mz/forall [i (mz/-- 1 (mz/- w 1))
+                      j (mz/-- 1 (mz/- h 1))]
+                     (mz/= (mz/* 4.0 (mz/nth t i j))
+                           ;; TODO: generalise binary operators like +, -, *, / 
+                           ;; to support an arbitrary number of args 
+                           (mz/+ (mz/nth t (mz/- i 1) j)
+                                 (mz/+ (mz/nth t i (mz/- j 1))
+                                       (mz/+ (mz/nth t (mz/+ i 1) j)
+                                             (mz/nth t i (mz/+ j 1))))))))
+         ;; edge constraints
+         (mz/constraint (mz/forall [i (mz/-- 1 (mz/- w 1))]
+                                   (mz/= (mz/nth t i 0) left)))
+         (mz/constraint (mz/forall [i (mz/-- 1 (mz/- w 1))]
+                                   (mz/= (mz/nth t i h) right)))
+         (mz/constraint (mz/forall [j (mz/-- 1 (mz/- h 1))]
+                                   (mz/= (mz/nth t 0 j) top)))
+         (mz/constraint (mz/forall [j (mz/-- 1 (mz/- h 1))]
+                                   (mz/= (mz/nth t w j) bottom)))
+         ;; corner constraints
+         (mz/constraint (mz/= (mz/nth t 0 0) 0.0))
+         (mz/constraint (mz/= (mz/nth t 0 h) 0.0))
+         (mz/constraint (mz/= (mz/nth t w 0) 0.0))
+         (mz/constraint (mz/= (mz/nth t w h) 0.0))
+         (mz/constraint (mz/= left 0.0))
+         (mz/constraint (mz/= right 0.0))
+         (mz/constraint (mz/= top 100.0))
+         (mz/constraint (mz/= bottom 0.0))
+         (mz/solve :satisfy)
+         ;; 2d-array output as flat 1d array -- formatting of result done by Clojure
+         (mz/output-var t) 
+         ))
+      :options ["-f fzn-gecode"]
+      ; :solver "mzn-g12mip"
+      )))))
+#+end_src
+
+In this model, the top-level call is =print-table=. The model therefore returns only =nil=, but prints the following result at the REPL.
+
+#+begin_example
+  0.00 100.00  100.00  100.00  100.00    0.00  
+  0.00  45.45   59.47   59.47   45.45    0.00  
+  0.00  22.35   32.95   32.95   22.35    0.00  
+  0.00  10.98   17.05   17.05   10.98    0.00  
+  0.00   4.55    7.20    7.20    4.55    0.00  
+  0.00   0.00    0.00    0.00    0.00    0.00  
+#+end_example
+
+In the model, the Laplace equation is currently unnecessarily complicated, because the clojure2minizinc arithmetic operators are only binary functions, like their MiniZinc counterparts. The will be generalised in a later version for an arbitrary number of arguments, in true Lisp spirit. 
+
+
+** TODO Complete this Tutorial...
+
+
+* Similarity and Differences between MiniZinc and clojure2minizinc
+
+  Definitions in clojure2minizinc can be very similar to MiniZinc code. But there are some differences, which are detailed here.
+
+
+** Code Similarity
+
+   The syntax of MiniZinc and clojure2minizinc differs clearly. The MiniZinc notation is close to an ASCII version of standard math notation, while in clojure2minizinc all code is expressed by standard Lisp S-expressions. 
+
+   Nevertheless, most MiniZinc operators, functions etc. are called exactly the same in clojure2minizinc. For example the following two code snippets show a MiniZinc code line and the corresponding clojure2minizinc code (without namespace prefixes).
+
+#+begin_example
+constraint x + y != z;
+#+end_example
+
+#+begin_src clojure :results silent
+(constraint (!= (+ x y) z))
+#+end_src
+
+   Because of this similarity of code, the main documentation of clojure2minizinc is the MiniZinc documentation itself.
+
+
+** Exceptions to the Similarity
+
+   There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure due to certain restrictions of Clojure. The differences between MiniZinc operators, keywords etc. and the corresponding Clojure functions are listed in the table below.
+
+   | MiniZinc | clojure2minizinc                |
+   |----------+---------------------------------|
+   | =var=    | =variable= and different syntax |
+   | =..=     | =--=                            |
+   | =/\=     | =and=                           |
+   | =\/=     | =or=                            |
+   | =array=  | different syntax                |
+   | =forall= | different syntax                |
+
+
+*** TODO Keep this Note Up To Date
+
+    Note also that not all MiniZinc operators, keywords etc. are supported in the early releases of clojure2minizinc yet. For example, the table below will grow once the MiniZinc =let= and =if= are supported (both need different clojure2minizinc names as well). Also, in future versions many binary MiniZinc operators will be n-ary in clojure2minizinc.
+
+    Further, an equivalent for the MiniZinc =output= does not exist, use =output-map= instead.
+    
+
+
+* What Makes clojure2minizinc Special?
+
+** Going Beyond MiniZinc Limitations
+
+*** Integration in a General-Purpose Programming Language
+     
+    clojure2minizinc allows you to do a number of things that are impossible (or at least much more difficult) in plain MiniZinc. MiniZinc is a highly specialised domain-specific language. clojure2minizinc is embedded in a general-purpose programming language and complements MiniZinc by standard programming features such as input/output, graphical user-interfaces, interfaces to the underlying operating system, and so forth. Basically, all Clojure and Java libraries are at your disposal when using clojure2minizinc. Also, the functionality of Clojure editors available for defining MiniZinc models. For example, auto-completion and documentation accessible in your editor will help you ([[http://www.minizinc.org/ide/index.html][MiniZinc editors]] do not support such functionality).
+
+     Perhaps most importantly, constraint problems can be created dynamically (before the search starts). For example, a constraint problem may depend on user input. Imagine a scheduling problem where different kinds of tasks to schedule are represented by different arrays, and depending on user input you may need a few additional arrays. While MiniZinc already provides some means for abstraction (predicates and functions), these are restricted in their capabilities. Adding a few global arrays is at least difficult: MiniZinc data structures cannot be nested, so the result of a function could at most be one array (but it could be multi-dimensional). By contrast, clojure2minizinc makes it easy to create constraint problems dynamically -- Lisps are very good at generating code on the fly.
+
+     It was mentioned already above that decision variables can be stored in arbitrary Clojure data structures, and then constraints be applied to these data structures (see section [[*Storing%20Variables%20in%20Other%20Data%20Structures][Storing Variables in Other Data Structures]]). MiniZinc does not see the Clojure data structure, but it may help to express information about the constraint problem to model (e.g., to express how certain variables are related).  
+
+
+*** Higher-Order Programming
+
+    Being integrated in a functional language, clojure2minizinc allows for higher-order programming. The following example maps a constraint (wrapped in a function) to all elements of a MiniZinc array (translated into a Clojure sequence). 
+
+#+begin_src clojure 
+(map #(mz/constraint (mz/< (mz/+ % 1) 10))
+     (mz/array->clj-seq (array (-- 1 3) [:var (-- -100 100)])))
+#+end_src
+
+    To make such higher-order programming working, in the resulting MiniZinc program the array element are accessed one by one.
+
+#+begin_example
+array[1..3] of var -100..100: array9289;
+constraint ((array9289[1] + 1) < 10);
+constraint ((array9289[2] + 1) < 10);
+constraint ((array9289[3] + 1) < 10);
+#+end_example
+
+    To be fair, using the MiniZinc aggregation function =forall= the example above can also be expressed very concisely. 
+
+#+begin_example
+array[1..3] of var -100..100: x;
+constraint forall(i in 1..3)((x[i] + 1) < 10);
+#+end_example
+
+    The difference is that the set of such aggregation functions and their capabilities is fixed in MiniZinc, but the clojure2minizinc user can define her own special-purpose higher-order function for applying constraints. 
+
+    *TODO: show example*
+
+    Of course, such higher-order functions can only depend on information available before the search starts. For example, it is not possible to define a filtering function as part of the constraint problem, which depends on the values of variables in the solution. Anyway, higher-order functions can apply constraints that depend on whether other constraints hold, using reified constraints such as implication. 
+
+    
+** clojure2minizinc is Solver-Independent 
+
+   The Constraint Programming community developed [[http://en.wikipedia.org/wiki/Constraint_programming#Logic_programming_based_constraint_logic_languages][many solvers]], and a considerable number of them extends a programming language directly. Such close integration has clear advantages. E.g., custom search strategies can be programmed using the full power of the host language (if the solver supports it).
+
+   clojure2minizinc's inherits from MiniZinc the advantage that it is solver-independent: [[http://www.hakank.org/minizinc/][any solver supporting FlatZinc]] as input can be used. 
+
+
+** Pitfalls of Constraint Programming Compared to Standard Clojure Programming 
+
+    Constraint programming provides a very high level of abstraction for the programmer. However, this strength comes with a certain price. In particular, software using constraint programming can be hard to debug. Even worse, error messages by MiniZinc currently refer to line numbers of the generated MiniZinc code, not the clojure2minizinc code. However, constraint problem debuggers are not too helpful anyway. Often it is necessary to carefully analyse a model in order to understand why it does not work as intended. 
+
+    A useful and easy debugging strategy is to disable a set of constraints and to enable them one by one again in order to find the problem. Another useful debugging aid is the search tree visualiser and interactive search tool =gist= provided by Gecode. It can be enabled with the =-mode= option. For more information see the [[http://www.gecode.org/doc-latest/MPG.pdf][Gecode tutorial]], p. 157ff. 
+
+#+begin_src clojure 
+(mz/minizinc aust :options ["-f fzn-gecode" "--fzn-flags '-mode gist'"])
+#+end_src    
+
+    *TODO: get code above working -- it works at the shell, but not yet in clojure2minizinc*
+
+
