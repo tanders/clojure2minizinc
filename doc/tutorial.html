@@ -1,0 +1,1006 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>A <code>clojure2minizinc</code> Tutorial</title>
+<!-- 2014-08-31 Sun 22:20 -->
+<meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta  name="generator" content="Org-mode" />
+<meta  name="author" content="Torsten Anders" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  pre.src-sh:before    { content: 'sh'; }
+  pre.src-bash:before  { content: 'sh'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-R:before     { content: 'R'; }
+  pre.src-perl:before  { content: 'Perl'; }
+  pre.src-java:before  { content: 'Java'; }
+  pre.src-sql:before   { content: 'SQL'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.right  { text-align: center;  }
+  th.left   { text-align: center;   }
+  th.center { text-align: center; }
+  td.right  { text-align: right;  }
+  td.left   { text-align: left;   }
+  td.center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara:nth-child(2) { display: inline; }
+  .footpara { display: block; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">A <code>clojure2minizinc</code> Tutorial</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. Introduction</a></li>
+<li><a href="#sec-2">2. Basic Modelling in MiniZinc</a>
+<ul>
+<li><a href="#sec-2-1">2.1. Defining a Namespace for the Tutorial</a></li>
+<li><a href="#sec-2-2">2.2. Our First Example (MiniZinc tutorial, p. 3ff)</a>
+<ul>
+<li><a href="#sec-2-2-1">2.2.1. The Resulting MiniZinc Code</a></li>
+<li><a href="#sec-2-2-2">2.2.2. Storing Variables in Other Data Structures</a></li>
+</ul>
+</li>
+<li><a href="#sec-2-3">2.3. An Arithmetic Optimisation Example (MiniZinc tutorial, p. 6ff)</a></li>
+<li><a href="#sec-2-4">2.4. Datafiles and Assertions (MiniZinc tutorial, p. 8ff)</a></li>
+<li><a href="#sec-2-5">2.5. Real Number Solving (MiniZinc tutorial, p. 11ff)</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. More Complex Models</a>
+<ul>
+<li><a href="#sec-3-1">3.1. Arrays and Sets (MiniZinc tutorial, p. 15ff)</a></li>
+<li><a href="#sec-3-2">3.2. <span class="todo TODO">TODO</span> Complete this Tutorial&#x2026;</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. Similarity and Differences between MiniZinc and clojure2minizinc</a>
+<ul>
+<li><a href="#sec-4-1">4.1. Code Similarity</a></li>
+<li><a href="#sec-4-2">4.2. Exceptions to the Similarity</a>
+<ul>
+<li><a href="#sec-4-2-1">4.2.1. <span class="todo TODO">TODO</span> Keep this Note Up To Date</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#sec-5">5. What Makes clojure2minizinc Special?</a>
+<ul>
+<li><a href="#sec-5-1">5.1. Going Beyond MiniZinc Limitations</a>
+<ul>
+<li><a href="#sec-5-1-1">5.1.1. Integration in a General-Purpose Programming Language</a></li>
+<li><a href="#sec-5-1-2">5.1.2. Higher-Order Programming</a></li>
+</ul>
+</li>
+<li><a href="#sec-5-2">5.2. clojure2minizinc is Solver-Independent</a></li>
+<li><a href="#sec-5-3">5.3. Pitfalls of Constraint Programming Compared to Standard Clojure Programming</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+The <a href="http://clojure.org/">Clojure</a> library <i>clojure2minizinc</i> provides an interface to MiniZinc. <a href="http://www.minizinc.org/">MiniZinc</a> is a domain-specific language (DSL) for modelling constraint satisfaction and optimisation problems (CSP) over Boolean, integer, real number, and set variables. MiniZinc has the potential to become the lingua franca of the Constraint Programming community. For developers of existing constraint solvers it is rather easy to define a MiniZinc interface for their solvers, <a href="http://www.minizinc.org/software.html">several state-of-the-art solvers already support MiniZinc</a> via the simpler language FlatZinc (even more solvers listed <a href="http://www.hakank.org/minizinc/">here</a>), and they compete in a yearly <a href="http://www.minizinc.org/challenge.html">MiniZinc Challenge</a>. More information on MiniZinc, in particular many related links can be found at <a href="http://www.hakank.org/minizinc/">http://www.hakank.org/minizinc/</a>
+</p>
+
+<p>
+In clojure2minizinc, CSPs are defined directly in Clojure. MiniZinc (and its constraint solvers, including 3rd-party solvers) do the actual work in the background, and the result is read back into Clojure. clojure2minizinc code can be very close to MiniZinc code, and therefore this tutorial complements the <a href="http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf">MiniZinc tutorial</a>: its examples are translated into Clojure here. In addition to the translated examples, this tutorial primarily explains the differences between clojure2minizinc and MiniZinc. It also discusses how the power of Clojure can complement what MiniZinc provides.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Basic Modelling in MiniZinc</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> Defining a Namespace for the Tutorial</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+MiniZinc is a highly specialised and rather small language. It lacks many features of standard programming languages. clojure2minizinc marries MiniZinc with Clojure and that way many concepts of general purpose languages (in the guise of their Clojure implementation) can be used for a MiniZinc program.
+</p>
+
+<p>
+For example, a clojure2minizinc program is defined in a Clojure namespace. The following code block defines a namespace for this tutorial. Note that clojure2minizinc "overwrites" many standard Clojure functions. You may want to use the library with a namespace prefix. The definitions below uses the alias <code>mz</code> (for MiniZinc). 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #a020f0;">ns</span> <span style="color: #228b22;">clojure2minizinc.tutorial</span>
+  (<span style="color: #008b8b;">:require</span> [<span style="color: #228b22;">clojure2minizinc.core</span> <span style="color: #008b8b;">:as</span> mz] <span style="color: #b22222;">; </span>
+            [<span style="color: #228b22;">clojure.pprint</span> <span style="color: #008b8b;">:as</span> pprint]))
+</pre>
+</div>
+
+<p>
+The library <code>clojure.pprint</code> will be needed later. We already add them here for convenience.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> Our First Example (MiniZinc tutorial, p. 3ff)</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+The first example defines a map-colouring of Australia. The <a href="http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf">MiniZinc tutorial</a>, p. 3ff, motivates and explains this model. This tutorial assumes that you read the MiniZinc tutorial alongside. To help you with that, even the same headlines are used.
+</p>
+
+<p>
+Notice that most functions in this example are in the <code>mz</code> namespace, but the decision variables (and an int) of the model are stored with the standard Clojure <code>let</code> form &#x2013; clojure2minizinc allows to store MiniZinc variables and parameters (constants) in arbitrary Clojure data structures.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #a020f0;">def</span> <span style="color: #a0522d;">aust</span>
+  (<span style="color: #228b22;">mz</span>/clj2mnz
+   (<span style="color: #a020f0;">let</span> [nc (<span style="color: #228b22;">mz</span>/int 'nc 3)              <span style="color: #b22222;">; </span><span style="color: #b22222;">number of colours</span>
+         wa (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 nc))  <span style="color: #b22222;">; </span><span style="color: #b22222;">7 variables for 7 states</span>
+         nt (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 nc))
+         sa (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 nc))
+         q (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 nc))
+         nsw (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 nc))
+         v (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 nc))
+         t (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 nc))]
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= wa nt))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= wa sa))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= nt sa))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= nt q))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= sa q))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= sa nsw))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= sa v))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= nsw v))
+     (<span style="color: #228b22;">mz</span>/solve <span style="color: #008b8b;">:satisfy</span>)
+     (<span style="color: #228b22;">mz</span>/output-map {<span style="color: #008b8b;">:wa</span> wa <span style="color: #008b8b;">:nt</span> nt <span style="color: #008b8b;">:sa</span> sa <span style="color: #008b8b;">:q</span> q <span style="color: #008b8b;">:nsw</span> nsw <span style="color: #008b8b;">:v</span> v <span style="color: #008b8b;">:t</span> t}))))
+</pre>
+</div>
+
+<p>
+We can solve this MiniZinc model as follows.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc aust)
+</pre>
+</div>
+
+<p>
+It returns the following result. Different numbers encode different colours on the map for the Australian states.
+</p>
+
+<p>
+<code>; =&gt; ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1})</code>
+</p>
+
+<p>
+In this example, a solution is wrapped in a Clojure map. You can ask for multiple solutions, if you like. 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc aust <span style="color: #008b8b;">:num-solutions</span> 3)
+</pre>
+</div>
+
+<p>
+<code>; =&gt; ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1} {:wa 2, :nt 1, :sa 3, :q 2, :nsw 2, :v 1, :t 1} {:wa 1, :nt 3, :sa 2, :q 1, :nsw 3, :v 1, :t 1})</code>
+</p>
+
+
+<p>
+In fact, you can specify arbitrary options supported by the <code>minizinc</code> shell command. The next code line specifies to use (the FlatZinc interpreter of) <a href="http://www.gecode.org/flatzinc.html">Gecode</a> (which must of could be installed). This solver won many <a href="http://www.minizinc.org/challenge.html">MiniZinc Challenges</a> and is much more efficient than the solver that <code>minizinc</code> uses by default. For this simple model this makes no real difference (most time is spend on the <a href="http://ww2.cs.mu.oz.au/~sbrand/project/minizinc07.pdf">translation of MiniZinc to FlatZinc</a> here), but for more complex problems the difference can be huge.   
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc aust <span style="color: #008b8b;">:options</span> [<span style="color: #8b2252;">"-f fzn-gecode"</span>])
+</pre>
+</div>
+
+<p>
+The solution happens to be different, because different solvers may use different search strategies, which can lead to different first solutions. (MiniZinc also allows to specify the search strategy, <a href="http://www.minizinc.org/workshop2011/mzn2011_submission_1.pdf">within certain bounds</a>). 
+</p>
+
+<p>
+<code>; =&gt; ({:wa 3, :nt 2, :sa 1, :q 3, :nsw 3, :v 2, :t 1})</code>  
+</p>
+
+<p>
+In the next call we ask Gecode to use 8 threads and/or cores for a parallel search. Again, this makes only a real difference for more complex problems. 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc aust <span style="color: #008b8b;">:options</span> [<span style="color: #8b2252;">"-f fzn-gecode"</span> <span style="color: #8b2252;">"-p8"</span>])
+</pre>
+</div>
+
+<p>
+For more information on solver options see the help screen of <code>minizinc</code>. Type at a terminal.
+</p>
+
+<p>
+<code>$ minizinc --help</code>
+</p>
+</div>
+
+
+<div id="outline-container-sec-2-2-1" class="outline-4">
+<h4 id="sec-2-2-1"><span class="section-number-4">2.2.1</span> The Resulting MiniZinc Code</h4>
+<div class="outline-text-4" id="text-2-2-1">
+<p>
+The var <code>aust</code> binds a string created by the model above. This string is shown below (without surrounding double-quotes for simplicity). 
+</p>
+
+<pre class="example">
+int: nc = 3;
+var 1..nc: var4570;
+var 1..nc: var4571;
+var 1..nc: var4572;
+var 1..nc: var4573;
+var 1..nc: var4574;
+var 1..nc: var4575;
+var 1..nc: var4576;
+constraint (var4570 != var4571);
+constraint (var4570 != var4572);
+constraint (var4571 != var4572);
+constraint (var4571 != var4573);
+constraint (var4572 != var4573);
+constraint (var4572 != var4574);
+constraint (var4572 != var4575);
+constraint (var4574 != var4575);
+solve satisfy;
+output ["{", " :wa ", show(var4570), " :nt ", show(var4571), " :sa ", show(var4572), " :q ", show(var4573), " :nsw ", show(var4574), " :v ", show(var4575), " :t ", show(var4576), "}\n"];
+</pre>
+
+<p>
+The string contains the generated MiniZinc code. Note the similarity between the model in Clojure and in MiniZinc. clojure2minizinc aims to be very similar to MiniZinc itself, so that the MiniZinc documentation can also document clojure2minizinc. Nevertheless, some differences are unavoidable. Obviously, clojure2minizinc uses Clojure syntax, and some functions names are illegal in Clojure (e.g., <code>var</code> is a special form, and clojure2minizinc must define the function <code>variable</code> instead).
+</p>
+
+<p>
+The generated code is almost exactly the same as the MiniZinc model <code>aust.mzn</code> shown in Figure 2 of the tutorial, p. 4. The main difference is that the variable names in the code above are generated automatically (the names may look slightly different when you run this code). The function <code>mz/variable</code> simply does not know that its result is stored in a symbol by <code>let</code>, and thus does not know its name. If you are only interested in the Clojure code, this poses no problem, as you do not need to read the automatically generated MiniZinc variables. 
+</p>
+
+<p>
+If you want better readable MiniZinc code, just explicitly tell <code>mz/variable</code> (or its friends like <code>mz/int</code>) your MiniZinc variable name. 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 10) 'x)
+</pre>
+</div>
+
+<p>
+The integer parameter of the model (<code>nc</code>) has been explicitly named this way (the optional name for the integer parameter is given before its optional initialisation value).
+</p>
+
+<p>
+Section <i>Similarity and Differences between MiniZinc and clojure2minizinc</i> below details further differences between these two languages.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-2-2-2" class="outline-4">
+<h4 id="sec-2-2-2"><span class="section-number-4">2.2.2</span> Storing Variables in Other Data Structures</h4>
+<div class="outline-text-4" id="text-2-2-2">
+<p>
+As mentioned above, clojure2minizinc can store MiniZinc variables and parameters in arbitrary Clojure data structures. The following example stores the variables for the colours of Australian states in a map. The same inequality constraints are applied by mapping over pairs of keywords representing these inequalities somewhat more concisely. 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc 
+ (<span style="color: #228b22;">mz</span>/clj2mnz
+  (<span style="color: #a020f0;">let</span> [nc (<span style="color: #228b22;">mz</span>/int 'nc 3)
+        states (zipmap [<span style="color: #008b8b;">:wa</span> <span style="color: #008b8b;">:nt</span> <span style="color: #008b8b;">:sa</span> <span style="color: #008b8b;">:q</span> <span style="color: #008b8b;">:nsw</span> <span style="color: #008b8b;">:v</span> <span style="color: #008b8b;">:t</span>]
+                       (take 7 (repeatedly #(<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 nc)))))]
+    (<span style="color: #a020f0;">doall</span> (map (<span style="color: #a020f0;">fn</span> [[s1 s2]] 
+                  (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= (s1 states) (s2 states))))
+                [[<span style="color: #008b8b;">:wa</span> <span style="color: #008b8b;">:nt</span>] [<span style="color: #008b8b;">:wa</span> <span style="color: #008b8b;">:sa</span>] [<span style="color: #008b8b;">:nt</span> <span style="color: #008b8b;">:sa</span>] [<span style="color: #008b8b;">:nt</span> <span style="color: #008b8b;">:q</span>] [<span style="color: #008b8b;">:sa</span> <span style="color: #008b8b;">:q</span>] [<span style="color: #008b8b;">:sa</span> <span style="color: #008b8b;">:nsw</span>] [<span style="color: #008b8b;">:sa</span> <span style="color: #008b8b;">:v</span>] [<span style="color: #008b8b;">:nsw</span> <span style="color: #008b8b;">:v</span>]]))
+    (<span style="color: #228b22;">mz</span>/solve <span style="color: #008b8b;">:satisfy</span>)
+    (<span style="color: #228b22;">mz</span>/output-map states))))
+</pre>
+</div>
+
+<p>
+The resulting MiniZinc code is basically the same, and thus also the result.
+</p>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-sec-2-3" class="outline-3">
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> An Arithmetic Optimisation Example (MiniZinc tutorial, p. 6ff)</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+The MiniZinc tutorial continues with an optimisation example, that computes the number of banana (<code>b</code>) and chocolate (<code>c</code>) cakes to bake for maximum profit given the recipes for these cakes, the amount of ingredients, and the price at which each cake can be sold. 
+</p>
+
+<p>
+The corresponding clojure2minizinc code is shown below. Please see the MiniZinc tutorial for an explanation of this model. 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc 
+ (<span style="color: #228b22;">mz</span>/clj2mnz
+  (<span style="color: #a020f0;">let</span> [b (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 100))
+        c (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 100))]
+    <span style="color: #b22222;">;; </span><span style="color: #b22222;">flour</span>
+    (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/* 250 b)
+                                (<span style="color: #228b22;">mz</span>/* 200 c))
+                          4000))
+    <span style="color: #b22222;">;; </span><span style="color: #b22222;">bananas</span>
+    (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/* 2 b) 6))
+    <span style="color: #b22222;">;; </span><span style="color: #b22222;">sugar</span>
+    (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/* 75 b)
+                                (<span style="color: #228b22;">mz</span>/* 150 c))
+                          2000))
+    <span style="color: #b22222;">;; </span><span style="color: #b22222;">butter </span>
+    (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/* 100 b)
+                                (<span style="color: #228b22;">mz</span>/* 150 c))
+                          500))
+    <span style="color: #b22222;">;; </span><span style="color: #b22222;">cocoa</span>
+    (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/* 75 c) 500))
+    <span style="color: #b22222;">;; </span><span style="color: #b22222;">maximise profit</span>
+    (<span style="color: #228b22;">mz</span>/solve <span style="color: #008b8b;">:maximize</span> (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/* 400 b) (<span style="color: #228b22;">mz</span>/* 450 c)))
+    (<span style="color: #228b22;">mz</span>/output-map {<span style="color: #008b8b;">:banana-cakes</span> b <span style="color: #008b8b;">:chocolate-cakes</span> c}))))
+</pre>
+</div>
+
+<p>
+The optimal solution are two cakes of each kind. 
+</p>
+
+<p>
+<code>; =&gt; ({:banana-cakes 2, :chocolate-cakes 2})</code>
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-2-4" class="outline-3">
+<h3 id="sec-2-4"><span class="section-number-3">2.4</span> Datafiles and Assertions (MiniZinc tutorial, p. 8ff)</h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+In the previous example, the amount of each ingredient was fixed in the model. MiniZinc supports parameterising models, where MiniZinc parameters or variables are declared but not further initialised. Values for this parameters/variables are specified outside of the model to the solver, usually with MiniZinc data files. 
+</p>
+
+<p>
+The clojure2minizinc version of the parameterised model is shown below. Again, please see the MiniZinc tutorial (p. 8ff) for an explanation of this model. 
+</p>
+
+<p>
+Note that we must specify explicit names for the parameters of a parameterised model (here <code>flour</code>, <code>banana</code>, <code>sugar</code>, and so forth), so that these names are the same as in the parameter file (i.e., automatically generated names would not work).
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #a020f0;">def</span> <span style="color: #a0522d;">cakes2</span>
+  (<span style="color: #228b22;">mz</span>/clj2mnz
+   (<span style="color: #a020f0;">let</span> [flour (<span style="color: #228b22;">mz</span>/int 'flour)
+         banana (<span style="color: #228b22;">mz</span>/int 'banana)
+         sugar (<span style="color: #228b22;">mz</span>/int 'sugar)
+         butter (<span style="color: #228b22;">mz</span>/int 'butter)
+         cocoa (<span style="color: #228b22;">mz</span>/int 'cocoa)]
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/assert (<span style="color: #228b22;">mz</span>/&gt;= flour 0) <span style="color: #8b2252;">"Amount of flour must not be negative"</span>))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/assert (<span style="color: #228b22;">mz</span>/&gt;= banana 0) <span style="color: #8b2252;">"Amount of banana must not be negative"</span>))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/assert (<span style="color: #228b22;">mz</span>/&gt;= sugar 0) <span style="color: #8b2252;">"Amount of sugar must not be negative"</span>))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/assert (<span style="color: #228b22;">mz</span>/&gt;= butter 0) <span style="color: #8b2252;">"Amount of butter must not be negative"</span>))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/assert (<span style="color: #228b22;">mz</span>/&gt;= cocoa 0) <span style="color: #8b2252;">"Amount of cocoa must not be negative"</span>))
+     (<span style="color: #a020f0;">let</span> [b (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 100))
+           c (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 1 100))]
+       <span style="color: #b22222;">;; </span><span style="color: #b22222;">flour</span>
+       (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/* 250 b)
+                                   (<span style="color: #228b22;">mz</span>/* 200 c))
+                             flour))
+       <span style="color: #b22222;">;; </span><span style="color: #b22222;">bananas</span>
+       (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/* 2 b) banana))
+       <span style="color: #b22222;">;; </span><span style="color: #b22222;">sugar</span>
+       (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/* 75 b)
+                                   (<span style="color: #228b22;">mz</span>/* 150 c))
+                             sugar))
+       <span style="color: #b22222;">;; </span><span style="color: #b22222;">butter </span>
+       (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/* 100 b)
+                                   (<span style="color: #228b22;">mz</span>/* 150 c))
+                             butter))
+       <span style="color: #b22222;">;; </span><span style="color: #b22222;">cocoa</span>
+       (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt;= (<span style="color: #228b22;">mz</span>/* 75 c) cocoa))
+       <span style="color: #b22222;">;; </span><span style="color: #b22222;">maximise profit</span>
+       (<span style="color: #228b22;">mz</span>/solve <span style="color: #008b8b;">:maximize</span> (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/* 400 b) (<span style="color: #228b22;">mz</span>/* 450 c)))
+       (<span style="color: #228b22;">mz</span>/output-map {<span style="color: #008b8b;">:banana-cakes</span> b <span style="color: #008b8b;">:chocolate-cakes</span> c})))))
+</pre>
+</div>
+
+
+<p>
+In clojure2minizinc, the parameters for a model are given directly to the solver. The code below specifies the same amounts of ingredients for the cakes as the original example, and therefore the result is the same. 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc cakes2
+  <span style="color: #008b8b;">:data</span> (<span style="color: #228b22;">mz</span>/map2minizinc {<span style="color: #008b8b;">:flour</span> 4000 <span style="color: #008b8b;">:banana</span> 6 <span style="color: #008b8b;">:sugar</span> 2000 <span style="color: #008b8b;">:butter</span> 500 <span style="color: #008b8b;">:cocoa</span> 500}))
+</pre>
+</div>
+
+<p>
+<code>; =&gt; ({:banana-cakes 2, :chocolate-cakes 2})</code>
+</p>
+
+<p>
+Different amounts have a different optimal result.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc cakes2
+  <span style="color: #008b8b;">:data</span> (<span style="color: #228b22;">mz</span>/map2minizinc {<span style="color: #008b8b;">:flour</span> 8000 <span style="color: #008b8b;">:banana</span> 11 <span style="color: #008b8b;">:sugar</span> 3000 <span style="color: #008b8b;">:butter</span> 1500 <span style="color: #008b8b;">:cocoa</span> 800}))
+</pre>
+</div>
+
+<p>
+<code>; =&gt;  ({:banana-cakes 3, :chocolate-cakes 8})</code>
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-2-5" class="outline-3">
+<h3 id="sec-2-5"><span class="section-number-3">2.5</span> Real Number Solving (MiniZinc tutorial, p. 11ff)</h3>
+<div class="outline-text-3" id="text-2-5">
+<p>
+The next example demonstrates constraint programming on "real numbers" (floating point variables). The example models the repayment of a loan with interest over four quarters.
+</p>
+
+<p>
+The model is also parameterised &#x2013; values for variables <code>r</code>, <code>p</code> and so forth can be specified to the solver. Remember that we must specify explicit names for these variables (they should not be named automatically).
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #a020f0;">def</span> <span style="color: #a0522d;">loan</span>
+  (<span style="color: #228b22;">mz</span>/clj2mnz
+   (<span style="color: #a020f0;">let</span> [r (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'r)           <span style="color: #b22222;">; </span><span style="color: #b22222;">quarterly repayment</span>
+         p (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'p)           <span style="color: #b22222;">; </span><span style="color: #b22222;">principal initially borrowed</span>
+         i (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- 0.0 10.0) 'i) <span style="color: #b22222;">; </span><span style="color: #b22222;">interest rate</span>
+         <span style="color: #b22222;">;; </span><span style="color: #b22222;">intermediate variables </span>
+         b1 (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'b1)         <span style="color: #b22222;">; </span><span style="color: #b22222;">balance after one quarter</span>
+         b2 (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'b2)         <span style="color: #b22222;">; </span><span style="color: #b22222;">balance after two quarters</span>
+         b3 (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'b3)         <span style="color: #b22222;">; </span><span style="color: #b22222;">balance after three quarters</span>
+         b4 (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'b4)]        <span style="color: #b22222;">; </span><span style="color: #b22222;">balance owing at end</span>
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= b1 (<span style="color: #228b22;">mz</span>/- (<span style="color: #228b22;">mz</span>/* p (<span style="color: #228b22;">mz</span>/+ 1.0 i)) r)))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= b2 (<span style="color: #228b22;">mz</span>/- (<span style="color: #228b22;">mz</span>/* b1 (<span style="color: #228b22;">mz</span>/+ 1.0 i)) r)))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= b3 (<span style="color: #228b22;">mz</span>/- (<span style="color: #228b22;">mz</span>/* b2 (<span style="color: #228b22;">mz</span>/+ 1.0 i)) r)))
+     (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= b4 (<span style="color: #228b22;">mz</span>/- (<span style="color: #228b22;">mz</span>/* b3 (<span style="color: #228b22;">mz</span>/+ 1.0 i)) r)))
+     (<span style="color: #228b22;">mz</span>/solve <span style="color: #008b8b;">:satisfy</span>)
+     (<span style="color: #228b22;">mz</span>/output-map {<span style="color: #008b8b;">:borrowing</span> p <span style="color: #008b8b;">:interest-rate</span> (<span style="color: #228b22;">mz</span>/* i 100.0)
+                     <span style="color: #008b8b;">:repayment-per-quarter</span> r
+                     <span style="color: #008b8b;">:owing-at-end</span> b4}))))
+</pre>
+</div>
+
+<p>
+The default MiniZinc solver (<code>mzn-g12fd</code>) does not support floating point variables, so we can use Gecode again. A solution is shown below the solver call.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc loan <span style="color: #008b8b;">:options</span> [<span style="color: #8b2252;">"-f fzn-gecode"</span>] 
+  <span style="color: #008b8b;">:data</span> (<span style="color: #228b22;">mz</span>/map2minizinc {<span style="color: #008b8b;">:i</span> 0.04 <span style="color: #008b8b;">:p</span> 1000.0 <span style="color: #008b8b;">:r</span> 260.0}))
+</pre>
+</div>
+
+<p>
+<code>; =&gt; ({:borrowing 1000.0, :interest-rate 4.00000000000001, :repayment-per-quarter 260.0, :owing-at-end 65.7779200000003})</code>
+</p>
+
+<p>
+In constraint programming any variable can be quasi input or output of the algorithm. Instead of setting the values for <code>r</code>, <code>p</code> and <code>i</code> in the solver call, we can set the values for other variables. By setting <code>b4</code> to 0 we specify that the loan is fully payed back after four quarters.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc loan <span style="color: #008b8b;">:options</span> [<span style="color: #8b2252;">"-f fzn-gecode"</span>] 
+  <span style="color: #008b8b;">:data</span> (<span style="color: #228b22;">mz</span>/map2minizinc {<span style="color: #008b8b;">:i</span> 0.04 <span style="color: #008b8b;">:p</span> 1000.0 <span style="color: #008b8b;">:b4</span> 0.0}))
+</pre>
+</div>
+
+<p>
+<code>; =&gt; ({:borrowing 1000.0, :interest-rate 4.00000000000001, :repayment-per-quarter 275.490045364803, :owing-at-end 0.0})</code>
+</p>
+
+<p>
+Here are again other variables set before the search.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc loan <span style="color: #008b8b;">:options</span> [<span style="color: #8b2252;">"-f fzn-gecode"</span>] 
+  <span style="color: #008b8b;">:data</span> (<span style="color: #228b22;">mz</span>/map2minizinc {<span style="color: #008b8b;">:i</span> 0.04 <span style="color: #008b8b;">:r</span> 250.0 <span style="color: #008b8b;">:b4</span> 0.0}))
+</pre>
+</div>
+
+<p>
+<code>; =&gt; ({:borrowing 907.473806064214, :interest-rate 4.00000000000001, :repayment-per-quarter 250.0, :owing-at-end 0.0})</code>
+</p>
+
+
+<p>
+If you do not have Gecode installed, you can also use the solver <code>mzn-g12mip</code>, which comes with MiniZinc. The result happens to be slightly different.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc loan <span style="color: #008b8b;">:solver</span> <span style="color: #8b2252;">"mzn-g12mip"</span>
+  <span style="color: #008b8b;">:data</span> (<span style="color: #228b22;">mz</span>/map2minizinc {<span style="color: #008b8b;">:i</span> 0.04 <span style="color: #008b8b;">:r</span> 250.0 <span style="color: #008b8b;">:b4</span> 0.0}))
+</pre>
+</div>
+
+<p>
+<code>; =&gt; ({:borrowing 907.4738060642132, :interest-rate 4.0, :repayment-per-quarter 250.0, :owing-at-end 0.0})</code>
+</p>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> More Complex Models</h2>
+<div class="outline-text-2" id="text-3">
+</div><div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> Arrays and Sets (MiniZinc tutorial, p. 15ff)</h3>
+<div class="outline-text-3" id="text-3-1">
+<p>
+This example demonstrates the use of a two-dimensional array of float variables. It models temperatures on a rectangular sheet of metal. The MiniZinc tutorial explains the details. 
+</p>
+
+<p>
+In order to make the result better comprehensible, we will print it in table form instead of just returning the result. We need an auxiliary function that prints a table. Lets use <code>print-table</code> that is shown as an example for <code>get-pretty-writer</code> at <a href="http://clojure.github.io/clojure/clojure.pprint-api.html"><a href="http://clojure.github.io">http://clojure.github.io</a></a> (<code>print-table</code> is only slightly edited here). This function is the reason why we <code>require</code>'d <code>clojure.pprint</code> in the name space definition above.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #a020f0;">defn</span> <span style="color: #0000ff;">print-table</span> [column-width aseq]
+  (<span style="color: #a020f0;">binding</span> [<span style="color: #483d8b;">*out*</span> (<span style="color: #228b22;">pprint</span>/get-pretty-writer <span style="color: #483d8b;">*out*</span>)]
+    (<span style="color: #a020f0;">doseq</span> [row aseq]
+      (<span style="color: #a020f0;">doseq</span> [col row]
+        (<span style="color: #228b22;">pprint</span>/cl-format <span style="color: #008b8b;">true</span> <span style="color: #8b2252;">"~6,2F~7,vT"</span> col column-width))
+      (prn))))
+</pre>
+</div>
+
+<p>
+Now we can present the clojure2minizinc version of the Laplace model from the MiniZinc tutorial. 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #a020f0;">let</span> [width 5
+      height 5]
+  (print-table 2
+   (partition (+ 1 height)  <span style="color: #b22222;">;; </span><span style="color: #b22222;">add one, because array boundaries are [0, height] etc.</span>
+    (first 
+     (<span style="color: #228b22;">mz</span>/minizinc 
+      (<span style="color: #228b22;">mz</span>/clj2mnz
+       (<span style="color: #a020f0;">let</span> [w (<span style="color: #228b22;">mz</span>/int 'w width)
+             h (<span style="color: #228b22;">mz</span>/int 'h height)
+             <span style="color: #b22222;">;; </span><span style="color: #b22222;">array decl</span>
+             t (<span style="color: #228b22;">mz</span>/array (list (<span style="color: #228b22;">mz</span>/-- 0 w) (<span style="color: #228b22;">mz</span>/-- 0 h)) [<span style="color: #008b8b;">:var</span> <span style="color: #008b8b;">:float</span>] 't)
+             left (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'left)
+             right (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'right)
+             top (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'top)
+             bottom (<span style="color: #228b22;">mz</span>/variable <span style="color: #008b8b;">:float</span> 'bottom)]
+         <span style="color: #b22222;">;; </span><span style="color: #b22222;">Laplace equation</span>
+         <span style="color: #b22222;">;; </span><span style="color: #b22222;">Each internal temp. is average of its neighbours</span>
+         (<span style="color: #228b22;">mz</span>/constraint 
+          (<span style="color: #228b22;">mz</span>/forall [i (<span style="color: #228b22;">mz</span>/-- 1 (<span style="color: #228b22;">mz</span>/- w 1))
+                      j (<span style="color: #228b22;">mz</span>/-- 1 (<span style="color: #228b22;">mz</span>/- h 1))]
+                     (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/* 4.0 (<span style="color: #228b22;">mz</span>/nth t i j))
+                           <span style="color: #b22222;">;; </span><span style="color: #ff0000; font-weight: bold;">TODO:</span><span style="color: #b22222;"> generalise binary operators like +, -, *, / </span>
+                           <span style="color: #b22222;">;; </span><span style="color: #b22222;">to support an arbitrary number of args </span>
+                           (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/nth t (<span style="color: #228b22;">mz</span>/- i 1) j)
+                                 (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/nth t i (<span style="color: #228b22;">mz</span>/- j 1))
+                                       (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/nth t (<span style="color: #228b22;">mz</span>/+ i 1) j)
+                                             (<span style="color: #228b22;">mz</span>/nth t i (<span style="color: #228b22;">mz</span>/+ j 1))))))))
+         <span style="color: #b22222;">;; </span><span style="color: #b22222;">edge constraints</span>
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/forall [i (<span style="color: #228b22;">mz</span>/-- 1 (<span style="color: #228b22;">mz</span>/- w 1))]
+                                   (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/nth t i 0) left)))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/forall [i (<span style="color: #228b22;">mz</span>/-- 1 (<span style="color: #228b22;">mz</span>/- w 1))]
+                                   (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/nth t i h) right)))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/forall [j (<span style="color: #228b22;">mz</span>/-- 1 (<span style="color: #228b22;">mz</span>/- h 1))]
+                                   (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/nth t 0 j) top)))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/forall [j (<span style="color: #228b22;">mz</span>/-- 1 (<span style="color: #228b22;">mz</span>/- h 1))]
+                                   (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/nth t w j) bottom)))
+         <span style="color: #b22222;">;; </span><span style="color: #b22222;">corner constraints</span>
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/nth t 0 0) 0.0))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/nth t 0 h) 0.0))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/nth t w 0) 0.0))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/nth t w h) 0.0))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= left 0.0))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= right 0.0))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= top 100.0))
+         (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/= bottom 0.0))
+         (<span style="color: #228b22;">mz</span>/solve <span style="color: #008b8b;">:satisfy</span>)
+         <span style="color: #b22222;">;; </span><span style="color: #b22222;">2d-array output as flat 1d array -- formatting of result done by Clojure</span>
+         (<span style="color: #228b22;">mz</span>/output-var t) 
+         ))
+      <span style="color: #008b8b;">:options</span> [<span style="color: #8b2252;">"-f fzn-gecode"</span>]
+      <span style="color: #b22222;">; </span><span style="color: #b22222;">:solver "mzn-g12mip"</span>
+      )))))
+</pre>
+</div>
+
+<p>
+In this model, the top-level call is <code>print-table</code>. The model therefore returns only <code>nil</code>, but prints the following result at the REPL.
+</p>
+
+<pre class="example">
+  0.00 100.00  100.00  100.00  100.00    0.00  
+  0.00  45.45   59.47   59.47   45.45    0.00  
+  0.00  22.35   32.95   32.95   22.35    0.00  
+  0.00  10.98   17.05   17.05   10.98    0.00  
+  0.00   4.55    7.20    7.20    4.55    0.00  
+  0.00   0.00    0.00    0.00    0.00    0.00
+</pre>
+
+<p>
+In the model, the Laplace equation is currently unnecessarily complicated, because the clojure2minizinc arithmetic operators are only binary functions, like their MiniZinc counterparts. The will be generalised in a later version for an arbitrary number of arguments, in true Lisp spirit. 
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> <span class="todo TODO">TODO</span> Complete this Tutorial&#x2026;</h3>
+</div>
+</div>
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Similarity and Differences between MiniZinc and clojure2minizinc</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+Definitions in clojure2minizinc can be very similar to MiniZinc code. But there are some differences, which are detailed here.
+</p>
+</div>
+
+
+<div id="outline-container-sec-4-1" class="outline-3">
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> Code Similarity</h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+The syntax of MiniZinc and clojure2minizinc differs clearly. The MiniZinc notation is close to an ASCII version of standard math notation, while in clojure2minizinc all code is expressed by standard Lisp S-expressions. 
+</p>
+
+<p>
+Nevertheless, most MiniZinc operators, functions etc. are called exactly the same in clojure2minizinc. For example the following two code snippets show a MiniZinc code line and the corresponding clojure2minizinc code (without namespace prefixes).
+</p>
+
+<pre class="example">
+constraint x + y != z;
+</pre>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(constraint (!= (+ x y) z))
+</pre>
+</div>
+
+<p>
+Because of this similarity of code, the main documentation of clojure2minizinc is the MiniZinc documentation itself.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-4-2" class="outline-3">
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> Exceptions to the Similarity</h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure due to certain restrictions of Clojure. The differences between MiniZinc operators, keywords etc. and the corresponding Clojure functions are listed in the table below.
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">MiniZinc</th>
+<th scope="col" class="left">clojure2minizinc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left"><code>var</code></td>
+<td class="left"><code>variable</code> and different syntax</td>
+</tr>
+
+<tr>
+<td class="left"><code>..</code></td>
+<td class="left"><code>--</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>/\</code></td>
+<td class="left"><code>and</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>\/</code></td>
+<td class="left"><code>or</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>array</code></td>
+<td class="left">different syntax</td>
+</tr>
+
+<tr>
+<td class="left"><code>forall</code></td>
+<td class="left">different syntax</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+<div id="outline-container-sec-4-2-1" class="outline-4">
+<h4 id="sec-4-2-1"><span class="section-number-4">4.2.1</span> <span class="todo TODO">TODO</span> Keep this Note Up To Date</h4>
+<div class="outline-text-4" id="text-4-2-1">
+<p>
+Note also that not all MiniZinc operators, keywords etc. are supported in the early releases of clojure2minizinc yet. For example, the table below will grow once the MiniZinc <code>let</code> and <code>if</code> are supported (both need different clojure2minizinc names as well). Also, in future versions many binary MiniZinc operators will be n-ary in clojure2minizinc.
+</p>
+
+<p>
+Further, an equivalent for the MiniZinc <code>output</code> does not exist, use <code>output-map</code> instead.
+</p>
+</div>
+</div>
+</div>
+</div>
+
+
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> What Makes clojure2minizinc Special?</h2>
+<div class="outline-text-2" id="text-5">
+</div><div id="outline-container-sec-5-1" class="outline-3">
+<h3 id="sec-5-1"><span class="section-number-3">5.1</span> Going Beyond MiniZinc Limitations</h3>
+<div class="outline-text-3" id="text-5-1">
+</div><div id="outline-container-sec-5-1-1" class="outline-4">
+<h4 id="sec-5-1-1"><span class="section-number-4">5.1.1</span> Integration in a General-Purpose Programming Language</h4>
+<div class="outline-text-4" id="text-5-1-1">
+<p>
+clojure2minizinc allows you to do a number of things that are impossible (or at least much more difficult) in plain MiniZinc. MiniZinc is a highly specialised domain-specific language. clojure2minizinc is embedded in a general-purpose programming language and complements MiniZinc by standard programming features such as input/output, graphical user-interfaces, interfaces to the underlying operating system, and so forth. Basically, all Clojure and Java libraries are at your disposal when using clojure2minizinc. Also, the functionality of Clojure editors available for defining MiniZinc models. For example, auto-completion and documentation accessible in your editor will help you (<a href="http://www.minizinc.org/ide/index.html">MiniZinc editors</a> do not support such functionality).
+</p>
+
+<p>
+Perhaps most importantly, constraint problems can be created dynamically (before the search starts). For example, a constraint problem may depend on user input. Imagine a scheduling problem where different kinds of tasks to schedule are represented by different arrays, and depending on user input you may need a few additional arrays. While MiniZinc already provides some means for abstraction (predicates and functions), these are restricted in their capabilities. Adding a few global arrays is at least difficult: MiniZinc data structures cannot be nested, so the result of a function could at most be one array (but it could be multi-dimensional). By contrast, clojure2minizinc makes it easy to create constraint problems dynamically &#x2013; Lisps are very good at generating code on the fly.
+</p>
+
+<p>
+It was mentioned already above that decision variables can be stored in arbitrary Clojure data structures, and then constraints be applied to these data structures (see section <i>Storing Variables in Other Data Structures</i>). MiniZinc does not see the Clojure data structure, but it may help to express information about the constraint problem to model (e.g., to express how certain variables are related).  
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-5-1-2" class="outline-4">
+<h4 id="sec-5-1-2"><span class="section-number-4">5.1.2</span> Higher-Order Programming</h4>
+<div class="outline-text-4" id="text-5-1-2">
+<p>
+Being integrated in a functional language, clojure2minizinc allows for higher-order programming. The following example maps a constraint (wrapped in a function) to all elements of a MiniZinc array (translated into a Clojure sequence). 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(map #(<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/&lt; (<span style="color: #228b22;">mz</span>/+ <span style="color: #a0522d;">%</span> 1) 10))
+     (<span style="color: #228b22;">mz</span>/array-&gt;clj-seq (array (-- 1 3) [<span style="color: #008b8b;">:var</span> (-- -100 100)])))
+</pre>
+</div>
+
+<p>
+To make such higher-order programming working, in the resulting MiniZinc program the array element are accessed one by one.
+</p>
+
+<pre class="example">
+array[1..3] of var -100..100: array9289;
+constraint ((array9289[1] + 1) &lt; 10);
+constraint ((array9289[2] + 1) &lt; 10);
+constraint ((array9289[3] + 1) &lt; 10);
+</pre>
+
+<p>
+To be fair, using the MiniZinc aggregation function <code>forall</code> the example above can also be expressed very concisely. 
+</p>
+
+<pre class="example">
+array[1..3] of var -100..100: x;
+constraint forall(i in 1..3)((x[i] + 1) &lt; 10);
+</pre>
+
+<p>
+The difference is that the set of such aggregation functions and their capabilities is fixed in MiniZinc, but the clojure2minizinc user can define her own special-purpose higher-order function for applying constraints. 
+</p>
+
+<p>
+<b>TODO: show example</b>
+</p>
+
+<p>
+Of course, such higher-order functions can only depend on information available before the search starts. For example, it is not possible to define a filtering function as part of the constraint problem, which depends on the values of variables in the solution. Anyway, higher-order functions can apply constraints that depend on whether other constraints hold, using reified constraints such as implication. 
+</p>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-sec-5-2" class="outline-3">
+<h3 id="sec-5-2"><span class="section-number-3">5.2</span> clojure2minizinc is Solver-Independent</h3>
+<div class="outline-text-3" id="text-5-2">
+<p>
+The Constraint Programming community developed <a href="http://en.wikipedia.org/wiki/Constraint_programming#Logic_programming_based_constraint_logic_languages">many solvers</a>, and a considerable number of them extends a programming language directly. Such close integration has clear advantages. E.g., custom search strategies can be programmed using the full power of the host language (if the solver supports it).
+</p>
+
+<p>
+clojure2minizinc's inherits from MiniZinc the advantage that it is solver-independent: <a href="http://www.hakank.org/minizinc/">any solver supporting FlatZinc</a> as input can be used. 
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-5-3" class="outline-3">
+<h3 id="sec-5-3"><span class="section-number-3">5.3</span> Pitfalls of Constraint Programming Compared to Standard Clojure Programming</h3>
+<div class="outline-text-3" id="text-5-3">
+<p>
+Constraint programming provides a very high level of abstraction for the programmer. However, this strength comes with a certain price. In particular, software using constraint programming can be hard to debug. Even worse, error messages by MiniZinc currently refer to line numbers of the generated MiniZinc code, not the clojure2minizinc code. However, constraint problem debuggers are not too helpful anyway. Often it is necessary to carefully analyse a model in order to understand why it does not work as intended. 
+</p>
+
+<p>
+A useful and easy debugging strategy is to disable a set of constraints and to enable them one by one again in order to find the problem. Another useful debugging aid is the search tree visualiser and interactive search tool <code>gist</code> provided by Gecode. It can be enabled with the <code>-mode</code> option. For more information see the <a href="http://www.gecode.org/doc-latest/MPG.pdf">Gecode tutorial</a>, p. 157ff. 
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #228b22;">mz</span>/minizinc aust <span style="color: #008b8b;">:options</span> [<span style="color: #8b2252;">"-f fzn-gecode"</span> <span style="color: #8b2252;">"--fzn-flags '-mode gist'"</span>])
+</pre>
+</div>
+
+<p>
+<b>TODO: get code above working &#x2013; it works at the shell, but not yet in clojure2minizinc</b>
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Torsten Anders</p>
+<p class="date">Created: 2014-08-31 Sun 22:20</p>
+<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.3.50.2 (<a href="http://orgmode.org">Org</a> mode 8.2.7b)</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
