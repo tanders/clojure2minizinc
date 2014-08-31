@@ -38,6 +38,92 @@
                                         ; => ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1})
 
 
+; performance testing -- about 3 msecs
+(time 
+ (mz/clj2mnz
+  (let [nc (mz/int 'nc 3)     
+        wa (mz/variable (mz/-- 1 nc))
+        nt (mz/variable (mz/-- 1 nc))
+        sa (mz/variable (mz/-- 1 nc))
+        q (mz/variable (mz/-- 1 nc))
+        nsw (mz/variable (mz/-- 1 nc))
+        v (mz/variable (mz/-- 1 nc))
+        t (mz/variable (mz/-- 1 nc))]
+    (mz/constraint (mz/!= wa nt))
+    (mz/constraint (mz/!= wa sa))
+    (mz/constraint (mz/!= nt sa))
+    (mz/constraint (mz/!= nt q))
+    (mz/constraint (mz/!= sa q))
+    (mz/constraint (mz/!= sa nsw))
+    (mz/constraint (mz/!= sa v))
+    (mz/constraint (mz/!= nsw v))
+    (mz/solve :satisfy)
+    (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t})
+    )))
+
+(time  ;; about 37 msecs
+ (mz/minizinc 
+ (mz/clj2mnz
+  (let [nc (mz/int 'nc 3)     
+        wa (mz/variable (mz/-- 1 nc))
+        nt (mz/variable (mz/-- 1 nc))
+        sa (mz/variable (mz/-- 1 nc))
+        q (mz/variable (mz/-- 1 nc))
+        nsw (mz/variable (mz/-- 1 nc))
+        v (mz/variable (mz/-- 1 nc))
+        t (mz/variable (mz/-- 1 nc))]
+    (mz/constraint (mz/!= wa nt))
+    (mz/constraint (mz/!= wa sa))
+    (mz/constraint (mz/!= nt sa))
+    (mz/constraint (mz/!= nt q))
+    (mz/constraint (mz/!= sa q))
+    (mz/constraint (mz/!= sa nsw))
+    (mz/constraint (mz/!= sa v))
+    (mz/constraint (mz/!= nsw v))
+    (mz/solve :satisfy)
+    (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t})
+    )))
+
+ (time
+  (mz/minizinc 
+   (mz/clj2mnz
+    (let [nc (mz/int 'nc 3)     
+          wa (mz/variable (mz/-- 1 nc))
+          nt (mz/variable (mz/-- 1 nc))
+          sa (mz/variable (mz/-- 1 nc))
+          q (mz/variable (mz/-- 1 nc))
+          nsw (mz/variable (mz/-- 1 nc))
+          v (mz/variable (mz/-- 1 nc))
+          t (mz/variable (mz/-- 1 nc))]
+      (mz/constraint (mz/!= wa nt))
+      (mz/constraint (mz/!= wa sa))
+      (mz/constraint (mz/!= nt sa))
+      (mz/constraint (mz/!= nt q))
+      (mz/constraint (mz/!= sa q))
+      (mz/constraint (mz/!= sa nsw))
+      (mz/constraint (mz/!= sa v))
+      (mz/constraint (mz/!= nsw v))
+      (mz/solve :satisfy)
+      (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t})
+      ))
+   ;; :print-solution? true
+   :options ["-f fzn-gecode"] ; "-s"
+   ))
+;; Gecode search statistics - Gecode's time (< 1 ms) takes much less than time required overall (about 3 msecs for clojure2minizinc -> MiniZinc, > 10/15 msecs for MiniZinc -> FlatZinc according to MiniZincIDE total time reported for this problem, and possibly another overhead for reading results back into Clojure.
+(comment
+  %%  runtime:       0.000 (0.320 ms)
+%%  solvetime:     0.000 (0.073 ms)
+%%  solutions:     1
+%%  variables:     7
+%%  propagators:   8
+%%  propagations:  8
+%%  nodes:         5
+%%  failures:      0
+%%  restarts:      0
+%%  peak depth:    4
+  )
+
+
 ;; Colouring Australia using nc colours
 ;; version using Clojure abstraction means
 (mz/minizinc 
