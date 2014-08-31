@@ -1,6 +1,6 @@
 (defproject minizinc/clojure2minizinc "0.1.0-SNAPSHOT"
   :description "This library provides an interface to the MiniZinc constraint modelling language (http://www.minizinc.org/), and constraint solvers supporting a FlatZinc interface (e.g., Gecode, http://www.gecode.org/flatzinc.html)."
-  ;; :url "http://example.com/FIXME"
+  :url "http://tanders.github.io/clojure2minizinc/"
   :license {:name "GNU General Public License"
             :url "https://gnu.org/licenses/gpl.html"}
   ;; ?? TODO: add dependencies -- how can Leiningen add dependencies outside Clojure?
