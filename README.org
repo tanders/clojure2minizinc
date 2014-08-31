@@ -60,11 +60,11 @@
 
 In the Clojure community there already exists an interest in Constraint Programming (and the related Logic Programming paradigm), and solvers have been developed for Clojure.
 
-[[https://github.com/clojure/core.logic][core.logic]] implements logic and constraint programming facilities from scratch directly in Clojure. More specifically, it implements [[http://minikanren.org][miniKanren]] and some of its extensions, e.g., [[https://github.com/calvis/cKanren][cKanren]] for Constraint Logic Programming. For example, according to the [[https://github.com/clojure/core.logic/wiki/Features][documentation of core.logic]], it currently implements about 10 constraints on integers (arithmetic operations, comparisons, and the global constraint =distinct=).  
+[[https://github.com/clojure/core.logic][core.logic]] implements logic programming facilities from scratch directly in Clojure. More specifically, it implements [[http://minikanren.org][miniKanren]]. It also implements some of its extensions, e.g., [[https://github.com/calvis/cKanren][cKanren]] for Constraint Logic Programming. 
 
-By contrast, clojure2minizinc provides an interface to a range of existing state-of-the-art constraint solvers. For example, in addition to constraints over integers (and many more constraints), it supports constraints over floats, sets, and reified constraints (i.e., the truth value of constraints can in turned be constrained, e.g., by logic relations such as implication or equivalence). Also, compared with the classical approach of Constraint Logic Programming implemented by cKanren, over the last twenty years the Constraint Programming community developed many techniques to greatly speed up the search process, which are implemented in state-of-the-art constraint solvers.
+By contrast, clojure2minizinc provides an interface to a range of existing state-of-the-art constraint solvers. Unlike core.logic, it does not support Logic Programming (e.g., it does not provide unification of arbitrary terms, only equality constraints for the supported domains). However, Constraint Programming is supported in a clearly more mature way by MiniZinc, and clojure2minizinc inherits its capabilities. MiniZinc supports more variable domains than core.logic (Booleans, integers, floats, and set of integers), more constraints (including more [[http://www.minizinc.org/downloads/doc-1.6/mzn-globals.html][global constraints]]), reified constraints (i.e., the truth value of constraints can in turn be constrained by logic relations such as implication or equivalence), and optimisation support.
 
-However, MiniZinc is not a Logic Programming language. For example, it does not provide unification of arbitrary terms (in contrast to equality constraints). 
+Perhaps most importantly, MiniZinc's 3rd-party solvers implement highly efficient search strategies developed by the [[http://www.a4cp.org/events/cp-conference-series][Constraint Programming community]], which clearly [[https://github.com/clojure/core.logic/wiki/External-solvers][outperform core.logic]]. The MiniZinc to FlatZinc transformation adds a [[http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.91.271&rep=rep1&type=pdf][certain overhead]], but this overhead is small and can be neglected in particular for more complex constraint problems. The translation from clojure2minizinc to MiniZinc is so simple that it can likely be neglected (*TODO: performance testing and improving once clojure2minizinc is more mature*). 
 
 
 *** C++: libmzn
@@ -78,7 +78,7 @@ However, MiniZinc is not a Logic Programming language. For example, it does not 
    
    Your contribution is welcome! 
    
-
+   
 ** License
 
    Distributed under the GNU General Public License.
