@@ -1,0 +1,22 @@
+#+TITLE:=clojure2minizinc= 
+#+AUTHOR: Torsten Anders
+
+#+OPTIONS: toc:nil num:nil
+
+* Summary
+
+   /clojure2minizinc/ provides an interface between [[http://www.minizinc.org/software.html][state-of-the-art constraint solvers]] (via [[www.minizinc.org][MiniZinc]]) and a very high-level programming language with excellent abstraction capabilities, [[http://clojure.org][Clojure]]. The clojure2minizinc user models in Clojure constraint satisfaction or optimisation problems over Boolean, integer, real number, and/or set variables. clojure2minizinc translates them into MiniZinc, they are solved in the background by a compatible solver, and the result is read back into Clojure. clojure2minizinc code can be very similar to the corresponding MiniZinc code, but in addition the full power of Clojure is at hand. 
+
+
+* Documentation
+
+   [[./tutorial.org][Tutorial]]
+
+   [[./reference/][Reference documentation]]
+
+
+* Source
+
+  https://github.com/tanders/clojure2minizinc
+
+
