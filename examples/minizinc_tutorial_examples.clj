@@ -264,8 +264,6 @@
  :solver "mzn-g12mip")
 
 
-
-;; TODO: finish def
 ;; TODO: def some mz/output-array
 ;; Example laplace, Tutorial p. 15f 
 ;; print-table copied from http://clojure.github.io/clojure/clojure.pprint-api.html
@@ -298,12 +296,11 @@
           (mz/forall [i (mz/-- 1 (mz/- w 1))
                       j (mz/-- 1 (mz/- h 1))]
                      (mz/= (mz/* 4.0 (mz/nth t i j))
-                           ;; TODO: generalise binary operators like +, -, *, / 
-                           ;; to support an arbitrary number of args 
+                           ;; Constraints like + support an arbitray number of arguments 
                            (mz/+ (mz/nth t (mz/- i 1) j)
-                                 (mz/+ (mz/nth t i (mz/- j 1))
-                                       (mz/+ (mz/nth t (mz/+ i 1) j)
-                                             (mz/nth t i (mz/+ j 1))))))))
+                                 (mz/nth t i (mz/- j 1))
+                                 (mz/nth t (mz/+ i 1) j)
+                                 (mz/nth t i (mz/+ j 1))))))
          ;; edge constraints
          (mz/constraint (mz/forall [i (mz/-- 1 (mz/- w 1))]
                                    (mz/= (mz/nth t i 0) left)))
@@ -336,3 +333,4 @@
       ;; :num-solutions 3
       )))))
 ;; Outputs nil -- solution printed (arranged as table)
+
