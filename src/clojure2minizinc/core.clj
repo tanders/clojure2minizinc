@@ -37,7 +37,7 @@
 ;; (def *mzn2fzn* "Path to the mzn2fzn executable" 
 ;;   "/Applications/minizinc-1.6/bin/mzn2fzn")
 ;; TODO: Find out -- use def or defvar? And does def support a doc string?
-(def ^:dynamic *fd-solver* "Path to constraint solver for finite domain (integers)" 
+(def ^:dynamic *fd-solver* "Path to default constraint solver for finite domain (integers)" 
   "minizinc")
 
 
@@ -48,7 +48,7 @@
 
 ;; Sending all constraints to a single store instead of returning them from functions like constraint allows, e.g., to store minizinc vars in arbitrary clojure data structures and freely traversing such data structure for applying constraints to these, without worrying how to collect the constraint information.
 ;; Note: Must be public so that other packages can indirectly write to it (why? tell-store does not need to be public either.)
-(def ^{:dynamic true} *mzn-store*  ; :private true
+(def ^{:dynamic true} ^:no-doc *mzn-store*  ; :private true
   "A thread-local store for collecting all information about a CSP."
   false)
 
@@ -78,13 +78,14 @@
 ;;;
 
 
-(defrecord aVar [name mzn-string])
+;; NOTE: ->aVar and map->aVar are created automatically, and it is included in the doc, because I cannot set ^:no-doc to it 
+(defrecord ^:no-doc aVar [name mzn-string])
 ;; NOTE: I would prefer making this a private function (and also aVar? make-anArray etc.), but it is required to be public (because used in macros?) 
-(defn make-aVar 
+(defn ^:no-doc make-aVar 
   "[Aux function] Returns an aVar record."
   [name mzn-string]
   (aVar. name mzn-string))
-(defn aVar? 
+(defn ^:no-doc aVar? 
   "Returns true if x is aVar record."
   [x]
   (core/= (type x) clojure2minizinc.core.aVar))
@@ -99,15 +100,15 @@
   (->aVar 'test "hi there")
   )
 
-
-(defrecord anArray [name mzn-string boundaries])
+;; NOTE: ->anArray and map->anArray are created automatically, and it is included in the doc, because I cannot set ^:no-doc to it 
+(defrecord ^:no-doc anArray [name mzn-string boundaries])
 (defn ^:private index-set->boundaries 
   "Retrieves the max and min of index-set. Example:
 (index-set->boundaries (-- 0 10)) ; > {:min 0 :max 10}"
   [index-set]
   (let [coll (map read-string (clojure.string/split index-set #"\.\."))]
     {:min (core/nth coll 0) :max (core/nth coll 1)}))
-(defn make-anArray 
+(defn ^:no-doc make-anArray 
   "[Aux function] Returns an anArray record."
   [name mzn-string index-set]
   ;; NOTE: no type-checking of index-set
@@ -122,7 +123,7 @@
                                        (aVar? %) (:name %)
                                        (string? %) %)) 
                                     index-set))))
-(defn anArray? 
+(defn ^:no-doc anArray? 
   "Returns true if x is anArray."
   [x]
   (core/= (type x) clojure2minizinc.core.anArray))
@@ -433,7 +434,7 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;; Aggregation functions for arithmetic arrays are
 ;;
 
-(defn forall-format 
+(defn ^:no-doc forall-format 
   "[Aux for forall] This function is only public, because it is needed in a public macro/"
   [vars & body]
   (format "forall(%s)(%s)" 
@@ -1030,7 +1031,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 ;;;
 
 (defn solve 
-  "Solve items specify what kind of solution is being looked for. Supported values for solver are satisfy, maximize, and minimize (a keyword)."
+  "Solve items specify what kind of solution is being looked for. Supported values for solver are :satisfy, :maximize, and :minimize (a keyword)."
   ([solver]
      {:pre [(#{:satisfy} solver)]}
      (tell-store (format "solve %s;" (name solver))))
