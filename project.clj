@@ -1,4 +1,4 @@
-(defproject minizinc/clojure2minizinc "0.1.0-SNAPSHOT"
+(defproject minizinc/clojure2minizinc "0.1.0"
   :description "This library provides an interface to the MiniZinc constraint modelling language (http://www.minizinc.org/), and constraint solvers supporting a FlatZinc interface (e.g., Gecode, http://www.gecode.org/flatzinc.html)."
   :url "http://tanders.github.io/clojure2minizinc/"
   :license {:name "GNU General Public License"
