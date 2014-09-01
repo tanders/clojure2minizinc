@@ -54,7 +54,7 @@
    Add this [[https://github.com/technomancy/leiningen][Leiningen]] dependency to your project:
 
 #+begin_src clojure :results silent
-[minizinc/clojure2minizinc "0.1.0-SNAPSHOT"]
+[minizinc/clojure2minizinc "0.1.0"]
 #+end_src
 
 # [![Clojars Project](http://clojars.org/minizinc/clojure2minizinc/latest-version.svg)](http://clojars.org/minizinc/clojure2minizinc)
