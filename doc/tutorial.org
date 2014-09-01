@@ -10,6 +10,12 @@
 
 #+PROPERTY: header-args:clojure  :session *clojure-1*
 
+# http://thomasf.github.io/solarized-css/
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-light.min.css" />
+# #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-dark.min.css" />
+
+#+INFOJS_OPT: view:info toc:t ltoc:t mouse:underline buttons:t path:http://thomasf.github.io/solarized-css/org-info.min.js
+
 * Introduction 
 
    The [[http://clojure.org/][Clojure]] library /clojure2minizinc/ provides an interface to MiniZinc. [[http://www.minizinc.org/][MiniZinc]] is a domain-specific language (DSL) for modelling constraint satisfaction and optimisation problems (CSP) over Boolean, integer, real number, and set variables. MiniZinc has the potential to become the lingua franca of the Constraint Programming community. For developers of existing constraint solvers it is rather easy to define a MiniZinc interface for their solvers, [[http://www.minizinc.org/software.html][several state-of-the-art solvers already support MiniZinc]] via the simpler language FlatZinc (even more solvers listed [[http://www.hakank.org/minizinc/][here]]), and they compete in a yearly [[http://www.minizinc.org/challenge.html][MiniZinc Challenge]]. More information on MiniZinc, in particular many related links can be found at http://www.hakank.org/minizinc/
@@ -27,8 +33,8 @@
 
 #+begin_src clojure :results silent
 (ns clojure2minizinc.tutorial
-  (:require [clojure2minizinc.core :as mz] ; 
-            [clojure.pprint :as pprint]))
+  (:require [clojure2minizinc.core :as mz]  ; loading clojure2minizinc.core 
+            [clojure.pprint :as pprint]))   ; pprint is needed later...
 #+end_src
    
    The library =clojure.pprint= will be needed later. We already add them here for convenience.
@@ -419,6 +425,7 @@ Note that in the actual Laplace equation in the code above, the =mz/+= constrain
 
 ** TODO Complete this Tutorial...
 
+   However, you can already move on to the next section...
 
 * Similarity and Differences between MiniZinc and clojure2minizinc
 

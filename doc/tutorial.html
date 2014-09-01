@@ -3,8 +3,8 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<title>A <code>clojure2minizinc</code> Tutorial</title>
-<!-- 2014-08-31 Sun 22:20 -->
+<title>A clojure2minizinc Tutorial</title>
+<!-- 2014-09-01 Mon 20:54 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Torsten Anders" />
@@ -88,6 +88,79 @@
     { background-color: #ffff00; color: #000000; font-weight: bold; }
   /*]]>*/-->
 </style>
+<link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-light.min.css" />
+
+<script type="text/javascript" src="http://thomasf.github.io/solarized-css/org-info.min.js">
+/**
+ *
+ * @source: http://thomasf.github.io/solarized-css/org-info.min.js
+ *
+ * @licstart  The following is the entire license notice for the
+ *  JavaScript code in http://thomasf.github.io/solarized-css/org-info.min.js.
+ *
+ * Copyright (C) 2012-2013 Free Software Foundation, Inc.
+ *
+ *
+ * The JavaScript code in this tag is free software: you can
+ * redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GNU GPL) as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.  The code is distributed WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+ *
+ * As additional permission under GNU GPL version 3 section 7, you
+ * may distribute non-source (e.g., minimized or compacted) forms of
+ * that code without the copy of the GNU GPL normally required by
+ * section 4, provided you include this license notice and a URL
+ * through which recipients can access the Corresponding Source.
+ *
+ * @licend  The above is the entire license notice
+ * for the JavaScript code in http://thomasf.github.io/solarized-css/org-info.min.js.
+ *
+ */
+</script>
+
+<script type="text/javascript">
+
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+
+<!--/*--><![CDATA[/*><!--*/
+org_html_manager.set("TOC_DEPTH", "3");
+org_html_manager.set("LINK_HOME", "");
+org_html_manager.set("LINK_UP", "");
+org_html_manager.set("LOCAL_TOC", "1");
+org_html_manager.set("VIEW_BUTTONS", "1");
+org_html_manager.set("MOUSE_HINT", "underline");
+org_html_manager.set("FIXED_TOC", "0");
+org_html_manager.set("TOC", "1");
+org_html_manager.set("VIEW", "info");
+org_html_manager.setup();  // activate after the parameters are set
+/*]]>*///-->
+</script>
 <script type="text/javascript">
 /*
 @licstart  The following is the entire license notice for the
@@ -137,7 +210,7 @@ for the JavaScript code in this tag.
 </head>
 <body>
 <div id="content">
-<h1 class="title">A <code>clojure2minizinc</code> Tutorial</h1>
+<h1 class="title">A clojure2minizinc Tutorial</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
@@ -220,8 +293,8 @@ For example, a clojure2minizinc program is defined in a Clojure namespace. The f
 <div class="org-src-container">
 
 <pre class="src src-clojure">(<span style="color: #a020f0;">ns</span> <span style="color: #228b22;">clojure2minizinc.tutorial</span>
-  (<span style="color: #008b8b;">:require</span> [<span style="color: #228b22;">clojure2minizinc.core</span> <span style="color: #008b8b;">:as</span> mz] <span style="color: #b22222;">; </span>
-            [<span style="color: #228b22;">clojure.pprint</span> <span style="color: #008b8b;">:as</span> pprint]))
+  (<span style="color: #008b8b;">:require</span> [<span style="color: #228b22;">clojure2minizinc.core</span> <span style="color: #008b8b;">:as</span> mz]  <span style="color: #b22222;">; </span><span style="color: #b22222;">loading clojure2minizinc.core </span>
+            [<span style="color: #228b22;">clojure.pprint</span> <span style="color: #008b8b;">:as</span> pprint]))   <span style="color: #b22222;">; </span><span style="color: #b22222;">pprint is needed later...</span>
 </pre>
 </div>
 
@@ -714,12 +787,11 @@ Now we can present the clojure2minizinc version of the Laplace model from the Mi
           (<span style="color: #228b22;">mz</span>/forall [i (<span style="color: #228b22;">mz</span>/-- 1 (<span style="color: #228b22;">mz</span>/- w 1))
                       j (<span style="color: #228b22;">mz</span>/-- 1 (<span style="color: #228b22;">mz</span>/- h 1))]
                      (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/* 4.0 (<span style="color: #228b22;">mz</span>/nth t i j))
-                           <span style="color: #b22222;">;; </span><span style="color: #ff0000; font-weight: bold;">TODO:</span><span style="color: #b22222;"> generalise binary operators like +, -, *, / </span>
-                           <span style="color: #b22222;">;; </span><span style="color: #b22222;">to support an arbitrary number of args </span>
+                           <span style="color: #b22222;">;; </span><span style="color: #b22222;">Constraints like + support an arbitray number of arguments </span>
                            (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/nth t (<span style="color: #228b22;">mz</span>/- i 1) j)
-                                 (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/nth t i (<span style="color: #228b22;">mz</span>/- j 1))
-                                       (<span style="color: #228b22;">mz</span>/+ (<span style="color: #228b22;">mz</span>/nth t (<span style="color: #228b22;">mz</span>/+ i 1) j)
-                                             (<span style="color: #228b22;">mz</span>/nth t i (<span style="color: #228b22;">mz</span>/+ j 1))))))))
+                                 (<span style="color: #228b22;">mz</span>/nth t i (<span style="color: #228b22;">mz</span>/- j 1))
+                                 (<span style="color: #228b22;">mz</span>/nth t (<span style="color: #228b22;">mz</span>/+ i 1) j)
+                                 (<span style="color: #228b22;">mz</span>/nth t i (<span style="color: #228b22;">mz</span>/+ j 1))))))
          <span style="color: #b22222;">;; </span><span style="color: #b22222;">edge constraints</span>
          (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/forall [i (<span style="color: #228b22;">mz</span>/-- 1 (<span style="color: #228b22;">mz</span>/- w 1))]
                                    (<span style="color: #228b22;">mz</span>/= (<span style="color: #228b22;">mz</span>/nth t i 0) left)))
@@ -762,7 +834,7 @@ In this model, the top-level call is <code>print-table</code>. The model therefo
 </pre>
 
 <p>
-In the model, the Laplace equation is currently unnecessarily complicated, because the clojure2minizinc arithmetic operators are only binary functions, like their MiniZinc counterparts. The will be generalised in a later version for an arbitrary number of arguments, in true Lisp spirit. 
+Note that in the actual Laplace equation in the code above, the <code>mz/+</code> constraint takes four arguments. Unlike MiniZinc, where such arithmetic operators are only binary (infix operators), their clojure2minizinc counterparts support an arbitrary number of arguments, in true Lisp spirit.  
 </p>
 </div>
 </div>
@@ -998,7 +1070,7 @@ A useful and easy debugging strategy is to disable a set of constraints and to e
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Torsten Anders</p>
-<p class="date">Created: 2014-08-31 Sun 22:20</p>
+<p class="date">Created: 2014-09-01 Mon 20:54</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.3.50.2 (<a href="http://orgmode.org">Org</a> mode 8.2.7b)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

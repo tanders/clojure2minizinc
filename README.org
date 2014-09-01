@@ -5,26 +5,6 @@
    /clojure2minizinc/ provides an interface between [[http://www.minizinc.org/software.html][state-of-the-art constraint solvers]] (via [[www.minizinc.org][MiniZinc]]) and a very high-level programming language with excellent abstraction capabilities, [[http://clojure.org][Clojure]]. The clojure2minizinc user models in Clojure constraint satisfaction or optimisation problems over Boolean, integer, real number, and/or set variables. clojure2minizinc translates them into MiniZinc, they are solved in the background by a compatible solver, and the result is read back into Clojure. clojure2minizinc code can be very similar to the corresponding MiniZinc code, but in addition the full power of Clojure is at hand. 
 
 
-** Installation 
-
-*** Installation of MiniZinc tools
-
-     - Install the [[http://www.minizinc.org/g12distrib.html][G12 MiniZinc Distribution]] (includes software that translates MiniZinc to the intermediate simpler format FlatZinc, which is understood by 3rd-party solvers, but also ready-to-use solvers)
-
-     - Optionally, install additional solvers. For example, see FlatZinc implementations at http://www.minizinc.org/software.html
-
-
-*** Installation of clojure2minizinc
-
-   Add this [[https://github.com/technomancy/leiningen][Leiningen]] dependency to your project:
-
-#+begin_src clojure :results silent
-[minizinc/clojure2minizinc "0.1.0-SNAPSHOT"]
-#+end_src
-
-# [![Clojars Project](http://clojars.org/minizinc/clojure2minizinc/latest-version.svg)](http://clojars.org/minizinc/clojure2minizinc)
-
-
 ** Usage: A Minimal Example 
 
    The following model declares two decision variables =a= and =b=, both with the domain /[-1 .. 1]/, and constraints them to be different.  
@@ -46,6 +26,26 @@
    The model asks for three solutions, and the default solver outputs the following.
 
    =; => ({:a 0, :b -1} {:a 1, :b -1} {:a -1, :b 0})=
+
+
+** Installation 
+
+*** Installation of MiniZinc tools
+
+     - Install the [[http://www.minizinc.org/g12distrib.html][G12 MiniZinc Distribution]] (includes software that translates MiniZinc to the intermediate simpler format FlatZinc, which is understood by 3rd-party solvers, but also ready-to-use solvers)
+
+     - Optionally, install additional solvers. For example, see FlatZinc implementations at http://www.minizinc.org/software.html
+
+
+*** Installation of clojure2minizinc
+
+   Add this [[https://github.com/technomancy/leiningen][Leiningen]] dependency to your project:
+
+#+begin_src clojure :results silent
+[minizinc/clojure2minizinc "0.1.0-SNAPSHOT"]
+#+end_src
+
+# [![Clojars Project](http://clojars.org/minizinc/clojure2minizinc/latest-version.svg)](http://clojars.org/minizinc/clojure2minizinc)
 
 
 ** Documentation

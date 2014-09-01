@@ -3,8 +3,8 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<title><code>clojure2minizinc</code></title>
-<!-- 2014-08-31 Sun 22:33 -->
+<title><img src="./graphics/clojure2minizinc-handdrawn-cut.png" alt="clojure2minizinc-handdrawn-cut.png" /></title>
+<!-- 2014-09-01 Mon 21:02 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Torsten Anders" />
@@ -88,6 +88,79 @@
     { background-color: #ffff00; color: #000000; font-weight: bold; }
   /*]]>*/-->
 </style>
+<link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-light.min.css" />
+
+<script type="text/javascript" src="http://thomasf.github.io/solarized-css/org-info.min.js">
+/**
+ *
+ * @source: http://thomasf.github.io/solarized-css/org-info.min.js
+ *
+ * @licstart  The following is the entire license notice for the
+ *  JavaScript code in http://thomasf.github.io/solarized-css/org-info.min.js.
+ *
+ * Copyright (C) 2012-2013 Free Software Foundation, Inc.
+ *
+ *
+ * The JavaScript code in this tag is free software: you can
+ * redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GNU GPL) as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.  The code is distributed WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+ *
+ * As additional permission under GNU GPL version 3 section 7, you
+ * may distribute non-source (e.g., minimized or compacted) forms of
+ * that code without the copy of the GNU GPL normally required by
+ * section 4, provided you include this license notice and a URL
+ * through which recipients can access the Corresponding Source.
+ *
+ * @licend  The above is the entire license notice
+ * for the JavaScript code in http://thomasf.github.io/solarized-css/org-info.min.js.
+ *
+ */
+</script>
+
+<script type="text/javascript">
+
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+
+<!--/*--><![CDATA[/*><!--*/
+org_html_manager.set("TOC_DEPTH", "3");
+org_html_manager.set("LINK_HOME", "");
+org_html_manager.set("LINK_UP", "");
+org_html_manager.set("LOCAL_TOC", "1");
+org_html_manager.set("VIEW_BUTTONS", "0");
+org_html_manager.set("MOUSE_HINT", "underline");
+org_html_manager.set("FIXED_TOC", "0");
+org_html_manager.set("TOC", "0");
+org_html_manager.set("VIEW", "showall");
+org_html_manager.setup();  // activate after the parameters are set
+/*]]>*///-->
+</script>
 <script type="text/javascript">
 /*
 @licstart  The following is the entire license notice for the
@@ -137,10 +210,36 @@ for the JavaScript code in this tag.
 </head>
 <body>
 <div id="content">
-<h1 class="title"><code>clojure2minizinc</code></h1>
+<h1 class="title"><img src="./graphics/clojure2minizinc-handdrawn-cut.png" alt="clojure2minizinc-handdrawn-cut.png" /></h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. Summary</a></li>
+<li><a href="#sec-2">2. Usage: A Minimal Example</a></li>
+<li><a href="#sec-3">3. Installation</a>
+<ul>
+<li><a href="#sec-3-1">3.1. Installation of MiniZinc tools</a></li>
+<li><a href="#sec-3-2">3.2. Installation of clojure2minizinc</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4. Documentation</a></li>
+<li><a href="#sec-5">5. Related Work</a>
+<ul>
+<li><a href="#sec-5-1">5.1. Clojure: core.logic</a></li>
+<li><a href="#sec-5-2">5.2. C++: libmzn</a></li>
+</ul>
+</li>
+<li><a href="#sec-6">6. Contribute</a></li>
+<li><a href="#sec-7">7. Source</a></li>
+<li><a href="#sec-8">8. License</a></li>
+</ul>
+</div>
+</div>
+
 
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">Summary</h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> Summary</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 <i>clojure2minizinc</i> provides an interface between <a href="http://www.minizinc.org/software.html">state-of-the-art constraint solvers</a> (via <i>MiniZinc</i>) and a very high-level programming language with excellent abstraction capabilities, <a href="http://clojure.org">Clojure</a>. The clojure2minizinc user models in Clojure constraint satisfaction or optimisation problems over Boolean, integer, real number, and/or set variables. clojure2minizinc translates them into MiniZinc, they are solved in the background by a compatible solver, and the result is read back into Clojure. clojure2minizinc code can be very similar to the corresponding MiniZinc code, but in addition the full power of Clojure is at hand. 
@@ -150,8 +249,76 @@ for the JavaScript code in this tag.
 
 
 <div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">Documentation</h2>
+<h2 id="sec-2"><span class="section-number-2">2</span> Usage: A Minimal Example</h2>
 <div class="outline-text-2" id="text-2">
+<p>
+The following model declares two decision variables <code>a</code> and <code>b</code>, both with the domain <i>[-1 .. 1]</i>, and constraints them to be different.  
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #a020f0;">ns</span> <span style="color: #228b22;">clojure2minizinc.examples</span>
+  (<span style="color: #008b8b;">:require</span> [<span style="color: #228b22;">clojure2minizinc.core</span> <span style="color: #008b8b;">:as</span> mz]))  
+
+(<span style="color: #228b22;">mz</span>/minizinc 
+ (<span style="color: #228b22;">mz</span>/clj2mnz
+  (<span style="color: #a020f0;">let</span> [a (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- -1 1)) 
+        b (<span style="color: #228b22;">mz</span>/variable (<span style="color: #228b22;">mz</span>/-- -1 1))]
+    (<span style="color: #228b22;">mz</span>/constraint (<span style="color: #228b22;">mz</span>/!= a b))
+    (<span style="color: #228b22;">mz</span>/solve <span style="color: #008b8b;">:satisfy</span>)
+    (<span style="color: #228b22;">mz</span>/output-map {<span style="color: #008b8b;">:a</span> a <span style="color: #008b8b;">:b</span> b})))
+ <span style="color: #008b8b;">:num-solutions</span> 3)
+</pre>
+</div>
+
+<p>
+The model asks for three solutions, and the default solver outputs the following.
+</p>
+
+<p>
+<code>; =&gt; ({:a 0, :b -1} {:a 1, :b -1} {:a -1, :b 0})</code>
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Installation</h2>
+<div class="outline-text-2" id="text-3">
+</div><div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> Installation of MiniZinc tools</h3>
+<div class="outline-text-3" id="text-3-1">
+<ul class="org-ul">
+<li>Install the <a href="http://www.minizinc.org/g12distrib.html">G12 MiniZinc Distribution</a> (includes software that translates MiniZinc to the intermediate simpler format FlatZinc, which is understood by 3rd-party solvers, but also ready-to-use solvers)
+</li>
+
+<li>Optionally, install additional solvers. For example, see FlatZinc implementations at <a href="http://www.minizinc.org/software.html">http://www.minizinc.org/software.html</a>
+</li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-sec-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> Installation of clojure2minizinc</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+Add this <a href="https://github.com/technomancy/leiningen">Leiningen</a> dependency to your project:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">[<span style="color: #228b22;">minizinc</span>/clojure2minizinc <span style="color: #8b2252;">"0.1.0-SNAPSHOT"</span>]
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Documentation</h2>
+<div class="outline-text-2" id="text-4">
 <p>
 <a href="./tutorial.html">Tutorial</a>
 </p>
@@ -163,18 +330,87 @@ for the JavaScript code in this tag.
 </div>
 
 
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">Source</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> Related Work</h2>
+<div class="outline-text-2" id="text-5">
+</div><div id="outline-container-sec-5-1" class="outline-3">
+<h3 id="sec-5-1"><span class="section-number-3">5.1</span> Clojure: core.logic</h3>
+<div class="outline-text-3" id="text-5-1">
+<p>
+In the Clojure community there already exists an interest in Constraint Programming (and the related Logic Programming paradigm), and solvers have been developed for Clojure.
+</p>
+
+<p>
+<a href="https://github.com/clojure/core.logic">core.logic</a> implements logic programming facilities from scratch directly in Clojure. More specifically, it implements <a href="http://minikanren.org">miniKanren</a>. It also implements some of its extensions, e.g., <a href="https://github.com/calvis/cKanren">cKanren</a> for Constraint Logic Programming. 
+</p>
+
+<p>
+By contrast, clojure2minizinc provides an interface to a range of existing state-of-the-art constraint solvers. Unlike core.logic, it does not support Logic Programming (e.g., it does not provide unification of arbitrary terms). However, Constraint Programming is supported in a clearly more mature way by MiniZinc, and clojure2minizinc inherits its capabilities. MiniZinc supports more variable domains than core.logic (Booleans, integers, floats, and set of integers), more constraints (including more <a href="http://www.minizinc.org/downloads/doc-1.6/mzn-globals.html">global constraints</a>), reified constraints (i.e., the truth value of constraints can in turn be constrained by logic relations such as implication or equivalence), and optimisation support.
+</p>
+
+<p>
+Perhaps most importantly, MiniZinc's 3rd-party solvers implement highly efficient search strategies developed by the <a href="http://www.a4cp.org/events/cp-conference-series">Constraint Programming community</a>, which clearly <a href="https://github.com/clojure/core.logic/wiki/External-solvers">outperform core.logic</a>. The MiniZinc to FlatZinc transformation adds a <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.91.271&rep=rep1&type=pdf">certain overhead</a>, but this overhead is small and can be neglected, in particular for more complex constraint problems. The translation from clojure2minizinc to MiniZinc is so simple that its overhead is even less and can also be neglected.
+</p>
+
+<p>
+(<b>TODO: reading results back into Clojure possibly causes another overhead &#x2013; more careful testing and improving of performance necessary, once clojure2minizinc is somewhat more mature</b>)
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-5-2" class="outline-3">
+<h3 id="sec-5-2"><span class="section-number-3">5.2</span> C++: libmzn</h3>
+<div class="outline-text-3" id="text-5-2">
+<p>
+A project with similar goals as clojure2minizinc is <a href="http://cp2013.a4cp.org/sites/default/files/uploads/cospel2013_submission_7.pdf">libmzn</a>, which provides a C++ interface to MiniZinc. It is planned to be released as part of MiniZinc 2.0. 
+</p>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> Contribute</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+Most clojure2minizinc functions simply generate a string with the corresponding MiniZinc code. So, this library is very easy to extend to support by and by the full feature set of MiniZinc, and also MiniZinc extensions proposed by various research projects.
+</p>
+
+<p>
+Your contribution is welcome! 
+</p>
+</div>
+</div>
+
+
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> Source</h2>
+<div class="outline-text-2" id="text-7">
 <p>
 <a href="https://github.com/tanders/clojure2minizinc">https://github.com/tanders/clojure2minizinc</a>
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8"><span class="section-number-2">8</span> License</h2>
+<div class="outline-text-2" id="text-8">
+<p>
+Distributed under the GNU General Public License.
+</p>
+
+<p>
+Copyright © 2014 Torsten Anders
 </p>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Torsten Anders</p>
-<p class="date">Created: 2014-08-31 Sun 22:33</p>
+<p class="date">Created: 2014-09-01 Mon 21:02</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.3.50.2 (<a href="http://orgmode.org">Org</a> mode 8.2.7b)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
