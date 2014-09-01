@@ -1,11 +1,63 @@
-#+TITLE:=clojure2minizinc= 
+# #+TITLE:=clojure2minizinc= 
+#+TITLE:[[./graphics/clojure2minizinc-handdrawn-cut.png]]
 #+AUTHOR: Torsten Anders
 
-#+OPTIONS: toc:nil num:nil
+
+# http://thomasf.github.io/solarized-css/
+# #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-dark.min.css" />
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-light.min.css" />
+
+# #+OPTIONS: toc:nil num:nil
+#+INFOJS_OPT: view:showall toc:nil ltoc:t mouse:underline buttons:0 path:http://thomasf.github.io/solarized-css/org-info.min.js
+# #+INFOJS_OPT: view:info toc:nil ltoc:t mouse:underline buttons:t path:http://thomasf.github.io/solarized-css/org-info.min.js
+
 
 * Summary
 
    /clojure2minizinc/ provides an interface between [[http://www.minizinc.org/software.html][state-of-the-art constraint solvers]] (via [[www.minizinc.org][MiniZinc]]) and a very high-level programming language with excellent abstraction capabilities, [[http://clojure.org][Clojure]]. The clojure2minizinc user models in Clojure constraint satisfaction or optimisation problems over Boolean, integer, real number, and/or set variables. clojure2minizinc translates them into MiniZinc, they are solved in the background by a compatible solver, and the result is read back into Clojure. clojure2minizinc code can be very similar to the corresponding MiniZinc code, but in addition the full power of Clojure is at hand. 
+
+
+* Usage: A Minimal Example 
+
+   The following model declares two decision variables =a= and =b=, both with the domain /[-1 .. 1]/, and constraints them to be different.  
+
+#+begin_src clojure :results silent
+(ns clojure2minizinc.examples
+  (:require [clojure2minizinc.core :as mz]))  
+
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [a (mz/variable (mz/-- -1 1)) 
+        b (mz/variable (mz/-- -1 1))]
+    (mz/constraint (mz/!= a b))
+    (mz/solve :satisfy)
+    (mz/output-map {:a a :b b})))
+ :num-solutions 3)
+#+end_src
+
+   The model asks for three solutions, and the default solver outputs the following.
+
+   =; => ({:a 0, :b -1} {:a 1, :b -1} {:a -1, :b 0})=
+
+
+* Installation 
+
+** Installation of MiniZinc tools
+
+    - Install the [[http://www.minizinc.org/g12distrib.html][G12 MiniZinc Distribution]] (includes software that translates MiniZinc to the intermediate simpler format FlatZinc, which is understood by 3rd-party solvers, but also ready-to-use solvers)
+
+    - Optionally, install additional solvers. For example, see FlatZinc implementations at http://www.minizinc.org/software.html
+
+
+** Installation of clojure2minizinc
+
+   Add this [[https://github.com/technomancy/leiningen][Leiningen]] dependency to your project:
+
+#+begin_src clojure :results silent
+[minizinc/clojure2minizinc "0.1.0-SNAPSHOT"]
+#+end_src
+
+# [![Clojars Project](http://clojars.org/minizinc/clojure2minizinc/latest-version.svg)](http://clojars.org/minizinc/clojure2minizinc)
 
 
 * Documentation
@@ -15,8 +67,43 @@
    [[./reference/][Reference documentation]]
 
 
+* Related Work
+
+** Clojure: core.logic
+# Existing Clojure Constraint Systems
+
+In the Clojure community there already exists an interest in Constraint Programming (and the related Logic Programming paradigm), and solvers have been developed for Clojure.
+
+[[https://github.com/clojure/core.logic][core.logic]] implements logic programming facilities from scratch directly in Clojure. More specifically, it implements [[http://minikanren.org][miniKanren]]. It also implements some of its extensions, e.g., [[https://github.com/calvis/cKanren][cKanren]] for Constraint Logic Programming. 
+
+By contrast, clojure2minizinc provides an interface to a range of existing state-of-the-art constraint solvers. Unlike core.logic, it does not support Logic Programming (e.g., it does not provide unification of arbitrary terms). However, Constraint Programming is supported in a clearly more mature way by MiniZinc, and clojure2minizinc inherits its capabilities. MiniZinc supports more variable domains than core.logic (Booleans, integers, floats, and set of integers), more constraints (including more [[http://www.minizinc.org/downloads/doc-1.6/mzn-globals.html][global constraints]]), reified constraints (i.e., the truth value of constraints can in turn be constrained by logic relations such as implication or equivalence), and optimisation support.
+
+Perhaps most importantly, MiniZinc's 3rd-party solvers implement highly efficient search strategies developed by the [[http://www.a4cp.org/events/cp-conference-series][Constraint Programming community]], which clearly [[https://github.com/clojure/core.logic/wiki/External-solvers][outperform core.logic]]. The MiniZinc to FlatZinc transformation adds a [[http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.91.271&rep=rep1&type=pdf][certain overhead]], but this overhead is small and can be neglected, in particular for more complex constraint problems. The translation from clojure2minizinc to MiniZinc is so simple that its overhead is even less and can also be neglected.
+
+(*TODO: reading results back into Clojure possibly causes another overhead -- more careful testing and improving of performance necessary, once clojure2minizinc is somewhat more mature*)
+
+
+** C++: libmzn
+
+ A project with similar goals as clojure2minizinc is [[http://cp2013.a4cp.org/sites/default/files/uploads/cospel2013_submission_7.pdf][libmzn]], which provides a C++ interface to MiniZinc. It is planned to be released as part of MiniZinc 2.0. 
+
+
+* Contribute
+
+  Most clojure2minizinc functions simply generate a string with the corresponding MiniZinc code. So, this library is very easy to extend to support by and by the full feature set of MiniZinc, and also MiniZinc extensions proposed by various research projects.
+  
+  Your contribution is welcome! 
+
+
+
 * Source
 
   https://github.com/tanders/clojure2minizinc
+  
+  
+* License
 
+  Distributed under the GNU General Public License.
+
+  Copyright © 2014 Torsten Anders
 

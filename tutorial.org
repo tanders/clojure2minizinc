@@ -1,4 +1,4 @@
-#+TITLE: A =clojure2minizinc= Tutorial 
+#+TITLE: A clojure2minizinc Tutorial 
 #+AUTHOR: Torsten Anders
 
 #+PROPERTY: header-args :results silent
@@ -9,6 +9,12 @@
 # Within org buffer start cider: M-x cider-jack-in RET
 
 #+PROPERTY: header-args:clojure  :session *clojure-1*
+
+# http://thomasf.github.io/solarized-css/
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-light.min.css" />
+# #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-dark.min.css" />
+
+#+INFOJS_OPT: view:info toc:t ltoc:t mouse:underline buttons:t path:http://thomasf.github.io/solarized-css/org-info.min.js
 
 * Introduction 
 
@@ -27,8 +33,8 @@
 
 #+begin_src clojure :results silent
 (ns clojure2minizinc.tutorial
-  (:require [clojure2minizinc.core :as mz] ; 
-            [clojure.pprint :as pprint]))
+  (:require [clojure2minizinc.core :as mz]  ; loading clojure2minizinc.core 
+            [clojure.pprint :as pprint]))   ; pprint is needed later...
 #+end_src
    
    The library =clojure.pprint= will be needed later. We already add them here for convenience.
@@ -371,12 +377,11 @@ Now we can present the clojure2minizinc version of the Laplace model from the Mi
           (mz/forall [i (mz/-- 1 (mz/- w 1))
                       j (mz/-- 1 (mz/- h 1))]
                      (mz/= (mz/* 4.0 (mz/nth t i j))
-                           ;; TODO: generalise binary operators like +, -, *, / 
-                           ;; to support an arbitrary number of args 
+                           ;; Constraints like + support an arbitray number of arguments 
                            (mz/+ (mz/nth t (mz/- i 1) j)
-                                 (mz/+ (mz/nth t i (mz/- j 1))
-                                       (mz/+ (mz/nth t (mz/+ i 1) j)
-                                             (mz/nth t i (mz/+ j 1))))))))
+                                 (mz/nth t i (mz/- j 1))
+                                 (mz/nth t (mz/+ i 1) j)
+                                 (mz/nth t i (mz/+ j 1))))))
          ;; edge constraints
          (mz/constraint (mz/forall [i (mz/-- 1 (mz/- w 1))]
                                    (mz/= (mz/nth t i 0) left)))
@@ -415,11 +420,12 @@ In this model, the top-level call is =print-table=. The model therefore returns 
   0.00   0.00    0.00    0.00    0.00    0.00  
 #+end_example
 
-In the model, the Laplace equation is currently unnecessarily complicated, because the clojure2minizinc arithmetic operators are only binary functions, like their MiniZinc counterparts. The will be generalised in a later version for an arbitrary number of arguments, in true Lisp spirit. 
+Note that in the actual Laplace equation in the code above, the =mz/+= constraint takes four arguments. Unlike MiniZinc, where such arithmetic operators are only binary (infix operators), their clojure2minizinc counterparts support an arbitrary number of arguments, in true Lisp spirit.  
 
 
 ** TODO Complete this Tutorial...
 
+   However, you can already move on to the next section...
 
 * Similarity and Differences between MiniZinc and clojure2minizinc
 
