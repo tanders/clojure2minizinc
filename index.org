@@ -49,7 +49,7 @@
     - Optionally, install additional solvers. For example, see FlatZinc implementations at http://www.minizinc.org/software.html
 
 
-** Installation of clojure2minizinc
+** Installation of clojure2minizincg
 
    Add this [[https://github.com/technomancy/leiningen][Leiningen]] dependency to your project:
 
@@ -64,7 +64,7 @@
 
    [[./tutorial.org][Tutorial]]
 
-   [[./reference/][Reference documentation]]
+   [[./reference/clojure2minizinc.core.html][Reference documentation]]
 
 
 * Related Work
