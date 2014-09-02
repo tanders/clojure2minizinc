@@ -64,7 +64,7 @@
 
    [[./tutorial.org][Tutorial]]
 
-   [[./reference/][Reference documentation]]
+   [[./reference/clojure2minizinc.core.html][Reference documentation]]
 
 
 * Related Work

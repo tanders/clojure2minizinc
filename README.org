@@ -50,7 +50,7 @@
 
 ** Documentation
    
-   clojure2minizinc comes with a [[http://tanders.github.io/clojure2minizinc/tutorial.html][tutorial]] and [[http://tanders.github.io/clojure2minizinc/reference/][reference documentation]], which are both part of the source tree. 
+   clojure2minizinc comes with a [[http://tanders.github.io/clojure2minizinc/tutorial.html][tutorial]] and [[http://tanders.github.io/clojure2minizinc/reference/clojure2minizinc.core.html][reference documentation]], which are both part of the source tree. 
 
 
 ** Related Work
