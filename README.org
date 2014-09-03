@@ -79,7 +79,11 @@ Perhaps most importantly, MiniZinc's 3rd-party solvers implement highly efficien
    Most clojure2minizinc functions simply generate a string with the corresponding MiniZinc code. So, this library is very easy to extend to support by and by the full feature set of MiniZinc, and also MiniZinc extensions proposed by various research projects.
    
    Your contribution is welcome! 
-   
+ 
+   For posting ideas, discussions and bug reports please use GitHub issues.
+
+#    If you need help, use Stack Overflow under the tag =minizinc=.
+
    
 ** License
 
