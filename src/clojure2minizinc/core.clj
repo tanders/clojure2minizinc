@@ -434,6 +434,45 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;; Aggregation functions for arithmetic arrays are
 ;;
 
+;; TODO: list and set comprehensions
+
+(comment
+;; syntax to generate  
+   array comprehension = `[` 〈expr〉 `|` 〈generator-exp>* [where 〈bool-exp〉] `]`
+   generator = 〈identifier〉* in 〈array-exp〉  ;  identifier is an iterator 
+
+   ;; Clojure syntax: examples
+   ;; TODO: find better fun name
+   ;; TODO: :where clause is ideally more close to generators, because they belong together. Current version, this is better Clojure syntax -- similar to when-let etc. 
+   (array-comp [i (-- 0 10)
+                j (-- 0 10)]
+      (+ i j)
+      :where (< i j))
+
+   ;; Syntax for multiple identifiers defined with single generator (makes only sense with an added :where ...)
+   ;; Commmas are whitespace in Clojure (http://clojure.org/reader)
+   (array-comp [i, j (-- 0 10)] ; here, range spec always last arg, everything before considered as identifiers 
+      (+ i j)
+      :where (< i j))
+
+   ;; forall( [a[i] != a[j] | i,j in 1..3 where i < j])
+   (forall [i, j (-- 1 3)]
+      (!= (nth a i) (nth a j))
+      :where (< i j))
+
+   ;; Variant that puts :where next to generators
+   ;; How to "find" range here? -- It is last arg in vector, except there is a :where declaration...
+   (forall [i, j (-- 1 3) :where (< i j)]
+      (!= (nth a i) (nth a j)))
+  )
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Aggregation functions for arithmetic arrays are
+;;
+
 (defn ^:no-doc forall-format 
   "[Aux for forall] This function is only public, because it is needed in a public macro/"
   [vars & body]
@@ -456,7 +495,7 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;; forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
 ;; 
 ;; TODO: allow for only a single expression, and not a body of multiple expressions? If multiple, they would need to be separated, e.g., by a semicolon?
-;; TODO: allow for List and Set Comprehensions, see MiniZinc tutorial p. 20
+;; TODO: allow for List and Set Comprehensions, see MiniZinc tutorial p. 22
 (defmacro forall
   "MiniZinc looping. decls are pairs of range declarations <name> <domain>.
 
