@@ -438,8 +438,8 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 
 (comment
 ;; syntax to generate  
-   array comprehension = `[` 〈expr〉 `|` 〈generator-exp>* [where 〈bool-exp〉] `]`
-   generator = 〈identifier〉* in 〈array-exp〉  ;  identifier is an iterator 
+   ;; array comprehension = `[` 〈expr〉 `|` 〈generator-exp>* [where 〈bool-exp〉] `]`
+   ;; generator = 〈identifier〉* in 〈array-exp〉  ;  identifier is an iterator 
 
    ;; Clojure syntax: examples
    ;; TODO: find better fun name
@@ -462,8 +462,32 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 
    ;; Variant that puts :where next to generators
    ;; How to "find" range here? -- It is last arg in vector, except there is a :where declaration...
+   ;; Multiple identifiers on a single line must be allowed, because an optional :where would act on them (not sure whether :where would also work with variables spread over multiple lines)
    (forall [i, j (-- 1 3) :where (< i j)]
       (!= (nth a i) (nth a j)))
+
+   ;; !! separation of identifiers in a flat vector not possible, if there are multiple generators as follows
+   ;; perhaps I better have a nested vector (more like a Common Lisp let)
+   ;; According to the MiniZinc tutorial, seemingly a :where is only allowed after the last, but even then 
+   ;;
+   ;; "In the wild" the :where clause seems not to be mixed with multiple generator clauses, but I should cater for that as well 
+   (forall [[k (-- 1 3)]
+            [i, j (-- 1 3) :where (< i j)]]
+      (!= (nth a i) (nth a j)))
+
+
+   ;; also works as follows
+   ;; slightly less concise (one extra line for j), but more clear and more Clojurereque 
+   ;; also more easy to 'parse' -- just split generators into pairs and check whether last starts with :where
+   ;; It reduces the need of an additional layer of parenthesis, recommended by Joy of Clojure, Sec 17.1.3 
+   (forall [i (-- 1 3)
+            j (-- 1 3) 
+            :where (< i j)]
+      (!= (nth a i) (nth a j)))
+
+   
+
+
   )
 
 
@@ -474,7 +498,7 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;;
 
 (defn ^:no-doc forall-format 
-  "[Aux for forall] This function is only public, because it is needed in a public macro/"
+  "[Aux for forall] This function is only public, because it is needed in a public macro."
   [vars & body]
   (format "forall(%s)(%s)" 
           (apply str (interpose ", " (map :mzn-string vars))) 
@@ -496,6 +520,11 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;; 
 ;; TODO: allow for only a single expression, and not a body of multiple expressions? If multiple, they would need to be separated, e.g., by a semicolon?
 ;; TODO: allow for List and Set Comprehensions, see MiniZinc tutorial p. 22
+;;
+;; * Musing for redesign
+;; - !! !! BUG: I should not define aVar instances inside forall and friends -- I should not implicitly declare additional global MiniZinc vars
+;;   .. This var is used to store the range of the variable, but not told to the store?
+;; - A let special form within the macro might be a good idea for binding symbols in the body, but value of a variable is simple its name string
 (defmacro forall
   "MiniZinc looping. decls are pairs of range declarations <name> <domain>.
 
