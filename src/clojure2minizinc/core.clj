@@ -434,114 +434,37 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;; Aggregation functions for arithmetic arrays are
 ;;
 
-;; TODO: list and set comprehensions
+;; (comment
+;; ;; syntax to generate  
+;;    ;; array comprehension = `[` 〈expr〉 `|` 〈generator-exp>* [where 〈bool-exp〉] `]`
+;;    ;; generator = 〈identifier〉* in 〈array-exp〉  ;  identifier is an iterator 
+;;   )
 
-(comment
-;; syntax to generate  
-   ;; array comprehension = `[` 〈expr〉 `|` 〈generator-exp>* [where 〈bool-exp〉] `]`
-   ;; generator = 〈identifier〉* in 〈array-exp〉  ;  identifier is an iterator 
-
-   ;; Clojure syntax: examples
-   ;; TODO: find better fun name
-   ;; TODO: :where clause is ideally more close to generators, because they belong together. Current version, this is better Clojure syntax -- similar to when-let etc. 
-   (array-comp [i (-- 0 10)
-                j (-- 0 10)]
-      (+ i j)
-      :where (< i j))
-
-   ;; Syntax for multiple identifiers defined with single generator (makes only sense with an added :where ...)
-   ;; Commmas are whitespace in Clojure (http://clojure.org/reader)
-   (array-comp [i, j (-- 0 10)] ; here, range spec always last arg, everything before considered as identifiers 
-      (+ i j)
-      :where (< i j))
-
-   ;; forall( [a[i] != a[j] | i,j in 1..3 where i < j])
-   (forall [i, j (-- 1 3)]
-      (!= (nth a i) (nth a j))
-      :where (< i j))
-
-   ;; Variant that puts :where next to generators
-   ;; How to "find" range here? -- It is last arg in vector, except there is a :where declaration...
-   ;; Multiple identifiers on a single line must be allowed, because an optional :where would act on them (not sure whether :where would also work with variables spread over multiple lines)
-   (forall [i, j (-- 1 3) :where (< i j)]
-      (!= (nth a i) (nth a j)))
-
-   ;; !! separation of identifiers in a flat vector not possible, if there are multiple generators as follows
-   ;; perhaps I better have a nested vector (more like a Common Lisp let)
-   ;; According to the MiniZinc tutorial, seemingly a :where is only allowed after the last, but even then 
-   ;;
-   ;; "In the wild" the :where clause seems not to be mixed with multiple generator clauses, but I should cater for that as well 
-   (forall [[k (-- 1 3)]
-            [i, j (-- 1 3) :where (< i j)]]
-      (!= (nth a i) (nth a j)))
-
-
-   ;; also works as follows
-   ;; slightly less concise (one extra line for j), but more clear and more Clojurereque 
-   ;; also more easy to 'parse' -- just split generators into pairs and check whether last starts with :where
-   ;; It reduces the need of an additional layer of parenthesis, recommended by Joy of Clojure, Sec 17.1.3 
-   (forall [i (-- 1 3)
-            j (-- 1 3) 
-            :where (< i j)]
-      (!= (nth a i) (nth a j)))
-
-   
-
-
-  )
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Aggregation functions for arithmetic arrays are
-;;
-
-(defn ^:no-doc forall-format 
-  "[Aux for forall] This function is only public, because it is needed in a public macro."
-  [vars where-expr & body]
-  (format "forall(%s)(%s)" 
+(defn ^:no-doc aggregation-format 
+  "[Aux for aggregation functions like forall] This function is only public, because it is needed in a public macro."
+  [agg-fn vars where-expr exp]
+  (format "%s(%s)(%s)" 
+          agg-fn
           (str (apply str (interpose ", " (map :mzn-string vars))) 
                (when where-expr (format " where %s" where-expr)))
-          (apply str body)))
+          (str exp)))
 
 (comment
   (let [a (array (-- 0 10) :int)
         i (make-aVar (name 'i) (format "%s in %s" (name 'i) (-- 1 10)))
         j (make-aVar (name 'j) (format "%s in %s" (name 'j) (-- 1 10)))]
-    (print (forall-format 
-            (list i j)
-            ;; (= (nth a i) 0)
-            (= (nth a j) 0))))
+    (aggregation-format 
+     'forall
+     (list i j)
+     (< i j)
+     (= (nth a j) 0)))
   )
 
-;; !! TODO: This definition is far away still from the flexibility of the true MiniZinc forall, which allows to declare multiple vars together, have "list generators" etc. 
-;; One example: 
-;; forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
-;; 
-;; TODO: allow for only a single expression, and not a body of multiple expressions? If multiple, they would need to be separated, e.g., by a semicolon?
-;; TODO: allow for List and Set Comprehensions, see MiniZinc tutorial p. 22
-;;
-;; * Musing for redesign
-;; - !! !! BUG: I should not define aVar instances inside forall and friends -- I should not implicitly declare additional global MiniZinc vars
-;;   .. This var is used to store the range of the variable, but not told to the store?
-;; - A let special form within the macro might be a good idea for binding symbols in the body, but value of a variable is simple its name string
-(defmacro forall
-  "MiniZinc looping. decls are pairs of range declarations <name> <domain>.
 
-Examples (array a undeclared here):
-
-    (forall [i (-- 0 10)]
-            (= (nth a i) 0)))
-
-    (forall [i (-- 1 3)
-             j (-- 1 3) 
-             :where (< i j)]
-        (!= (nth a i) (nth a j)))
-"
-  {:forms '[(forall [range-decls*] exprs*)]}
-  [range-decls & body]
-  (let [all-var-val-pairs (partition 2 range-decls)
+(defmacro ^:no-doc def-aggregation-macro
+  "Todo"
+  [agg-fn generators exp]
+  (let [all-var-val-pairs (partition 2 generators)
         last-pair (last all-var-val-pairs)
         where-expr (when (core/= (first last-pair) :where) 
                      (second last-pair))
@@ -551,10 +474,31 @@ Examples (array a undeclared here):
     `(let ~(vec (mapcat (fn [[par-name range]]
                           (list par-name `(make-aVar ~(name par-name) (format "%s in %s" ~(name par-name) ~range))))
                         var-val-pairs))
-       (forall-format 
+       (aggregation-format 
+        ~agg-fn
         ~(cons 'list (map first var-val-pairs))
         ~where-expr
-        ~@body))))
+        ~exp))))
+
+
+(defmacro forall
+   "[aggregation macro] 
+
+MiniZinc looping. decls are pairs of range declarations <name> <domain>.
+
+Examples (array a undeclared here):
+
+    (forall [i (index_set a)]
+            (= (nth a i) 0)))
+
+    (forall [i (-- 1 3)
+             j (-- 1 3) 
+             :where (< i j)]
+        (!= (nth a i) (nth a j)))
+"
+  {:forms '[(forall [generators*] exp)]}
+  [generators exp]
+  `(def-aggregation-macro "forall" ~generators ~exp))
 
 
 (comment
@@ -576,67 +520,70 @@ Examples (array a undeclared here):
            :where (< i j)]
       (!= (nth a i) (nth a j)))
 
-
-  (print 
-   (let [x 1
-         a (array (-- 0 10) :int)]
-     (forall [i (-- 0 10)
-              j (-- -1 x)]
-             (= (nth a i) 0)
-             (= (nth a j) 0))))
   )
 
+;; TODO: seemingly the macros min, max, exist, sum, product below should also exist as unary functions (created with def-unary-function)
+;; I cannot have a function with the same name as a macro, but I could perhaps have a macro with optional args (different defs for different arities of args)
+;; Alternative: define functions min* etc.
 
+;; TODO: docs for all macros below
+
+;; Done the below?
+;; TODO: define missing aggregation functions for arithmetic arrays with their full syntax
+;; See MiniZinc tutorial p. 23 and surrounding pages
+;; arg vectors below are only sketch, and may not be what is needed in the end for full syntax
+;; All these macros and forall are very similar -- likely I need to define general case only once and then customise... 
+
+(defmacro exists
+  ""
+  {:forms '[(exists [generators*] exp)]}
+  [generators exp]
+  `(def-aggregation-macro "exists" ~generators ~exp))
 
 (comment
-  
-  ;; TODO: define missing aggregation functions for arithmetic arrays with their full syntax
-  ;; See MiniZinc tutorial p. 23 and surrounding pages
-  ;; arg vectors below are only sketch, and may not be what is needed in the end for full syntax
-  ;; All these macros and forall are very similar -- likely I need to define general case only once and then customise...
-  (defmacro exists
-    ""
-    {:forms '[(forall [range-decls*] exprs*)]}
-    [range-decls & body]
-    ...)
-
-  (defmacro xorall
-    ""
-    {:forms '[(forall [range-decls*] exprs*)]}
-    [range-decls & body]
-    ...)
-
-  (defmacro iffall
-    ""
-    {:forms '[(forall [range-decls*] exprs*)]}
-    [range-decls & body]
-    ...)
-
-  (defmacro sum
-    ""
-    {:forms '[(forall [range-decls*] exprs*)]}
-    [range-decls & body]
-    ...)
-
-  (defmacro product
-    ""
-    {:forms '[(forall [range-decls*] exprs*)]}
-    [range-decls & body]
-    ...)
-
-  (defmacro min
-    ""
-    {:forms '[(forall [range-decls*] exprs*)]}
-    [range-decls & body]
-    ...)
-
-  (defmacro max
-    ""
-    {:forms '[(forall [range-decls*] exprs*)]}
-    [range-decls & body]
-    ...)
-
+  (def a (array (-- 1 10) :int 'a))
+  (exists [i (-- 1 3)] (= (nth a i) 0))
   )
+
+(defmacro xorall
+  ""
+  {:forms '[(xorall [generators*] exp)]}
+  [generators exp]
+  `(def-aggregation-macro "xorall" ~generators ~exp))
+
+(defmacro iffall
+  ""
+  {:forms '[(iffall [generators*] exp)]}
+  [generators exp]
+  `(def-aggregation-macro "iffall" ~generators ~exp))
+
+(defmacro sum
+  ""
+  {:forms '[(sum [generators*] exp)]}
+  [generators exp]
+  `(def-aggregation-macro "sum" ~generators ~exp))
+
+(defmacro product
+  ""
+  {:forms '[(product [generators*] exp)]}
+  [generators exp]
+  `(def-aggregation-macro "product" ~generators ~exp))
+
+(defmacro min
+  ""
+  {:forms '[(min [generators*] exp)]}
+  [generators exp]
+  `(def-aggregation-macro "min" ~generators ~exp))
+
+(defmacro max
+  ""
+  {:forms '[(max [generators*] exp)]}
+  [generators exp]
+  `(def-aggregation-macro "max" ~generators ~exp))
+
+
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1004,12 +951,6 @@ Examples:
   "logarithm base 2 constraint")
 (def-unary-function log10 log10
   "logarithm base 10 constraint")
-(def-n-ary-function min min
-  " function constraint")
-(def-n-ary-function max max
-  " function constraint")
-(def-unary-function product product
-  " function constraint")
 (def-unary-function round round
   " function constraint")
 (def-unary-function set2array set2array
@@ -1026,8 +967,6 @@ Examples:
   "hyperbolic sine constraint")
 (def-unary-function sqrt sqrt
   "square root constraint")
-(def-unary-function sum sum
-  " function constraint")
 (def-unary-function tan tan
   "tangent constraint")
 (def-unary-function tanh tanh
