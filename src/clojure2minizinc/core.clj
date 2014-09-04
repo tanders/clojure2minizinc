@@ -499,9 +499,10 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 
 (defn ^:no-doc forall-format 
   "[Aux for forall] This function is only public, because it is needed in a public macro."
-  [vars & body]
+  [vars where-expr & body]
   (format "forall(%s)(%s)" 
-          (apply str (interpose ", " (map :mzn-string vars))) 
+          (str (apply str (interpose ", " (map :mzn-string vars))) 
+               (when where-expr (format " where %s" where-expr)))
           (apply str body)))
 
 (comment
@@ -528,33 +529,53 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 (defmacro forall
   "MiniZinc looping. decls are pairs of range declarations <name> <domain>.
 
-Example:
-    (let [a (array (-- 0 10) :int)]
-      (forall [i (-- 0 10)]
-              (= (nth a i) 0)))
+Examples (array a undeclared here):
 
-BUG: Only subset of MiniZinc's `forall` syntax supported yet. In particular, no list and set comprehensions supported yet."
+    (forall [i (-- 0 10)]
+            (= (nth a i) 0)))
+
+    (forall [i (-- 1 3)
+             j (-- 1 3) 
+             :where (< i j)]
+        (!= (nth a i) (nth a j)))
+"
   {:forms '[(forall [range-decls*] exprs*)]}
   [range-decls & body]
-  (let [var-val-pairs (partition 2 range-decls)]
+  (let [all-var-val-pairs (partition 2 range-decls)
+        last-pair (last all-var-val-pairs)
+        where-expr (when (core/= (first last-pair) :where) 
+                     (second last-pair))
+        var-val-pairs (if where-expr
+                        (butlast all-var-val-pairs)
+                        all-var-val-pairs)]
     `(let ~(vec (mapcat (fn [[par-name range]]
                           (list par-name `(make-aVar ~(name par-name) (format "%s in %s" ~(name par-name) ~range))))
                         var-val-pairs))
        (forall-format 
         ~(cons 'list (map first var-val-pairs))
+        ~where-expr
         ~@body))))
 
 
 (comment
   (def a (array (-- 1 10) :int 'a))
-  (print (forall [i (-- 1 10)]
-                 (= (nth a i) 0)))
+  (forall [i (-- 1 10)]
+          (= (nth a i) 0))
   ;; => "forall(i in 1..10)((a[i] = 0))"    
 
+  (forall [i (index_set a)]
+          (= (nth a i) 0))
+
   ;; a only 1 dimensional, but for test this is sufficient :)
-  (print (forall [i (-- 0 10)
-                  j (-- 0 10)]
-                 (= (nth a i j) 0)))
+  (forall [i (-- 0 10)
+           j (-- 0 10)]
+          (= (nth a i j) 0))
+
+  (forall [i (-- 1 3)
+           j (-- 1 3) 
+           :where (< i j)]
+      (!= (nth a i) (nth a j)))
+
 
   (print 
    (let [x 1
