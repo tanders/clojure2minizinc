@@ -328,6 +328,8 @@ Examples:
     (array (-- 1 10) :int 'x)              ; array explicitly named x 
 
     (array (-- 1 3) :int 'x [5 6 7])       ; array of ins with init value
+
+BUG: literal arrays not supported as init val.
 "
   ([index-set type-inst] (array index-set type-inst (gensym "array")))
   ([index-set type-inst array-name] (array index-set type-inst array-name nil))
@@ -377,10 +379,11 @@ Examples:
   (array (-- 1 10) [:var #{1 3 5}])
   (array (-- 1 10) [:var :set (-- 1 3)])
   (array (-- 1 10) [:var :set #{1 3 5}])
-
   (array (list (-- 1 10) (-- 1 10))  [:var :int (-- 1 3)])
+  (array (-- 1 3) :int 'x [5 6 7])
+  ;; BUG: literal arrays should be supported as well
+  (array (-- 1 3) :int 'x (literal-array 5 6 7))
 
-  (array (-- 1 3) :int 'x (literal-array 5 6 7)) 
   )
 
 
