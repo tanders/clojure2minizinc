@@ -522,9 +522,7 @@ Examples (array a undeclared here):
 
   )
 
-;; TODO: seemingly the macros min, max, exist, sum, product below should also exist as unary functions (created with def-unary-function)
-;; I cannot have a function with the same name as a macro, but I could perhaps have a macro with optional args (different defs for different arities of args)
-;; Alternative: define functions min* etc.
+
 
 ;; TODO: docs for all macros below
 
@@ -913,6 +911,8 @@ Examples:
   " function constraint")
 (def-unary-function dom_size dom_size
   " function constraint")
+(def-unary-function exist* exist
+  " function constraint")
 (def-unary-function fix fix
   " function constraint")
 (def-unary-function exp exp
@@ -951,6 +951,12 @@ Examples:
   "logarithm base 2 constraint")
 (def-unary-function log10 log10
   "logarithm base 10 constraint")
+(def-unary-function max* max
+  " function constraint")
+(def-unary-function min* min
+  " function constraint")
+(def-unary-function product* product
+  " function constraint")
 (def-unary-function round round
   " function constraint")
 (def-unary-function set2array set2array
@@ -967,6 +973,8 @@ Examples:
   "hyperbolic sine constraint")
 (def-unary-function sqrt sqrt
   "square root constraint")
+(def-unary-function sum* sum
+  " function constraint")
 (def-unary-function tan tan
   "tangent constraint")
 (def-unary-function tanh tanh
