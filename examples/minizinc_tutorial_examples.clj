@@ -334,3 +334,64 @@
       )))))
 ;; Outputs nil -- solution printed (arranged as table)
 
+
+;; simple production planning problem (tutorial p. 18)
+;; TODO: abstraction/avoid repetition: save (mz/-- 1 nresources) and friends in strings with names like `resources`?
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [;; Number of different products
+        nproducts (mz/int 'nproducts)
+        products (mz/set 'products (mz/-- 1 nproducts))  ;; !! needed?
+        ;; Profit per unit for each product
+        ;; Note: array index-set must be specified explicitly (otherwise no support for translation into list for higher-order programming) 
+        profit (mz/array (mz/-- 1 nproducts) :int 'profit)
+        pname (mz/array (mz/-- 1 nproducts) :string 'pname)
+        ;; Number of resources
+        nresources (mz/int 'nresources)
+        resources (mz/set 'resources (mz/-- 1 nresources))  ;; !! needed?
+        ;; Amount of each resource available
+        capacity (mz/array (mz/-- 1 nresources) :int 'capacity)
+        rname (mz/array (mz/-- 1 nresources) :string 'rname)
+        ;; Units of each resource required to produce 1 unit of product
+        consumption (mz/array (list (mz/-- 1 nproducts) (mz/-- 1 nresources)) :int 'consumption)
+        ;; Bound on number of Products
+        mproducts (mz/int 'mproducts (mz/max [p (mz/-- 1 nproducts)]
+                                        (mz/min [r (mz/-- 1 nresources)
+                                                 :where (mz/> (mz/nth consumption p r) 0)]
+                                           (mz/div (mz/nth capacity r) (mz/nth consumption p r)))))
+        ;; Variables: how much should we make of each product
+        produce (mz/array (mz/-- 1 nproducts) [:var (mz/-- 0 mproducts)])
+        used (mz/array (mz/-- 1 nresources) [:var (mz/-- 0 (mz/max* capacity))])]
+    (mz/constraint (mz/assert (mz/forall [r (mz/-- 1 nresources)
+                                          p (mz/-- 1 nproducts)]
+                                (mz/>= (mz/nth consumption p r) 0)) 
+                              "Error: negative consumption"))
+    ;; Production cannot use more than the available resources
+    (mz/constraint (mz/forall [r (mz/-- 1 nresources)]
+                      (mz/and (mz/= (mz/nth used r)
+                                    (mz/sum [p (mz/-- 1 nproducts)]
+                                       (mz/* (mz/nth consumption p r)
+                                             (mz/nth produce p))))
+                              (mz/<= (mz/nth used r)
+                                     (mz/nth capacity r)))))
+    ;; Maximize profit
+    (mz/solve :maximize (mz/sum [p (mz/-- 1 nproducts)]
+                           (mz/* (mz/nth profit p)
+                                 (mz/nth produce p))))
+    ;; TODO: array comprehension within output
+    ;; TMP: output hack 
+    (mz/output-map {:produce produce :used used})))
+ :data (mz/map2minizinc {:nproducts 2 ; banana cakes and chocolate cakes
+                         ;; BUG:  expr: not allowed as literal MiniZinc expr: [400 450] of type clojure.lang.PersistentVector
+                         ;; BUG: expr must support more types or map2minizinc must translate them 
+                         :profit [400, 450] ; in cents
+                         :pname ["banana-cake", "chocolate-cake"] 
+                         :nresources 5 ; flour, banana, sugar, butter, cocoa
+                         :capacity [4000, 6, 2000, 500, 500]
+                         :rname ["flour","banana","sugar","butter","cocoa"]
+                         :consumption (mz/literal-array [250, 2, 75, 100, 0][200, 0, 150, 150, 75])
+                         }))
+
+
+;; TMP: testing
+(mz/literal-array [250, 2, 75, 100, 0][200, 0, 150, 150, 75])
