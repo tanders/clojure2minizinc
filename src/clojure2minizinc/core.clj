@@ -259,7 +259,7 @@
 (defn literal-array 
   "Specifies a one- or two-dimensional array that contains the given MiniZinc expressions as elements. Two-dimensional arrays are defined by a list of expressions."
   [& exprs]
-  (if (every? list? exprs)
+  (if (every? coll? exprs)
     (str "[|" (apply str (flatten (interpose " | " (map (fn [sub-exprs]
                                                           (interpose ", " (map expr sub-exprs)))
                                                         exprs)))) "|]")    
