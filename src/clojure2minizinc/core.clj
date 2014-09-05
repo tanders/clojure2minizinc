@@ -492,12 +492,12 @@ MiniZinc looping. decls are pairs of range declarations <name> <domain>.
 Examples (array a undeclared here):
 
     (forall [i (index_set a)]
-            (= (nth a i) 0)))
+      (= (nth a i) 0)))
 
     (forall [i (-- 1 3)
              j (-- 1 3) 
              :where (< i j)]
-        (!= (nth a i) (nth a j)))
+      (!= (nth a i) (nth a j)))
 "
   {:forms '[(forall [generators*] exp)]}
   [generators exp]
@@ -914,6 +914,7 @@ Examples:
   " function constraint")
 (def-unary-function dom_size dom_size
   " function constraint")
+;; NOTE: starred form of exists*, sum*, product*, max*, and min* to avoid conflict with macros of otherwise same name
 (def-unary-function exist* exist
   " function constraint")
 (def-unary-function fix fix
