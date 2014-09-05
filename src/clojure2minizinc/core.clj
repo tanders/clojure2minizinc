@@ -1141,7 +1141,9 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 ;; TODO: make this somehow more smart by allowing for vars etc
 ;; e.g., at least allow for any number of args
 (defn output 
-  "Expects an output definition (a string) and turns it into an output statement (surround by brackets etc.)"
+  "Expects an output definition (a string) and turns it into an output statement (surround by brackets etc.)
+
+BUG: this fn is currently far too inflexible."
   [mzn-string]
   (tell-store (format "output [ %s ];" (expr mzn-string)))) ; \"\\n\"
 
