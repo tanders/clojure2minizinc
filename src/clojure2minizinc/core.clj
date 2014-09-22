@@ -443,72 +443,113 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;;    ;; generator = 〈identifier〉* in 〈array-exp〉  ;  identifier is an iterator 
 ;;   )
 
+
 (defn ^:no-doc aggregation-format 
   "[Aux for aggregation functions like forall] This function is only public, because it is needed in a public macro."
-  [agg-fn vars where-expr exp]
-  (format "%s(%s)(%s)" 
-          agg-fn
+  [set-or-array vars where-expr exp]
+  (format (case set-or-array 
+            :array "[%s | %s]"
+            :set "{%s | %s}"
+            ;; TMP: this exception is overkill
+            (throw (Exception. 
+                    (pprint/cl-format nil "arregate arg set-or-array (must only be :array or :set): ~S" 
+                                      set-or-array))))
+          (str exp)
           (str (apply str (interpose ", " (map :mzn-string vars))) 
-               (when where-expr (format " where %s" where-expr)))
-          (str exp)))
+               (when where-expr (format " where %s" where-expr)))))
 
 (comment
-  (let [a (array (-- 0 10) :int)
-        i (make-aVar (name 'i) (format "%s in %s" (name 'i) (-- 1 10)))
-        j (make-aVar (name 'j) (format "%s in %s" (name 'j) (-- 1 10)))]
-    (aggregation-format 
-     'forall
-     (list i j)
-     (< i j)
-     (= (nth a j) 0)))
+(def a (array (-- 0 10) :int))
+(def i (make-aVar (name 'i) (format "%s in %s" (name 'i) (-- 1 10))))
+(def j (make-aVar (name 'j) (format "%s in %s" (name 'j) (-- 1 10))))
+(aggregation-format 
+ :array
+ (list i j)
+ (< i j)
+ (= (nth a j) 0))
+)
+
+
+(defmacro aggregate
+  "List (array) and set comprehension. Generates a MiniZinc array/set containing the possible combinations of locally declared MiniZinc parameters (generators) used in the expression (exp). 
+
+Example:
+
+    (aggregate [i (-- 1 3)] 
+      (* i i))
+    ; means [1*1, 2*2, 3*3]  (in MiniZinc syntax)
+
+Note that every generator (e.g., `(-- 1 3)`) declares always only a single MiniZinc parameter (`i` in the example above). This follows standard Clojure conventions (e.g., similar to `let` and friends), while MiniZinc allows for declaring multiple parameters together.
+
+A where-expression can be added after the generators, which acts as a filter. Only elements satisfying this Boolean expression are used to construct elements in the output array/set.
+
+Example:
+
+    (def a (array (-- 1 3) :int))
+    (aggregate [i (-- 1 3)
+                j (-- 1 3) 
+                :where (< i j)]
+      (!= (nth a i) (nth a j)))  
+    ; means [a[1] != a[2], a[2] != a[3]] (in MiniZinc syntax)
+
+The optional arguments `set-or-array` specifies whether result is array or set. It must be either `:array` or `:set`, default is `:array`.  
+
+Example:
+
+    (aggregate [i (-- 1 3)]
+      (= (nth a i) 0)
+      :set)
+"
+  ([generators exp] `(aggregate ~generators ~exp :array)) 
+  ([generators exp set-or-array]
+     (let [all-var-val-pairs (partition 2 generators)
+           last-pair (last all-var-val-pairs)
+           where-expr (when (core/= (first last-pair) :where) 
+                        (second last-pair))
+           var-val-pairs (if where-expr
+                           (butlast all-var-val-pairs)
+                           all-var-val-pairs)]
+       `(let ~(vec (mapcat (fn [[par-name range]]
+                             (list par-name `(make-aVar ~(name par-name) (format "%s in %s" ~(name par-name) ~range))))
+                           var-val-pairs))
+          (aggregation-format 
+           ~set-or-array
+           ~(cons 'list (map first var-val-pairs))
+           ~where-expr
+           ~exp)))))
+
+(comment
+  (def a (array (-- 0 10) :int))
+
+  (aggregate [i (index_set a)]
+    (= (nth a i) 0))
+
+  (aggregate [i (-- 1 3)
+              j (-- 1 3) 
+              :where (< i j)]
+    (!= (nth a i) (nth a j)))
+
+  (aggregate [i (index_set a)]
+    (= (nth a i) 0)
+    :set)
   )
 
 
-(defmacro ^:no-doc def-aggregation-macro
-  "Todo"
-  [agg-fn generators exp]
-  (let [all-var-val-pairs (partition 2 generators)
-        last-pair (last all-var-val-pairs)
-        where-expr (when (core/= (first last-pair) :where) 
-                     (second last-pair))
-        var-val-pairs (if where-expr
-                        (butlast all-var-val-pairs)
-                        all-var-val-pairs)]
-    `(let ~(vec (mapcat (fn [[par-name range]]
-                          (list par-name `(make-aVar ~(name par-name) (format "%s in %s" ~(name par-name) ~range))))
-                        var-val-pairs))
-       (aggregation-format 
-        ~agg-fn
-        ~(cons 'list (map first var-val-pairs))
-        ~where-expr
-        ~exp))))
-
 
 (defmacro forall
-   "[aggregation macro] 
+   "forall with list comprehension support: Logical conjunction of aggregated Boolean expressions.
 
-MiniZinc looping. decls are pairs of range declarations <name> <domain>.
-
-Examples (array a undeclared here):
-
-    (forall [i (index_set a)]
-      (= (nth a i) 0)))
-
-    (forall [i (-- 1 3)
-             j (-- 1 3) 
-             :where (< i j)]
-      (!= (nth a i) (nth a j)))
-"
+See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(forall [generators*] exp)]}
   [generators exp]
-  `(def-aggregation-macro "forall" ~generators ~exp))
+  `(format "forall(%s)" (aggregate ~generators ~exp)))
 
 
 (comment
   (def a (array (-- 1 10) :int 'a))
   (forall [i (-- 1 10)]
           (= (nth a i) 0))
-  ;; => "forall(i in 1..10)((a[i] = 0))"    
+  ;; => "forall([(a[i] = 0) | i in 1..10])" 
 
   (forall [i (index_set a)]
           (= (nth a i) 0))
@@ -536,10 +577,12 @@ Examples (array a undeclared here):
 ;; All these macros and forall are very similar -- likely I need to define general case only once and then customise... 
 
 (defmacro exists
-  ""
+  "exists with list comprehension support: Logical disjunction of aggregated Boolean expressions.
+
+See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(exists [generators*] exp)]}
   [generators exp]
-  `(def-aggregation-macro "exists" ~generators ~exp))
+  `(format "exists(%s)" (aggregate ~generators ~exp)))
 
 (comment
   (def a (array (-- 1 10) :int 'a))
@@ -547,42 +590,52 @@ Examples (array a undeclared here):
   )
 
 (defmacro xorall
-  ""
+  "xorall with list comprehension support: odd number of aggregated Boolean expressions holds.
+
+See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(xorall [generators*] exp)]}
   [generators exp]
-  `(def-aggregation-macro "xorall" ~generators ~exp))
+  `(format "xorall(%s)" (aggregate ~generators ~exp)))
 
 (defmacro iffall
-  ""
+  "iffall with list comprehension support: even number of aggregated Boolean expressions holds.
+
+See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(iffall [generators*] exp)]}
   [generators exp]
-  `(def-aggregation-macro "iffall" ~generators ~exp))
+  `(format "iffall(%s)" (aggregate ~generators ~exp)))
 
 (defmacro sum
-  ""
+  "sum with list comprehension support: adds aggregated expressions. If aggregated expressions are empty returns 0.
+
+See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(sum [generators*] exp)]}
   [generators exp]
-  `(def-aggregation-macro "sum" ~generators ~exp))
+  `(format "sum(%s)" (aggregate ~generators ~exp)))
 
 (defmacro product
-  ""
+  "product with list comprehension support: multiplies aggregated expressions. If aggregated expressions are empty returns 1.
+
+See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(product [generators*] exp)]}
   [generators exp]
-  `(def-aggregation-macro "product" ~generators ~exp))
+  `(format "product(%s)" (aggregate ~generators ~exp)))
 
 (defmacro min
-  ""
+  "min with list comprehension support: least element in aggregated expressions. If aggregated expressions are empty gives MiniZinc error.
+
+See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(min [generators*] exp)]}
   [generators exp]
-  `(def-aggregation-macro "min" ~generators ~exp))
+  `(format "min(%s)" (aggregate ~generators ~exp)))
 
 (defmacro max
-  ""
+  "max with list comprehension support: greatest element in aggregated expressions. If aggregated expressions are empty gives MiniZinc error.
+
+See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(max [generators*] exp)]}
   [generators exp]
-  `(def-aggregation-macro "max" ~generators ~exp))
-
-
+  `(format "max(%s)" (aggregate ~generators ~exp)))
 
 
 
