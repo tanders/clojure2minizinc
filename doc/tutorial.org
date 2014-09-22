@@ -427,6 +427,7 @@ Note that in the actual Laplace equation in the code above, the =mz/+= constrain
 
    However, you can already move on to the next section...
 
+
 * Similarity and Differences between MiniZinc and clojure2minizinc
 
   Definitions in clojure2minizinc can be very similar to MiniZinc code. But there are some differences, which are detailed here.
@@ -460,10 +461,12 @@ constraint x + y != z;
    | =/\=                                               | =and=                                              |
    | =\/=                                               | =or=                                               |
    | =array=                                            | special syntax                                     |
+   | list comprehension                                 | =aggregate=, and special syntax                 |
    | aggregation functions:  =forall=, =exists=, =xorall=, =iffall=, =sum=, =product=, =max=, =min= | special syntax                                     |
    | aggregation functions overload unary functions: =exists=, =sum=, =product=, =max=, =min= | unary functions: =exists*=, =sum*=, =product*=, =max*=, =min*= |
    |                                                    |                                                    |
    | <50>                                               | <50>                                               |
+   #+TBLFM: $2=aggregate= with special syntax
 
 
 *** TODO Keep this Note Up To Date
