@@ -11,6 +11,9 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [me.raynes/fs "1.4.5"]
                  [org.clojure/math.combinatorics "0.0.7"]
+                 ;; https://github.com/clojure-emacs/cider-tracing
+                 ;; https://github.com/clojure/tools.trace
+                 ;; [org.clojure/tools.trace "0.7.5"]
                  ]
   ;; see https://github.com/weavejester/codox
   :codox {:defaults {:doc "TODO: write docs"
