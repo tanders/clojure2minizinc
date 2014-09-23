@@ -13,7 +13,8 @@
 (ns clojure2minizinc.core
   ;; make explicit shadowing a range of core clojure functions etc
   (:refer-clojure :exclude [> >= <= < = == != -> + - * / mod assert concat min max 
-                            int float set and or not nth]) 
+                            int float set and or not nth
+                            string?]) 
   (:require [clojure.core :as core]
             [clojure.java.shell :as shell]
             ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
@@ -116,12 +117,12 @@
             (cond 
              ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
              (aVar? index-set) (index-set->boundaries (:name index-set))
-             (string? index-set) (index-set->boundaries index-set) 
+             (core/string? index-set) (index-set->boundaries index-set) 
              (list? index-set) (map #(index-set->boundaries
                                       (cond 
                                        ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
                                        (aVar? %) (:name %)
-                                       (string? %) %)) 
+                                       (core/string? %) %)) 
                                     index-set))))
 (defn ^:no-doc anArray? 
   "Returns true if x is anArray."
@@ -132,24 +133,55 @@
   ;; access boundaries of given index-set
   (index-set->boundaries (-- 0 10))
   (make-anArray 'test "this is a test" (list (-- 0 10) (-- 0 10))) 
+
+  (def a (array (-- 0 10) :int))
+  (anArray? a)
+
   )
 
+;; quasi forward declaration, so that fns can be used in other fns before defined
+(def literal-set)
+(def literal-array)
 
-
+;; TODO: support more Clojure data types, which are then automatically translated into the corresponding literal MiniZinc type
+;; - OK bool
+;; - set of ints
+;; - vector (and list) of bool/ints/floats/strings/sets of ints into array of bool/ints/floats/strings/sets of ints
+;; - nested vectors/lists
+;; 
+;; !! Problem: How to distinguish between strings "automatically" created from more complex expressions (e.g., "x = y") and strings intended as MiniZinc string literals? Perhaps I should call quote-string (or named something like MiniZinc string) when the MiniZinc string literals are created?
+;; Idea: fn string (meaning literate-string, currently called quote-string) for marking literal MiniZinc strings 
+;; For convenience I may want some other easy syntax for strings later, but that will be difficult.
+;; 
+;; -> Once I decided on a clean design, mark difference also in tutorial 
+;; Syntax for literal strings values differs:  "my string"  |  (string "my string")  
+;; (detail also for nested array/vector)
+;; Clojure integers, flaots and sets of integers are automatically translated into corresponding MiniZinc values
+;; Clojure vectors/seqs of supported values are automatically translated into MiniZinc arrays
+;;
+;; !! Perhaps def fn literal that translates all Clojure values into the corresponding MiniZinc value. Internally calls literal-array, literal-set etc.
+;;
+;; TODO: should this function be renamed perhaps?
+;; 
 (defn- expr
-  "Returns an expression (e.g., a string with a MiniZinc expression). If x is aVar or similar record, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.)."
+  "Translates a Clojure value into a MiniZinc value (e.g., a string with a MiniZinc expression). If x is aVar or similar record, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.)."
   [x]
   ;; (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
   (cond (core/or (aVar? x) (anArray? x)) (:name x)
-        (core/or (string? x)
-                 (number? x)) x
-                 (core/or (keyword? x)
-                          (symbol? x)) (name x)
-                          ;; (some #(% x) literal-tests) x
-                          :else (throw (Exception. 
-                                        (pprint/cl-format nil
-                                                          "expr: not allowed as literal MiniZinc expr: ~S of type ~S" 
-                                                          x (type x))))))
+        (core/or (number? x)                            ; !! ratios also translated
+                 (core/= (type x) java.lang.Boolean)) x  
+        (core/or (core/string? x)
+                 (keyword? x)
+                 (symbol? x)) (name x)
+        (core/set? x) (apply literal-set x)             ; !! set with any elements allowed
+        ;; !! literal-array calls expr for all its elements already
+        (core/or (vector? x) 
+                 (seq? x)) (apply literal-array x) ;; BUG: not working for nested vectors/lists
+        ;; (some #(% x) literal-tests) x
+        :else (throw (Exception. 
+                      (pprint/cl-format nil
+                                        "expr: not allowed as literal MiniZinc expr: ~S of type ~S" 
+                                        x (type x))))))
 
 (comment
 
@@ -220,6 +252,37 @@
   ([par-name] (par :bool par-name))
   ([par-name init-value] (par :bool par-name init-value)))
 
+
+
+(defn string?
+  "Returns true if x is a MiniZinc string."
+  [x]
+  ;; x is a string, surrounded by double quotes, and there are no other double quotes inside the string. 
+  (core/and (core/string? x)
+            (core/= (first x) \")
+            (core/empty? (filter #(core/= % \")
+                              (butlast (drop 1 x))))
+            (core/= (last x) \")))
+
+(comment
+  (string? "\"test\"") ; true
+  (string? "test") ; false
+  (string? "\"te\"st\"") ; false
+  (string? 1) ; false
+  )
+
+
+(defn string 
+  "Creates a MiniZinc string."
+  [x]
+  (if (clojure2minizinc.core/string? x)
+    x
+    (cond (core/string? x) (str "\"" x "\"")
+          (core/or (keyword? x) 
+                   (symbol? x)) (str "\"" (name x) "\"")
+                   :else (throw (Exception. 
+                                 (pprint/cl-format nil
+                                                   "string: not allowed as MiniZinc string: ~S" x))))))
 
 
 (defn literal-set
@@ -344,13 +407,13 @@ BUG: literal arrays not supported as init val.
                (cond 
                 ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
                 (aVar? index-set) (:name index-set)
-                (string? index-set) index-set
+                (core/string? index-set) index-set
                 (list? index-set) (apply str
                                          (interpose ", "
                                                     (map #(cond 
                                                            ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
                                                            (aVar? %) (:name %)
-                                                           (string? %) %
+                                                           (core/string? %) %
                                                            :else (throw 
                                                                   (Exception. 
                                                                    (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
@@ -1272,7 +1335,7 @@ BUG: only few value types supported."
      (apply str (doall (map (fn [x#]  ; x# results in unique gensym
                               (str (cond (core/or (aVar? x#) (anArray? x#))
                                          (:mzn-string x#)
-                                         (string? x#) x#
+                                         (core/string? x#) x#
                                          :else (throw (Exception. (pprint/cl-format nil "~S not supported. MiniZinc statements must be strings or variables defined with function clojure2minizinc.core/variable." x#)))) 
                                    "\n"))
                             *mzn-store*)))))
