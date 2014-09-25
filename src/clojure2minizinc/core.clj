@@ -988,11 +988,22 @@ Examples:
      ([arg1# arg2# & args#]
         (reduce ~fn-name arg1# (cons arg2# args#)))))
 
+(defn fn-call 
+  "A MiniZinc function call supporting a function arity of 1 or more."
+  [fn & args]
+  (format (str fn "(%s)") (apply str (interpose ", " (map expr args)))))
+
+(comment
+  (fn-call 'foo )
+  (fn-call 'foo 'bar)
+  (fn-call 'foo 'x 'y 'z)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Constraint defs
 ;;;
+
 
 (def-unary-and-n-ary-operator + + 
   "+ constraint")
