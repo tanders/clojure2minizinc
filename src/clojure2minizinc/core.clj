@@ -322,16 +322,26 @@
 (defn literal-array 
   "Specifies a one- or two-dimensional array that contains the given MiniZinc expressions as elements. Two-dimensional arrays are defined by a list of expressions."
   [& exprs]
-  (if (every? coll? exprs)
+  (if (every? #(core/or (vector? %) (seq? %)) exprs)
     (str "[|" (apply str (flatten (interpose " | " (map (fn [sub-exprs]
                                                           (interpose ", " (map expr sub-exprs)))
                                                         exprs)))) "|]")    
     (format "[%s]" (apply str (interpose ", " (map expr exprs))))))
 
 (comment
+  (seq? '(1 2 3))
+
+  (literal-array 1 2 3)
   (literal-array (int) (int) (int))
-  (print (literal-array (list (int) (int)) (list (int) (int))))
+  (literal-array [(int) (int)][(int) (int)])
   (apply literal-array [(int) (int) (int)])
+
+
+  (let [x (variable (-- 1 3))
+        y (variable (-- 1 3))
+        z (variable (-- 1 3))]
+    (apply literal-array [x y z]))
+
   )
 
 (defn- mk-type-inst-string [type-inst]
