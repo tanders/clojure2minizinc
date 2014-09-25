@@ -48,12 +48,12 @@
 ;;;
 
 ;; Sending all constraints to a single store instead of returning them from functions like constraint allows, e.g., to store minizinc vars in arbitrary clojure data structures and freely traversing such data structure for applying constraints to these, without worrying how to collect the constraint information.
-;; Note: Must be public so that other packages can indirectly write to it (why? tell-store does not need to be public either.)
+;; Note: Must be public so that other packages can indirectly write to it (why? tell-store! does not need to be public either.)
 (def ^{:dynamic true} ^:no-doc *mzn-store*  ; :private true
   "A thread-local store for collecting all information about a CSP."
   false)
 
-(defn- tell-store 
+(defn- tell-store! 
   "Extends *mzn-store* by given constraint and returns constraint (only extends *mzn-store* at thread-local level, otherwise does nothing)."
   [constraint]
   (if *mzn-store*
@@ -61,13 +61,51 @@
         constraint)
     constraint))
 
-
 (comment
   (binding [*mzn-store* ()]
-    (tell-store 1)
-    (tell-store 2)
-    (tell-store 3)
+    (tell-store! 1)
+    (tell-store! 2)
+    (tell-store! 3)
     ;; (println *mzn-store*)
+    )
+  )
+
+(def ^{:dynamic true} ^:no-doc *included-files*  ; :private true
+  "A thread-local store for collecting which files have already been included. Used for automatic inclusion of global constraint defs."
+  false)
+
+;; (defn- add-included-file!
+;;   "Extends *included-files* by given file and tells store to include that file, but only if that file was not included already. (Only extends *included-files* at thread-local level, otherwise does nothing)."
+;;   [file]
+;;   (if (core/and *included-files*
+;;                 (core/not (contains? *included-files* file)))
+;;     (do (println (format "add-included-file!: %s, %s, %s" file *included-files* *mzn-store*))
+;;         (tell-store! (include file))
+;;         (set! *included-files* (conj *included-files* file))
+;;         file)
+;;     file))
+
+;; Extends *included-files* by given file and tells store to include that file, but only if that file was not included already. (Only extends *included-files* at thread-local level, otherwise does nothing).
+(defn include 
+  "Include the given file."
+  [file]
+  (if (core/and *included-files*
+                (core/not (contains? *included-files* file)))
+    (do ; (println (format "add-included-file!: %s, %s, %s" file *included-files* *mzn-store*))
+        (tell-store! (format "include \"%s\";" file))
+        (set! *included-files* (conj *included-files* file))
+        file)
+    file))
+
+(comment
+  (binding [*included-files* #{}
+            *mzn-store* ()]
+    (include "test.mzn")
+    (include (io/as-file "test2.mzn"))
+    (include "test.mzn")
+    (include (io/as-file "test2.mzn"))
+    ;; (println *included-files*)
+    (println *mzn-store*)
     )
   )
 
@@ -190,12 +228,30 @@
   (expr "myVar")
   (expr myVar)
   (expr 1)
+  (expr 3.41)
   (expr :test)
   
-  ;; errors 
-  (expr ['myVar])
-  (expr 'x)
+  (expr false)
+  (expr [1 2 3])
+  (expr [[1.0 2.0][3.0 4.0]])
+  (expr #{1 2 3})
+  ;; Not really convenient, but correct results
+  (expr (map string ["foo" "bar"]))
+  (expr [:foo :bar]) 
+
+  (expr [#{1 2 3} #{4 5 6}])
+ 
+  (let [x (variable (-- 1 3))]
+    (expr x))
+
+  (let [x (variable (-- 1 3))
+        y (variable (-- 1 3))
+        z (variable (-- 1 3))]
+    (expr [x y z]))
+
   )
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -212,7 +268,7 @@
   ([param-type par-name init-value]
      {:pre [(#{"int" "float" "bool" "set of int"} (name param-type))]}
      ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, par-name ~S" param-type init-value par-name))
-     (tell-store
+     (tell-store!
       (make-aVar (name par-name) 
                  (if init-value
                    (format "%s: %s = %s;" (name param-type) (name par-name) init-value)
@@ -409,7 +465,7 @@ BUG: literal arrays not supported as init val.
   ([index-set type-inst array-name init-value]
      ;; {:pre [(#{"int" "float" "bool" "string" "set of int"} (name type-inst))]}
      ;; (println (pprint/cl-format nil "type-inst: ~S, init-value: ~S, array-name ~S" type-inst init-value array-name))
-     (tell-store
+     (tell-store!
       (make-anArray 
        (name array-name) 
        (format "array[%s] of %s: %s;" 
@@ -781,7 +837,7 @@ Examples:
     ([type-inst var-name]
        (let [dom-string (mk-type-inst-string type-inst)
              name-string (name var-name)]
-         (tell-store (make-aVar name-string (format "var %s: %s;" dom-string name-string))))))
+         (tell-store! (make-aVar name-string (format "var %s: %s;" dom-string name-string))))))
     
 
 (comment
@@ -839,15 +895,6 @@ Examples:
 
 
 
-(defn include 
-  "Include the given file."
-  [file]
-  (format "include \"%s\";" file))
-
-(comment
-  (include "test.mzn")
-  (include (io/as-file "test2.mzn"))
-  )
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -858,7 +905,7 @@ Examples:
 (defn constraint 
   "Expects a constraint expression (a string) and turns it into a constraint statement."
   [constraint-expr]
-  (tell-store (format "constraint %s;" (expr constraint-expr))))
+  (tell-store! (format "constraint %s;" (expr constraint-expr))))
 
 (defmacro ^:private def-unary-operator
   "Defines a function that outputs the code for a MiniZinc unary operator."
@@ -1200,10 +1247,10 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
   "Solve items specify what kind of solution is being looked for. Supported values for solver are :satisfy, :maximize, and :minimize (a keyword)."
   ([solver]
      {:pre [(#{:satisfy} solver)]}
-     (tell-store (format "solve %s;" (name solver))))
+     (tell-store! (format "solve %s;" (name solver))))
   ([solver expr]
      {:pre [(#{:maximize :minimize} solver)]}
-     (tell-store (format "solve %s %s;" (name solver) expr))))
+     (tell-store! (format "solve %s %s;" (name solver) expr))))
 
 
 (comment
@@ -1229,7 +1276,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 (defn output-map
   "Expects a map containing MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure map for Clojure to read."
   [my-map]
-  (tell-store 
+  (tell-store! 
    (str "output [\"{\", " 
         ;; BUG: of REPL? Strings containing parentheses can cause blocking.
         ;; waiting for a response at https://groups.google.com/forum/#!forum/clojure-tools
@@ -1245,7 +1292,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 (defn output-vector
   "Expects a vector of MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure vector for Clojure to read."
   [my-vec]
-  (tell-store 
+  (tell-store! 
    (str "output [\"[\", " 
         ;; BUG: of REPL? Strings containing parentheses can cause blocking.
         ;; waiting for a response at https://groups.google.com/forum/#!forum/clojure-tools
@@ -1261,7 +1308,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 (defn output-var 
   "Outputs a single MiniZinc variable. For example, a one-dimensional MiniZinc array can be read into a Clojure vector directly."
   [my-var]
-  (tell-store (format "output [ show(%s) ];" (expr my-var))))
+  (tell-store! (format "output [ show(%s) ];" (expr my-var))))
 
 ;; TODO: output for multi-dimensional vector
 
@@ -1272,7 +1319,7 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 
 BUG: this fn is currently far too inflexible."
   [mzn-string]
-  (tell-store (format "output [ %s ];" (expr mzn-string)))) ; \"\\n\"
+  (tell-store! (format "output [ %s ];" (expr mzn-string)))) ; \"\\n\"
 
 (comment
   (print (output "x = show(a)"))
@@ -1339,7 +1386,8 @@ BUG: only few value types supported."
 (defmacro clj2mnz 
   "Translates a constraint problem defined in Clojure into the corresponding MiniZinc code. Expects any number of variable/parameter declarations, any number of constraints, one output, and one solver declaration, all in any order."
   [& constraints]
-  `(binding [*mzn-store* []]
+  `(binding [*mzn-store* []
+             *included-files* #{}]
      ~@constraints
      ;; TODO: map is lazy -- make sure dynamic scope is not left
      (apply str (doall (map (fn [x#]  ; x# results in unique gensym
