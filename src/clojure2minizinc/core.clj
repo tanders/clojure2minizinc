@@ -1245,27 +1245,106 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
   )
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Global constraint defs
+;;;
 
+(defn alldifferent 
+  "Constrains all elements in an array (ints, or sets of ints) to be all different."
+  [my-array]
+  (include "alldifferent.mzn")
+  (fn-call 'alldifferent my-array))
 
-
-
-;; TMP: old defs
 (comment
+  (let [x (variable (-- 1 3))
+        y (variable (-- 1 3))
+        z (variable (-- 1 3))]
+    (alldifferent [x y z]))
 
-  (defn != 
-    ""
-    [lh rh]
-    (format "%s != %s" (expr lh) (expr rh)))
-
-  ;; (defn != 
-  ;;   ""
-  ;; [lh rh]
-  ;; (pprint/cl-format nil "~S != ~S" (expr lh) (expr rh)))
-
-  
   )
 
 
+(comment
+
+
+(defn all_different 
+  "Constrains all elements in an array (ints, or sets of ints) to be all different."
+  [my-array]
+  (alldifferent my-array))
+
+(defn alldifferent_except_0 
+  "Constrains the elements in an array of ints to be all different except those elements that are assigned the value 0."
+  [my-array]
+  (fn-call 'alldifferent_except_0 my-array))
+
+(defn all_disjoint 
+  "Ensures that every pair of sets in a array of sets of ints is disjoint."
+  [my-array]
+  (fn-call 'all_disjoint my-array))
+
+(defn all_equal 
+  "Constrains all elements in an array (ints, or sets of ints) to have the same value."
+  [my-array]
+  (fn-call 'all_equal my-array))
+
+(defn among 
+  "Requires exactly n variables in x to take one of the values in v."
+  [my-array]
+  (fn-call 'among my-array))
+
+at_least (atleast)
+at_most (atmost)
+at_most1 (atmost1)
+bin_packing
+bin_packing_capa
+bin_packing_load
+circuit
+count_eq (count)
+count_geq
+count_gt
+count_leq
+count_lt
+count_neq
+cumulative
+decreasing
+diffn
+disjoint
+distribute
+element
+exactly
+global_cardinality
+global_cardinality_closed
+global_cardinality_low_up
+global_cardinality_low_up_closed
+increasing
+int_set_channel
+inverse
+inverse_set
+lex_greater
+lex_greatereq
+lex_less
+lex_lesseq
+lex2
+link_set_to_booleans
+maximum
+member
+minimum
+nvalue
+partition_set
+range
+regular
+roots
+sliding_sum
+sort
+strict_lex2
+subcircuit
+sum_pred (sum)
+table
+value_precede
+value_precede_chain
+
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
