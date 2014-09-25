@@ -116,7 +116,6 @@
 ;;; (I could perhaps only use strings, but additional explicit information important for certain types)
 ;;;
 
-
 ;; NOTE: ->aVar and map->aVar are created automatically, and it is included in the doc, because I cannot set ^:no-doc to it 
 (defrecord ^:no-doc aVar [name mzn-string])
 ;; NOTE: I would prefer making this a private function (and also aVar? make-anArray etc.), but it is required to be public (because used in macros?) 
@@ -340,7 +339,6 @@
                                  (pprint/cl-format nil
                                                    "string: not allowed as MiniZinc string: ~S" x))))))
 
-
 (defn literal-set
   "Specifies a set of explicitly given integers (can be MiniZinc expressions) as elements."
   [& exprs]
@@ -348,6 +346,8 @@
 
 (comment
   (literal-set 1 2 3)
+  ;; Minor BUG: order of set elements scrambled. This is used in expr for Clojure sets -- can this be a problem? 
+  (apply literal-set #{1 2 3})
   )
 
 
@@ -775,13 +775,14 @@ See [[aggregate]] for list comprehension syntax and examples."
 ;;;
 
 (comment
-  ;; TODO: define `if`, but under different name
+  ;; Tutorial p. 26
+  ;; TODO: define `if`, but under name `TODO` if* ??
   ;; (if is a special form)
 
-;; CompilerException java.lang.RuntimeException: No such var: core/if, 
-;; compiling:(/private/var/folders/c_/14td248n5xd5wjbmrhldmwl00000gq/T/form-init6276176329836054569.clj:1:1) 
+  ;; MiniZinc if should have same syntax as Clojure if
   
   )
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -790,8 +791,23 @@ See [[aggregate]] for list comprehension syntax and examples."
 ;;;
 
 (comment
-  ;; TODO: define `let`, but under different name
+  ;; Tutorial p. 49
+
+  ;; TODO: define `let`, but under name `local`
   ;; (let is a special form)
+
+  ;; `local` should be usable like Clojure's if, but automatically assign the same names as the Clojure symbols/locals to MiniZinc params and variables
+
+;; var s..e: x;
+;; let {int: l = s div 2, int: u = e div 2, var l .. u: y} in x = 2*y
+
+
+  ;; constraint let { var int: s = x1 + x2 + x3 + x4 } in l <= s /\ s <= u;
+  ;; 
+  ;; BUG: variable def changed: skipped var name and added init value
+  (local [s (variable :int (+ x1x2 x3 x4))]
+         (<= l s u))  ; BUG: <= only binary 
+
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -933,6 +949,7 @@ Examples:
      ([arg1# arg2# & args#]
         (reduce ~op-name arg1# (cons arg2# args#)))))
 
+;; BUG: parentheses surrounding expressions are surrounding accumulating expressions like (((a + b) + c) + d)
 (defmacro ^:private def-unary-and-n-ary-operator
   "Defines a function that outputs the code for a MiniZinc unary and binary operator."
   [op-name operation doc-string]
@@ -1165,6 +1182,7 @@ Examples:
 
 (def-binary-function pow pow
   "power constraint")
+
 (defn assert 
   "Constraint to guard against certain errors (e.g., to double-check input from data files).
 
