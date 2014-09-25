@@ -466,8 +466,34 @@ constraint x + y != z;
    | aggregation functions overload unary functions: =exists=, =sum=, =product=, =max=, =min= | unary functions: =exists*=, =sum*=, =product*=, =max*=, =min*= |
    |                                                    |                                                    |
    | <50>                                               | <50>                                               |
-   #+TBLFM: $2=aggregate= with special syntax
 
+
+   Several literal Clojure types can be used directly in clojure2minizinc for corresponding literal MiniZinc parameter types. The exception are Clojure strings.
+   
+# Org does not recognise ="my string"= and | is not allowed within a table, even not within code
+   | MiniZinc                                           | clojure2minizinc                                   |
+   |----------------------------------------------------+----------------------------------------------------|
+   | =42=                                               | =42=                                               |
+   | =3.14=                                             | =3.14=                                             |
+   | =true=                                             | =true=                                             |
+   | =[1, 2, 3]=                                        | =[1 2 3]=                                          |
+   | ={1, 2, 3}=                                        | =#{1 2 3}=                                         |
+   | "my string"                                        | =(string "my string")=                             |
+   | <50>                                               | <50>                                               |
+
+
+Two-dimensional MiniZinc arrays can be encoded by nested Clojure vectors. The nested vectors
+
+#+begin_src clojure
+[[1.0 2.0] [3.0 4.0]]
+#+end_src
+
+corresponds to the MiniZinc code
+
+#+BEGIN_SRC minizinc
+[| 1.0, 2.0 | 3.0, 4.0 |]
+#+END_SRC
+   
 
 *** TODO Keep this Note Up To Date
 

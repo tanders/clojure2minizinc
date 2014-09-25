@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>A clojure2minizinc Tutorial</title>
-<!-- 2014-09-22 Mon 11:42 -->
+<!-- 2014-09-25 Thu 11:20 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Torsten Anders" />
@@ -956,6 +956,80 @@ There are a few exceptions, where certain MiniZinc operator etc. names cannot be
 </tr>
 </tbody>
 </table>
+
+
+<p>
+Several literal Clojure types can be used directly in clojure2minizinc for corresponding literal MiniZinc parameter types. The exception are Clojure strings.
+</p>
+
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">MiniZinc</th>
+<th scope="col" class="left">clojure2minizinc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left"><code>42</code></td>
+<td class="left"><code>42</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>3.14</code></td>
+<td class="left"><code>3.14</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>true</code></td>
+<td class="left"><code>true</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>[1, 2, 3]</code></td>
+<td class="left"><code>[1 2 3]</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>{1, 2, 3}</code></td>
+<td class="left"><code>#{1 2 3}</code></td>
+</tr>
+
+<tr>
+<td class="left">"my string"</td>
+<td class="left"><code>(string "my string")</code></td>
+</tr>
+</tbody>
+</table>
+
+
+<p>
+Two-dimensional MiniZinc arrays can be encoded by nested Clojure vectors. The nested vectors
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">[[1.0 2.0] [3.0 4.0]]
+</pre>
+</div>
+
+<p>
+corresponds to the MiniZinc code
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-minizinc">[| 1.0, 2.0 | 3.0, 4.0 |]
+</pre>
+</div>
 </div>
 
 
@@ -1090,7 +1164,7 @@ A useful and easy debugging strategy is to disable a set of constraints and to e
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Torsten Anders</p>
-<p class="date">Created: 2014-09-22 Mon 11:42</p>
+<p class="date">Created: 2014-09-25 Thu 11:20</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.3.50.2 (<a href="http://orgmode.org">Org</a> mode 8.2.7b)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
