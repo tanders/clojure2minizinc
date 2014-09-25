@@ -378,19 +378,58 @@
     (mz/solve :maximize (mz/sum [p (mz/-- 1 nproducts)]
                            (mz/* (mz/nth profit p)
                                  (mz/nth produce p))))
-    ;; TODO: array comprehension within output
-    ;; TMP: output hack 
+    ;; TODO: array comprehension within output -- make fn output more flexible
+    ;; TODO: make printed result more clear (possibly with Clojure instead of MiniZinc coding)
     (mz/output-map {:produce produce :used used})))
  :data (mz/map2minizinc {:nproducts 2 ; banana cakes and chocolate cakes
-                         ;; BUG:  expr: not allowed as literal MiniZinc expr: [400 450] of type clojure.lang.PersistentVector
-                         ;; BUG: expr must support more types or map2minizinc must translate them 
                          :profit [400, 450] ; in cents
-                         :pname ["banana-cake", "chocolate-cake"] 
+                         ;; MiniZinc strings must be explicitly declared (they are indistuigishable from other MiniZinc code otherwise, because such code is stored internally in Clojure strings)
+                         :pname (map mz/string ["banana-cake", "chocolate-cake"]) 
                          :nresources 5 ; flour, banana, sugar, butter, cocoa
                          :capacity [4000, 6, 2000, 500, 500]
-                         :rname ["flour","banana","sugar","butter","cocoa"]
+                         :rname (map mz/string ["flour","banana","sugar","butter","cocoa"])
                          :consumption (mz/literal-array [250, 2, 75, 100, 0][200, 0, 150, 150, 75])
                          }))
+
+
+;; send more money, tutorial, p. 25
+(mz/minizinc 
+ (mz/clj2mnz
+  ;; every global constraint of the MiniZinc library is automatically included when that global constraint is used
+  ;; (mz/include "alldifferent.mzn") 
+  (let [s (mz/variable (mz/-- 1 9))
+        e (mz/variable (mz/-- 0 9))
+        n (mz/variable (mz/-- 0 9))
+        d (mz/variable (mz/-- 0 9))
+        m (mz/variable (mz/-- 1 9))
+        o (mz/variable (mz/-- 0 9))
+        r (mz/variable (mz/-- 0 9))
+        y (mz/variable (mz/-- 0 9))]
+    (mz/constraint (mz/= (mz/+ (mz/* 1000 s) (mz/* 100 e) (mz/* 10 n) d
+                               (mz/* 1000 m) (mz/* 100 o) (mz/* 10 r) e)
+                         (mz/+ (mz/* 10000 m) (mz/* 1000 o) (mz/* 100 n) (mz/* 10 e) y)))
+    (mz/constraint (mz/alldifferent [s e n d m o r y]))
+    (mz/solve :satisfy)
+    ;; TODO: revise output, see MiniZinc tutorial (or use Clojure capabilities)
+    (mz/output-map {:s s :e e :n n :d d :m m :o o :r r :y y})
+    ))
+ :print-mzn? true)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
