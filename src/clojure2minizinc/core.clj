@@ -1963,7 +1963,7 @@ Requires that the number of occurrences of cover[i] in x is counts[i].
 The elements of x must take their values from cover.
 Aborts if cover and counts do not have identical index sets."
   [x cover counts]
-  (call-global-constraint 'global_cardinality_closed x cover count))
+  (call-global-constraint 'global_cardinality_closed x cover counts))
 
 (defn global_cardinality_low_up
   "global_cardinality_low_up(array[int] of var int: x, array[int] of int: cover, array[int] of int: lb, array[int] of int: ub)
