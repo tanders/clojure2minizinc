@@ -706,16 +706,22 @@ See [[aggregate]] for list comprehension syntax and examples."
 ;; All these macros and forall are very similar -- likely I need to define general case only once and then customise... 
 
 (defmacro exists
-  "exists with list comprehension support: Logical disjunction of aggregated Boolean expressions.
+  "Logical disjunction
+
+Unary: MiniZinc function exists.
+
+Binary: exists with list comprehension support: Logical disjunction of aggregated Boolean expressions.
 
 See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(exists [generators*] exp)]}
-  [generators exp]
-  `(format "exists(%s)" (aggregate ~generators ~exp)))
+  ([x] (call-fn 'exists x))
+  ([generators exp]
+  `(format "exists(%s)" (aggregate ~generators ~exp))))
 
 (comment
   (def a (array (-- 1 10) :int 'a))
   (exists [i (-- 1 3)] (= (nth a i) 0))
+  (exists a)
   )
 
 (defmacro xorall
@@ -735,36 +741,56 @@ See [[aggregate]] for list comprehension syntax and examples."
   `(format "iffall(%s)" (aggregate ~generators ~exp)))
 
 (defmacro sum
-  "sum with list comprehension support: adds aggregated expressions. If aggregated expressions are empty returns 0.
+  "Summation
+
+Unary: MiniZinc function sum.
+
+Binary: sum with list comprehension support: adds aggregated expressions. If aggregated expressions are empty returns 0.
 
 See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(sum [generators*] exp)]}
-  [generators exp]
-  `(format "sum(%s)" (aggregate ~generators ~exp)))
+  ([x] (call-fn 'sum x))
+  ([generators exp]
+     `(format "sum(%s)" (aggregate ~generators ~exp))))
 
 (defmacro product
-  "product with list comprehension support: multiplies aggregated expressions. If aggregated expressions are empty returns 1.
+  "Multiplication
+
+Unary: MiniZinc function Multiplication.
+
+Binary: product with list comprehension support: multiplies aggregated expressions. If aggregated expressions are empty returns 1.
 
 See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(product [generators*] exp)]}
-  [generators exp]
-  `(format "product(%s)" (aggregate ~generators ~exp)))
+  ([x] (call-fn 'product x))
+  ([generators exp]
+     `(format "product(%s)" (aggregate ~generators ~exp))))
 
 (defmacro min
-  "min with list comprehension support: least element in aggregated expressions. If aggregated expressions are empty gives MiniZinc error.
+  "Minimal value
+
+Unary: MiniZinc function min.
+
+Binary: min with list comprehension support: least element in aggregated expressions. If aggregated expressions are empty gives MiniZinc error.
 
 See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(min [generators*] exp)]}
-  [generators exp]
-  `(format "min(%s)" (aggregate ~generators ~exp)))
+  ([x] (call-fn 'min x))
+  ([generators exp]
+     `(format "min(%s)" (aggregate ~generators ~exp))))
 
 (defmacro max
-  "max with list comprehension support: greatest element in aggregated expressions. If aggregated expressions are empty gives MiniZinc error.
+  "Maximal value
+
+Unary: MiniZinc function max.
+
+Binary: max with list comprehension support: greatest element in aggregated expressions. If aggregated expressions are empty gives MiniZinc error.
 
 See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(max [generators*] exp)]}
-  [generators exp]
-  `(format "max(%s)" (aggregate ~generators ~exp)))
+  ([x] (call-fn 'max x))
+  ([generators exp]
+     `(format "max(%s)" (aggregate ~generators ~exp))))
 
 
 
@@ -1127,8 +1153,8 @@ Examples:
 (def-unary-function dom_size dom_size
   " function constraint")
 ;; NOTE: starred form of exists*, sum*, product*, max*, and min* to avoid conflict with macros of otherwise same name
-(def-unary-function exist* exist
-  " function constraint")
+;; (def-unary-function exist* exist
+;;   " function constraint")
 (def-unary-function fix fix
   " function constraint")
 (def-unary-function exp exp
@@ -1167,12 +1193,12 @@ Examples:
   "logarithm base 2 constraint")
 (def-unary-function log10 log10
   "logarithm base 10 constraint")
-(def-unary-function max* max
-  " function constraint")
-(def-unary-function min* min
-  " function constraint")
-(def-unary-function product* product
-  " function constraint")
+;; (def-unary-function max* max
+;;   " function constraint")
+;; (def-unary-function min* min
+;;   " function constraint")
+;; (def-unary-function product* product
+;;   " function constraint")
 (def-unary-function round round
   " function constraint")
 (def-unary-function set2array set2array
@@ -1189,8 +1215,8 @@ Examples:
   "hyperbolic sine constraint")
 (def-unary-function sqrt sqrt
   "square root constraint")
-(def-unary-function sum* sum
-  " function constraint")
+;; (def-unary-function sum* sum
+;;   " function constraint")
 (def-unary-function tan tan
   "tangent constraint")
 (def-unary-function tanh tanh
