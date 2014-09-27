@@ -87,7 +87,7 @@
 
 ;; Extends *included-files* by given file and tells store to include that file, but only if that file was not included already. (Only extends *included-files* at thread-local level, otherwise does nothing).
 (defn include 
-  "Include the given file."
+  "Include the given file. Does automatic book keeping whether file was already included, and includes it only once."
   [file]
   (if (core/and *included-files*
                 (core/not (contains? *included-files* file)))
@@ -988,15 +988,26 @@ Examples:
      ([arg1# arg2# & args#]
         (reduce ~fn-name arg1# (cons arg2# args#)))))
 
-(defn fn-call 
+(defn call-fn 
   "A MiniZinc function call supporting a function arity of 1 or more."
   [fn & args]
   (format (str fn "(%s)") (apply str (interpose ", " (map expr args)))))
 
 (comment
-  (fn-call 'foo )
-  (fn-call 'foo 'bar)
-  (fn-call 'foo 'x 'y 'z)
+  (call-fn 'foo )
+  (call-fn 'foo 'bar)
+  (call-fn 'foo 'x 'y 'z)
+  )
+
+;; http://www.minizinc.org/downloads/doc-1.6/mzn-globals.html
+(defn call-global-constraint
+  "Includes <fn>.mzn and then calls fn, like [[call-fn]]."
+  [fn & args]
+  (include (str fn ".mzn"))
+  (apply call-fn fn args))
+
+(comment
+  (str 'alldifferent ".mzn")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1251,100 +1262,492 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 ;;;
 
 (defn alldifferent 
-  "Constrains all elements in an array (ints, or sets of ints) to be all different."
-  [my-array]
-  (include "alldifferent.mzn")
-  (fn-call 'alldifferent my-array))
+  "alldifferent(array[int] of var int: x)
+alldifferent(array[int] of var set of int: x)
+
+Constrains the array of objects x to be all different."
+  [x]
+  (call-global-constraint 'alldifferent x))
 
 (comment
   (let [x (variable (-- 1 3))
         y (variable (-- 1 3))
         z (variable (-- 1 3))]
     (alldifferent [x y z]))
-
   )
 
-
-(comment
-
-
 (defn all_different 
-  "Constrains all elements in an array (ints, or sets of ints) to be all different."
-  [my-array]
-  (alldifferent my-array))
+  "Same as [[alldifferent]]."
+  [x]
+  (alldifferent x))
 
 (defn alldifferent_except_0 
-  "Constrains the elements in an array of ints to be all different except those elements that are assigned the value 0."
-  [my-array]
-  (fn-call 'alldifferent_except_0 my-array))
+  "alldifferent_except_0(array[int] of var int: x)
+
+Constrains the elements of the array x to be all different except those elements that are assigned the value 0."
+  [x]
+  (call-global-constraint 'alldifferent_except_0 x))
 
 (defn all_disjoint 
-  "Ensures that every pair of sets in a array of sets of ints is disjoint."
-  [my-array]
-  (fn-call 'all_disjoint my-array))
+  "all_disjoint(array[int] of var set of int: x)
+
+Ensures that every pair of sets in the array x is disjoint."
+  [x]
+  (call-global-constraint 'all_disjoint x))
 
 (defn all_equal 
-  "Constrains all elements in an array (ints, or sets of ints) to have the same value."
-  [my-array]
-  (fn-call 'all_equal my-array))
+  "all_equal(array[int] of var int:          x)
+all_equal(array[int] of var set of int:   x)
+
+Constrains the array of objects x to have the same value."
+  [x]
+  (call-global-constraint 'all_equal x))
 
 (defn among 
-  "Requires exactly n variables in x to take one of the values in v."
-  [my-array]
-  (fn-call 'among my-array))
+  "among(var int: n, array[int] of var int: x, set of int: v)
 
-at_least (atleast)
-at_most (atmost)
-at_most1 (atmost1)
-bin_packing
-bin_packing_capa
-bin_packing_load
-circuit
-count_eq (count)
-count_geq
-count_gt
-count_leq
-count_lt
-count_neq
-cumulative
-decreasing
-diffn
-disjoint
-distribute
-element
-exactly
-global_cardinality
-global_cardinality_closed
-global_cardinality_low_up
-global_cardinality_low_up_closed
-increasing
-int_set_channel
-inverse
-inverse_set
-lex_greater
-lex_greatereq
-lex_less
-lex_lesseq
-lex2
-link_set_to_booleans
-maximum
-member
-minimum
-nvalue
-partition_set
-range
-regular
-roots
-sliding_sum
-sort
-strict_lex2
-subcircuit
-sum_pred (sum)
-table
-value_precede
-value_precede_chain
+Requires exactly n variables in x to take one of the values in v."
+  [n x v]
+  (call-global-constraint 'among n x v))
 
-)
+(defn at_least 
+  "at_least(int: n, array[int] of var int:        x, int:        v)
+at_least(int: n, array[int] of var set of int: x, set of int: v)
+
+Requires at least n variables in x to take the value v."
+  [n x v]
+  (call-global-constraint 'at_least x))
+
+(defn atleast 
+  "Same as [[at_least]]."
+  [n x v]
+  (at_least n x v))
+
+(defn at_most
+  "at_most(int: n, array[int] of var int:        x, int:        v)
+at_most(int: n, array[int] of var set of int: x, set of int: v)
+
+Requires at most n variables in x to take the value v."
+  [n x v]
+  (call-global-constraint 'at_most n x v))
+
+(defn atmost
+  "Same as [[at_most]]."
+  [n x v]
+  (at_most n x v))
+
+(defn at_most1 
+  "at_most1(array[int] of var set of int: s)
+
+Requires that each pair of sets in s overlap in at most one element."
+  [s]
+  (call-global-constraint 'at_most1 s))
+
+(defn atmost1 
+  "Same as [[at_most1]]."
+  [s]
+  (at_most1 s))
+
+(defn bin_packing
+  "bin_packing(int: c, array[int] of var int: bin, array[int] of int: w)
+
+Requires that each item i be put into bin bin[i] such that the sum of the weights of each item, w[i], in each bin does not exceed the capacity c.
+Aborts if an item has a negative weight or if the capacity is negative.
+Aborts if the index sets of bin and w are not identical."
+  [c bin w]
+  (call-global-constraint 'bin_packing c bin w))
+
+(defn bin_packing_capa 
+  "bin_packing_capa(array[int] of int: c, array[int] of var int: bin, array[int] of int:w)
+
+Requires that each item i be put into bin bin[i] such that the sum of the weights of each item, w[i], in each bin b does not exceed the capacity c[b].
+Aborts if an item has negative weight.
+Aborts if the index sets of bin and w are not identical."
+  [c bin w]
+  (call-global-constraint 'bin_packing_capa c bin w))
+
+(defn bin_packing_load 
+  "bin_backing_load(array[int] of var int: l, array[int] of var int: bin, array[int] of int: w)
+
+Requires that each item i be put into bin bin[i] such that the sum of the weights of each item, w[i], in each bin b is equal to the load l[b].
+Aborts if an item has negative weight.
+Aborts if the index sets of bin and w are not identical."
+  [l bin w]
+  (call-global-constraint 'bin_packing_load l bin w))
+
+(defn circuit
+  "circuit[array[int] of var int: x)
+
+Constraints the elements of x to define a circuit where x[i] = j mean that j is the successor of i."
+  [x]
+  (call-global-constraint 'circuit x))
+
+(defn count_eq
+  "count_eq(array[int] of var int: x, var int: y, var int: c)
+
+Constrains c to be the number of occurrences of y in x.
+Also available by the name count."
+  [x y c]
+  (call-global-constraint 'count_eq x y c))
+
+(defn count
+  "Same as [[count_eq]]."
+  [x y c]
+  (count_eq x y c))
+
+(defn count_geq
+  "count_geq(array[int] of var int: x, var int: y, var int: c)
+
+Constrains c to greater than or equal to the number of occurrences of y in x."
+  [x y c]
+  (call-global-constraint 'count_geq x y c))
+
+(defn count_gt
+  "count_gt(array[int] of var int: x, var int: y, var int: c)
+
+Constrains c to strictly greater than the number of occurrences of y in x."
+  [x y c]
+  (call-global-constraint 'count_gt x y c))
+
+(defn count_leq
+  "count_leq(array[int] of var int: x, var int: y, var int: c)
+
+Constrains c to less than or equal to the number of occurrences of y in x."
+  [x y c]
+  (call-global-constraint 'count_leq x y c))
+
+(defn count_lt
+  "count_lt(array[int] of var int: x, var int: y, var int: c)
+
+Constrains c to strictly less than the number of occurrences of y in x."
+  [x y c]
+  (call-global-constraint 'count_lt x y c))
+
+(defn count_neq
+  "count_neq(array[int] of var int: x, var int: y, var int: c)
+
+Constrains c to not be the number of occurrences of y in x."
+  [x y c]
+  (call-global-constraint 'count_neq x y c))
+
+(defn cumulative
+  "cumulative(array[int] of var int: s, array[int] of var int: d, array[int] of var int: r, var int: b)
+
+Requires that a set of tasks given by start times s, durations d, and resource requirements r, never require more than a global resource bound b at any one time.
+Aborts if s, d, and r do not have identical index sets.
+Aborts if a duration or resource requirement is negative."
+  [s d r b]
+  (call-global-constraint 'cumulative s d r b))
+
+(defn decreasing
+  "decreasing(array[int] of var bool:       x)
+decreasing(array[int] of var float:      x)
+decreasing(array[int] of var int:        x)
+decreasing(array[int] of var set of int: x)
+
+Requires that the array x is in (non-strictly) decreasing order."
+  [x]
+  (call-global-constraint 'decreasing x))
+
+(defn diffn
+  "diffn(array[int] of var int: x,  array[int] of var int: y,
+      array[int] of var int: dx, array[int] of var int: dy)
+
+Constrains rectangles, given by their origins x,y and sizes dx,dy, to be non-overlapping."
+  [x y dx dy]
+  (call-global-constraint 'diffn x y dx dy))
+
+(defn disjoint
+  "disjoint(var set of int: s, var set of int: t)
+
+Requires that sets s and t do not intersect."
+  [s t]
+  (call-global-constraint 'disjoint s t))
+
+(defn distribute
+  "distribute(array[int] of var int: card, array[int] of var int: value, array[int] of var int: base)
+
+Requires that card[i] is the number of occurrences of value[i] in base.
+In this implementation the values in value need not be distinct.
+Aborts if card and value do not have identical index sets."
+  [card value base]
+  (call-global-constraint 'distribute card value base))
+
+(defn element
+  "element(var int: i, array[int] of var bool:       x, var bool:       y)
+element(var int: i, array[int] of var float:      x, var float:      y)
+element(var int: i, array[int] of var int:        x, var int:        y)
+element(var int: i, array[int] of var set of int: x, var set of int: y)
+
+The same as x[i] = y or (= (nth x i) y). That is, y is the ith element of the array x."
+  [i x y]
+  (call-global-constraint 'element i x y))
+
+(defn exactly
+  "exactly(int: n, array[int] of var int:        x, int:        v)
+exactly(int: n, array[int] of var set of int: x, set of int: v)
+
+Requires exactly n variables in x to take the value v."
+  [n x v]
+  (call-global-constraint 'exactly n x v))
+
+(defn global_cardinality
+  "global_cardinality(array[int] of var int: x, array[int] of int: cover, array[int] of var int: counts)
+
+Requires that the number of occurrences of cover[i] in x is counts[i].
+Aborts if cover and counts do not have identical index sets."
+  [x cover counts]
+  (call-global-constraint 'global_cardinality x cover counts))
+
+(defn global_cardinality_closed
+  "global_cardinality_closed(array[int] of var int: x, array[int] of int: cover, array[int] of var int: counts)
+
+Requires that the number of occurrences of cover[i] in x is counts[i].
+The elements of x must take their values from cover.
+Aborts if cover and counts do not have identical index sets."
+  [x cover counts]
+  (call-global-constraint 'global_cardinality_closed x cover count))
+
+(defn global_cardinality_low_up
+  "global_cardinality_low_up(array[int] of var int: x, array[int] of int: cover, array[int] of int: lb, array[int] of int: ub)
+
+Requires that for all i, the value cover[i] appears at least lb[i] and at most ub[i] times in the array x."
+  [x cover lb ub]
+  (call-global-constraint 'global_cardinality_low_up x cover lb ub))
+
+(defn global_cardinality_low_up_closed
+  "global_cardinality_low_up_closed(array[int] of var int: x, array[int] of int: cover, array[int] of int: lb, array[int] of int: ub)
+
+Requires that for all i, the value cover[i] appears at least lb[i] and at most ub[i] times in the array x.
+The elements of x must take their values from cover."
+  [x cover lb ub]
+  (call-global-constraint 'global_cardinality_low_up_closed x cover lb ub))
+
+(defn increasing
+  "increasing(array[int] of var bool:       x)
+increasing(array[int] of var float:      x)
+increasing(array[int] of var int:        x)
+increasing(array[int] of var set of int: x)
+
+Requires that the array x is in (non-strictly) increasing order."
+  [x]
+  (call-global-constraint 'increasing x))
+
+(defn int_set_channel
+  "int_set_channel(array[int] of var int: x, array[int] of var set of int: y)
+
+Requires that x[i] = j if and only if i is an element of y[j]."
+  [x y]
+  (call-global-constraint 'int_set_channel x y))
+
+(defn inverse
+  "inverse(array[int] of var int: f, array[int] of var int: invf)
+
+Constrains two arrays to represent inverse functions of each other. All the values in each array must be within the index set of the other array."
+  [f invf]
+  (call-global-constraint 'inverse f invf))
+
+(defn inverse_set
+  "inverse_set(array[int] of var set of int: f, array[int] of var set of int: invf)
+
+Constrains the two arrays f and invf so that a j is an element of f[i] if and only if i is an element of invf[j]. All the values in each array's sets must be within the index set of the other array."
+  [f invf]
+  (call-global-constraint 'inverse_set f invf))
+
+(defn lex_greater
+  "lex_greater(array[int] of var bool:       x, array[int] of var bool:       y)
+lex_greater(array[int] of var float:      x, array[int] of var float:      y)
+lex_greater(array[int] of var int:        x, array[int] of var int:        y)
+lex_greater(array[int] of var set of int: x, array[int] of var set of int: y)
+
+Requires that the array x is strictly lexicographically greater than array y.
+Compares them from first to last element, regardless of indices."
+  [x y]
+  (call-global-constraint 'lex_greater x y))
+
+(defn lex_greatereq
+  "lex_greatereq(array[int] of var bool:       x, array[int] of var bool:       y)
+lex_greatereq(array[int] of var float:      x, array[int] of var float:      y)
+lex_greatereq(array[int] of var int:        x, array[int] of var int:        y)
+lex_greatereq(array[int] of var set of int: x, array[int] of var set of int: y)
+
+Requires that the array x is lexicographically greater than or equal to array y.
+Compares them from first to last element, regardless of indices."
+  [x y]
+  (call-global-constraint 'lex_greatereq x y))
+
+(defn lex_less
+  "lex_less(array[int] of var bool:       x, array[int] of var bool:       y)
+lex_less(array[int] of var float:      x, array[int] of var float:      y)
+lex_less(array[int] of var int:        x, array[int] of var int:        y)
+lex_less(array[int] of var set of int: x, array[int] of var set of int: y)
+
+Requires that the array x is strictly lexicographically less than array y.
+Compares them from first to last element, regardless of indices."
+  [x y]
+  (call-global-constraint 'lex_less x y))
+
+(defn lex_lesseq
+  "lex_lesseq(array[int] of var bool:       x, array[int] of var bool:       y)
+lex_lesseq(array[int] of var float:      x, array[int] of var float:      y)
+lex_lesseq(array[int] of var int:        x, array[int] of var int:        y)
+lex_lesseq(array[int] of var set of int: x, array[int] of var set of int: y)
+
+Requires that the array x is lexicographically less than or equal to array y.
+Compares them from first to last element, regardless of indices."
+  [x y]
+  (call-global-constraint 'lex_lesseq x y))
+
+(defn lex2
+  "lex2(array[int, int] of var int: x)
+
+Require adjacent rows and adjacent columns in the the array x to be lexicographically ordered. Adjacent rows and adjacent columns may be equal."
+  [x]
+  (call-global-constraint 'lex2 x))
+
+(defn link_set_to_booleans
+  "link_set_to_booleans(var set of int: s, array[int] of var bool: b)
+
+The array of booleans b is the characteristic representation of the set s.
+Aborts if the index set of b is not a superset of the possible values of s."
+  [s b]
+  (call-global-constraint 'link_set_to_booleans s b))
+
+(defn maximum
+  "maximum(var int:   m, array[int] of var int:   x)
+maximum(var float: m, array[int] of var float: x)
+
+Constrains m to be the maximum of the values in x. (The array x must have at least one element.)"
+  [m x]
+  (call-global-constraint 'maximum m x))
+
+(defn member
+  "member(array[int] of var bool:       x, var bool:       y)
+member(array[int] of var float:      x, var float:      y)
+member(array[int] of var int:        x, var int:        y)
+member(array[int] of var set of int: x, var set of int: y)
+member(var set of int:               x, var int:        y)
+
+Requires that y occurs in the array or set x."
+  [x y]
+  (call-global-constraint 'member x y))
+
+(defn minimum
+  "minimum(var float: m, array[int] of var float: x)
+minimum(var int:   m, array[int] of var int:   x)
+
+Constrains m to be the minimum of the values in x. (The array x must have at least one element.)"
+  [m x]
+  (call-global-constraint 'minimum m x))
+
+(defn nvalue
+  "nvalue(var int: n, array[int] of var int: x)
+
+Requires that the number of distinct values in x is n."
+  [x]
+  (call-global-constraint 'nvalue x))
+
+(defn partition_set
+  "partition_set(array[int] of var set of int: s, set of int: universe)
+
+Partitions universe into disjoint sets."
+  [s universe]
+  (call-global-constraint 'partition_set s universe))
+
+(defn range
+  "range(array[int] of var int: x, var set of int: s, var set of int: t)
+
+Requires that the image of function x (represented as an array) on set of values s is t.
+Aborts if ub(s) is not a subset of the index set of x."
+  [x s t]
+  (call-global-constraint 'range x s t))
+
+(defn regular
+  "regular(array[int] of var int: x, int: Q, int: S, array[int,int] of int: d, int: q0, set of int: F)
+
+The sequence of values in array x (which must all be in the range 1..S) is accepted by the DFA of Q states with input 1..S and transition function d (which maps ⟨1..Q, 1..S⟩ to 0..Q) and initial state q0 (which must be in 1..Q) and accepting states F (which all must be in 1..Q). State 0 is reserved to be an always failing state.
+Aborts if Q < 1.
+Aborts if S < 1.
+Aborts if the transition function d is not in [1..Q, 1..s].
+Aborts if the start state, q0, is not in 1..Q.
+Aborts if F is not a subset of 1..Q."
+  [x Q S d q0 F]
+  (call-global-constraint 'regular x Q S d q0 F))
+
+(defn roots
+  "roots(array[int] of var int: x, var set of int: s, var set of int: t)
+
+Requires that x[i] is an element of t for all i element of s.
+Aborts if ub(s) is not a subset of the index set of x."
+  [x s t]
+  (call-global-constraint 'roots x s t))
+
+(defn sliding_sum
+  "sliding_sum(int: low, int: up, int: seq, array[int] of var int: vs)
+
+Requires that in each subsequence vs[i], ..., vs[i + seq - 1] the sum of the values belongs to the interval [low, up]."
+  [low up seq vs]
+  (call-global-constraint 'sliding_sum low up seq vs))
+
+(defn sort
+  "sort(array[int] of var int: x, array[int] of var int: y)
+
+Requires that the multiset of values in x is the same as the multiset of values in y but y is in sorted order.
+Aborts if the cardinality of the index sets of x and y is not equal."
+  [x y]
+  (call-global-constraint 'sort x y))
+
+(defn strict_lex2
+  "strict_lex2(array[int, int] of var int: x)
+
+Require adjacent rows and adjacent columns in the the array x to be lexicographically ordered. Adjacent rows and adjacent columns cannot be equal."
+  [x]
+  (call-global-constraint 'strict_lex2 x))
+
+(defn subcircuit
+  "subcircuit(array[int] of var int: x)
+
+Constrains the elements of x to define a subcircuit where x[i] = j means that j is the successor of i and x[i] = i means that i is not in the circuit."
+  [x]
+  (call-global-constraint 'subcircuit x))
+
+(defn sum_pred
+  "sum_pred(var int: i, array[int] of set of int: sets, array[int] of int: c, var int: s)
+
+Requires that the sum of c[i1]...c[iN] equals s, where i1..iN are the elements of the ith set in sets.
+This constraint is usually named sum, but using that would conflict with the MiniZinc built-in function of the same name."
+  [i sets c s]
+  (call-global-constraint 'sum_pred i sets c s))
+
+(defn table
+  "table(array[int] of var bool: x, array[int, int] of bool: t)
+table(array[int] of var int:  x, array[int, int] of int:  t)
+
+Represents the constraint x is element of t where we consider each row in t to be a tuple and t as a set of tuples.
+Aborts if the second dimension of t does not equal the number of variables in x.
+The default decomposition of this constraint cannot be flattened if it occurs in a reified context."
+  [x t]
+  (call-global-constraint 'table x t))
+
+(defn value_precede
+  "value_precede(int: s, int: t, array[int] of var int: x)
+value_precede(int: s, int: t, array[int] of var set of int: x)
+
+Requires that s precede t in the array x.
+For integer variables this constraint requires that if an element of x is equal to t, then another element of x with a lower index is equal to s.
+For set variables this constraint requires that if an element of x contains t but not s, then another element of x with lower index contains s but not t."
+  [s t x]
+  (call-global-constraint 'value_precede s t x))
+
+(defn value_precede_chain
+  "value_precede_chain(array[int] of int: c, array[int] of var int: x)
+value_precede_chain(array[int] of int: c, array[int] of var set of int: x)
+
+Requires that the [[value_precede]] constraint is true for every pair of adjacent integers in c in the array x."
+  [c x]
+  (call-global-constraint 'value_precede_chain c x))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
