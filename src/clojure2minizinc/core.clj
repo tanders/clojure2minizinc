@@ -562,6 +562,55 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Calls to MiniZinc fns etc
+;;;
+
+(defn call-operator 
+  "A MiniZinc operator call supporting arities of 2 or more. For higher arities multiple operators are used (e.g., a ternary plus is translated into x + y + z)"
+  [operator x y & more]
+  (apply str (interpose (str " " operator " ") (map expr (cons x (cons y more))))))
+
+(comment
+  (call-operator '+) ; error as intended
+  (call-operator '+ 1) ; error as intended
+  (call-operator '+ 1 2)
+  (call-operator '+ 1 2 3)
+  )
+
+(defn call-unary-operator 
+  "A MiniZinc unary operator call."
+  [operator x]
+  (str operator (expr x)))
+
+(comment
+  (call-unary-operator '+ 1)
+  )
+
+(defn call-fn 
+  "A MiniZinc function call supporting a function arity of 1 or more."
+  [fn & args]
+  (format (str fn "(%s)") (apply str (interpose ", " (map expr args)))))
+
+(comment
+  (call-fn 'foo)
+  (call-fn 'foo 'bar)
+  (call-fn 'foo 'x 'y 'z)
+  )
+
+;; http://www.minizinc.org/downloads/doc-1.6/mzn-globals.html
+(defn call-global-constraint
+  "Includes <fn>.mzn and then calls fn, like [[call-fn]]."
+  [fn & args]
+  (include (str fn ".mzn"))
+  (apply call-fn fn args))
+
+(comment
+  (str 'alldifferent ".mzn")
+  )
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; Aggregation functions for arithmetic arrays are
 ;;
@@ -949,92 +998,71 @@ Examples:
   [constraint-expr]
   (tell-store! (format "constraint %s;" (expr constraint-expr))))
 
-(defmacro ^:private def-unary-operator
-  "Defines a function that outputs the code for a MiniZinc unary operator."
-  [op-name operation doc-string]
-  `(defn ~op-name
-     ~doc-string
-     [arg#]
-     (format ~(str operation " %s")  (expr arg#))))
+;; (defmacro ^:private def-unary-operator
+;;   "Defines a function that outputs the code for a MiniZinc unary operator."
+;;   [op-name operation doc-string]
+;;   `(defn ~op-name
+;;      ~doc-string
+;;      [arg#]
+;;      (format ~(str operation " %s")  (expr arg#))))
 
-(defmacro ^:private def-binary-operator
-  "Defines a function that outputs the code for a MiniZinc binary operator."
-  [op-name operation doc-string]
-  `(defn ~op-name
-     ~doc-string
-     [lh# rh#]
-     (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#))))
+;; (defmacro ^:private def-binary-operator
+;;   "Defines a function that outputs the code for a MiniZinc binary operator."
+;;   [op-name operation doc-string]
+;;   `(defn ~op-name
+;;      ~doc-string
+;;      [lh# rh#]
+;;      (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#))))
 
-(defmacro ^:private def-binary-and-n-ary-operator
-  "Defines a function that outputs the code for a MiniZinc binary operator."
-  [op-name operation doc-string]
-  `(defn ~op-name
-     ~doc-string
-     ([lh# rh#]
-        (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#)))
-     ([arg1# arg2# & args#]
-        (reduce ~op-name arg1# (cons arg2# args#)))))
+;; (defmacro ^:private def-binary-and-n-ary-operator
+;;   "Defines a function that outputs the code for a MiniZinc binary operator."
+;;   [op-name operation doc-string]
+;;   `(defn ~op-name
+;;      ~doc-string
+;;      ([lh# rh#]
+;;         (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#)))
+;;      ([arg1# arg2# & args#]
+;;         (reduce ~op-name arg1# (cons arg2# args#)))))
 
-;; BUG: parentheses surrounding expressions are surrounding accumulating expressions like (((a + b) + c) + d)
-(defmacro ^:private def-unary-and-n-ary-operator
-  "Defines a function that outputs the code for a MiniZinc unary and binary operator."
-  [op-name operation doc-string]
-  `(defn ~op-name
-     ~doc-string
-     ([arg#]
-        (format ~(str operation " %s") (expr arg#)))
-     ([lh# rh#]
-        (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#)))
-     ([arg1# arg2# & args#]
-        (reduce ~op-name arg1# (cons arg2# args#)))))
+;; ;; BUG: parentheses surrounding expressions are surrounding accumulating expressions like (((a + b) + c) + d)
+;; (defmacro ^:private def-unary-and-n-ary-operator
+;;   "Defines a function that outputs the code for a MiniZinc unary and binary operator."
+;;   [op-name operation doc-string]
+;;   `(defn ~op-name
+;;      ~doc-string
+;;      ([arg#]
+;;         (format ~(str operation " %s") (expr arg#)))
+;;      ([lh# rh#]
+;;         (format ~(str "(%s " operation " %s)") (expr lh#) (expr rh#)))
+;;      ([arg1# arg2# & args#]
+;;         (reduce ~op-name arg1# (cons arg2# args#)))))
 
-(defmacro ^:private def-unary-function
-  "Defines a function that outputs the code for a MiniZinc function."
-  [fn-name fn doc-string]
-  `(defn ~fn-name
-     ~doc-string
-     [arg#]
-     (format ~(str fn "(%s)")  (expr arg#))))
+;; (defmacro ^:private def-unary-function
+;;   "Defines a function that outputs the code for a MiniZinc function."
+;;   [fn-name fn doc-string]
+;;   `(defn ~fn-name
+;;      ~doc-string
+;;      [arg#]
+;;      (format ~(str fn "(%s)")  (expr arg#))))
 
-(defmacro ^:private def-binary-function
-  "Defines a function that outputs the code for a MiniZinc function."
-  [fn-name fn doc-string]
-  `(defn ~fn-name
-     ~doc-string
-     [arg1# arg2#]
-     (format ~(str fn "(%s, %s)")  (expr arg1#) (expr arg2#))))
+;; (defmacro ^:private def-binary-function
+;;   "Defines a function that outputs the code for a MiniZinc function."
+;;   [fn-name fn doc-string]
+;;   `(defn ~fn-name
+;;      ~doc-string
+;;      [arg1# arg2#]
+;;      (format ~(str fn "(%s, %s)")  (expr arg1#) (expr arg2#))))
 
-(defmacro ^:private def-n-ary-function
-  "Defines a function that outputs the code for a MiniZinc function."
-  [fn-name fn doc-string]
-  `(defn ~fn-name
-     ~doc-string
-     ([arg1# arg2#]
-        (format ~(str fn "(%s, %s)")  (expr arg1#) (expr arg2#)))
-     ([arg1# arg2# & args#]
-        (reduce ~fn-name arg1# (cons arg2# args#)))))
+;; (defmacro ^:private def-n-ary-function
+;;   "Defines a function that outputs the code for a MiniZinc function."
+;;   [fn-name fn doc-string]
+;;   `(defn ~fn-name
+;;      ~doc-string
+;;      ([arg1# arg2#]
+;;         (format ~(str fn "(%s, %s)")  (expr arg1#) (expr arg2#)))
+;;      ([arg1# arg2# & args#]
+;;         (reduce ~fn-name arg1# (cons arg2# args#)))))
 
-(defn call-fn 
-  "A MiniZinc function call supporting a function arity of 1 or more."
-  [fn & args]
-  (format (str fn "(%s)") (apply str (interpose ", " (map expr args)))))
-
-(comment
-  (call-fn 'foo )
-  (call-fn 'foo 'bar)
-  (call-fn 'foo 'x 'y 'z)
-  )
-
-;; http://www.minizinc.org/downloads/doc-1.6/mzn-globals.html
-(defn call-global-constraint
-  "Includes <fn>.mzn and then calls fn, like [[call-fn]]."
-  [fn & args]
-  (include (str fn ".mzn"))
-  (apply call-fn fn args))
-
-(comment
-  (str 'alldifferent ".mzn")
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -1042,194 +1070,597 @@ Examples:
 ;;;
 
 
-(def-unary-and-n-ary-operator + + 
-  "+ constraint")
-(def-unary-and-n-ary-operator - -
-  "- constraint")
+;; (def-unary-and-n-ary-operator + + 
+;;   "+ constraint")
+;; (def-unary-and-n-ary-operator - -
+;;   "- constraint")
 
-(def-binary-operator <-> <->
-  "Logical equivalence constraint")
-(def-binary-operator -> ->
-  "Logical implication constraint")
-(def-binary-operator <- <-
-  "")
-(def-unary-operator not not 
-  "Logical negation constraint")
-(def-binary-and-n-ary-operator or "\\/"
-  "Logical or constraint")
-(def-binary-operator xor xor
-  "Logical and constraint")
-(def-binary-and-n-ary-operator and "/\\"
-  "Logical xor constraint")
-;; TODO: document briefly all below constraints
-(def-binary-operator < <
-  " constraint")
-(def-binary-operator > >
-  " constraint")
-(def-binary-operator <= <=
-  " constraint")
-(def-binary-operator >= >=
-  " constraint")
-(def-binary-operator = =
-  " constraint")
-(def-binary-operator == ==
-  " constraint")
-(def-binary-operator != !=
-  "Not equal constraint")
-(def-binary-operator in in
-  " constraint")
-(def-binary-operator subset subset
-  " constraint")
-(def-binary-operator superset superset
-  " constraint")
-(def-binary-operator union union
-  " constraint")
-(def-binary-operator diff diff
-  " constraint")
-(def-binary-operator symdiff symdiff
-  " constraint")
-(def-binary-operator intersect intersect
-  " constraint")
-(def-binary-and-n-ary-operator ++ ++
-  "Concatenates strings and arrays.")
-(def-binary-and-n-ary-operator * *
-  " constraint")
-(def-binary-and-n-ary-operator / /
-  " constraint")
-(def-binary-and-n-ary-operator div div
-  " constraint")
-(def-binary-operator mod mod
-  " constraint")
+;; NOTE: def longer than necessary (macro call to define fn can be more concise), but this way the function args are documented more cleanly
+(defn + 
+  "Addition, or unary operator +"
+  ([x] (call-unary-operator '+ x))
+  ([x y & more] (apply call-operator '+ x y more)))
+(defn -
+  "Subtraction, or unary operator -"
+  ([x] (call-unary-operator '- x))
+  ([x y & more] (apply call-operator '- x y more)))
 
-;; TODO: doc strings
-(def-unary-function abort abort
-  " function constraint")
-(def-unary-function abs abs
-  "absolute value constraint")
-(def-unary-function acos acos
-  "arccosine constraint")
-(def-unary-function acosh acosh
-  "hyperbolic arccosine constraint")
-(def-unary-function array_intersect array_intersect
-  " function constraint")
-(def-unary-function array_union array_union
-  " function constraint")
-(def-unary-function array1d array1d
-  " function constraint")
-(def-unary-function array2d array2d
-  " function constraint")
-(def-unary-function array3d array3d
-  " function constraint")
-(def-unary-function array4d array4d
-  " function constraint")
-(def-unary-function array5d array5d
-  " function constraint")
-(def-unary-function array6d array6d
-  " function constraint")
-(def-unary-function asin asin
-  "arcsine constraint")
-(def-unary-function asinh asinh
-  "hyperbolic arcsine constraint")
-(def-unary-function atan atan
-  "arctangent constraint")
-(def-unary-function atanh atanh
-  "hyperbolic arctangent constraint")
-(def-unary-function bool2int bool2int
-  " function constraint")
-(def-unary-function card card
-  " function constraint")
-(def-unary-function ceil ceil
-  " function constraint")
-(def-unary-function concat concat
-  " function constraint")
-(def-unary-function cos cos
-  "cosine constraint")
-(def-unary-function cosh cosh
-  "hyperbolic cosine constraint")
-(def-unary-function dom dom
-  " function constraint")
-(def-unary-function dom_array dom_array
-  " function constraint")
-(def-unary-function dom_size dom_size
-  " function constraint")
+(comment
+  (+) ;; error, as desired
+  (+ (variable (-- 1 3)))
+  (+ 1 2)
+  (+ 1 2 3 4 5)
+  )
+
+;; (def-binary-operator <-> <->
+;;   "Logical equivalence constraint")
+;; (def-binary-operator -> ->
+;;   "Logical implication constraint")
+;; (def-binary-operator <- <-
+;;   "")
+(defn <-> 
+  "Logical equivalence"
+  [x y]
+  (call-operator '<-> x y))
+(defn -> 
+  "Logical implication"
+  [x y] 
+  (call-operator '-> x y))
+(defn <- 
+  "Reverse logical implication"
+  [x y] 
+  (call-operator '<- x y))
+
+;; (def-unary-operator not not 
+;;   "Logical negation constraint")
+(defn not 
+  "Logical negation"
+  [x] 
+  (call-unary-operator 'not x))
+
+;; (def-binary-and-n-ary-operator or "\\/"
+;;   "Logical or constraint")
+;; (def-binary-operator xor xor
+;;   "Logical xor constraint")
+;; (def-binary-and-n-ary-operator and "/\\"
+;;   "Logical and constraint")
+
+(defn or
+  "Logical or"
+  [x y & more] 
+  (apply call-operator "\\/" x y more))
+(defn xor
+  "Logical xor"
+  [x y & more] 
+  (apply call-operator 'xor x y more))
+(defn and
+  "Logical and"
+  [x y & more] 
+  (apply call-operator "/\\" x y more))
+
+;; (def-binary-operator < <
+;;   " constraint")
+;; (def-binary-operator > >
+;;   " constraint")
+;; (def-binary-operator <= <=
+;;   " constraint")
+;; (def-binary-operator >= >=
+;;   " constraint")
+;; (def-binary-operator = =
+;;   " constraint")
+;; (def-binary-operator == ==
+;;   " constraint")
+;; (def-binary-operator != !=
+;;   "Not equal constraint")
+
+(defn <
+  "Less than"
+  [x y & more] 
+  (apply call-operator '< x y more))
+(defn >
+  "Greater than"
+  [x y & more] 
+  (apply call-operator '> x y more))
+(defn <=
+  "Less than or equal"
+  [x y & more] 
+  (apply call-operator '<= x y more))
+(defn >=
+  "Greater than or equal"
+  [x y & more] 
+  (apply call-operator '>= x y more))
+(defn =
+  "Equal"
+  [x y & more] 
+  (apply call-operator '= x y more))
+(defn ==
+  "Equal"
+  [x y & more] 
+  (apply call-operator '== x y more))
+(defn !=
+  "Not equal"
+  [x y & more] 
+  (apply call-operator '!= x y more))
+
+;; (def-binary-operator in in
+;;   " constraint")
+;; (def-binary-operator subset subset
+;;   " constraint")
+;; (def-binary-operator superset superset
+;;   " constraint")
+;; (def-binary-operator union union
+;;   " constraint")
+;; (def-binary-operator diff diff
+;;   " constraint")
+;; (def-binary-operator symdiff symdiff
+;;   " constraint")
+;; (def-binary-operator intersect intersect
+;;   " constraint")
+
+(defn in
+  "Set membership"
+  [x s] 
+  (call-operator 'in x s))
+(defn subset
+  "Subset"
+  [s1 s2] 
+  (call-operator 'subset s1 s2))
+(defn superset
+  "Superset"
+  [s1 s2] 
+  (call-operator 'superset s1 s2))
+(defn union
+  "Set union"
+  [s1 s2] 
+  (call-operator 'union s1 s2))
+(defn diff
+  "Set difference"
+  [s1 s2] 
+  (call-operator 'diff s1 s2))
+(defn symdiff
+  "Set symmetric difference"
+  [s1 s2] 
+  (call-operator 'symdiff s1 s2))
+(defn intersect
+  "Set intersection"
+  [s1 s2] 
+  (call-operator 'intersect s1 s2))
+
+;; (def-binary-and-n-ary-operator ++ ++
+;;   "Concatenates strings and arrays.")
+;; (def-binary-and-n-ary-operator * *
+;;   " constraint")
+;; (def-binary-and-n-ary-operator / /
+;;   " constraint")
+;; (def-binary-and-n-ary-operator div div
+;;   " constraint")
+
+(defn ++
+  "String and array concatenation"
+  [x y & more] 
+  (apply call-operator '++ x y more))
+(defn *
+  "Multiplication"
+  [x y & more] 
+  (apply call-operator '* x y more))
+(defn /
+  "Floating point division"
+  [x y & more] 
+  (apply call-operator '/ x y more))
+(defn div
+  "Integer devision, result rounded towards zero"
+  [x y & more] 
+  (apply call-operator 'div x y more))
+
+;; (def-binary-operator mod mod
+;;   " constraint")
+(defn mod
+  "Modulo operation (remainder of division)"
+  [x y] 
+  (call-operator 'mod x y))
+
+;; (def-unary-function abort abort
+;;   " function constraint")
+(defn abort 
+  "Abort evaluation, printing the given string."
+  [my-string] 
+  (call-fn 'abort (string my-string)))
+;; (def-unary-function abs abs
+;;   "absolute value constraint")
+(defn abs 
+  "Absolute value"
+  [x] 
+  (call-fn 'abs x))
+;; (def-unary-function acos acos
+;;   "arccosine constraint")
+;; (def-unary-function acosh acosh
+;;   "hyperbolic arccosine constraint")
+(defn acos 
+  "Arccosine"
+  [x] 
+  (call-fn 'acos x))
+(defn acosh 
+  "Hyperbolic arccosine"
+  [x] 
+  (call-fn 'acosh x))
+;; (def-unary-function array_intersect array_intersect
+;;   " function constraint")
+;; (def-unary-function array_union array_union
+;;   " function constraint")
+;; (def-unary-function array1d array1d
+;;   " function constraint")
+;; (def-unary-function array2d array2d
+;;   " function constraint")
+;; (def-unary-function array3d array3d
+;;   " function constraint")
+;; (def-unary-function array4d array4d
+;;   " function constraint")
+;; (def-unary-function array5d array5d
+;;   " function constraint")
+;; (def-unary-function array6d array6d
+;;   " function constraint")
+(defn array_intersect
+  "Intersection of an array of sets"
+  [x] 
+  (call-fn 'array_intersect x))
+(defn array_union
+  "Union of an array of sets"
+  [x] 
+  (call-fn 'array_union x))
+(defn array1d
+  "Initialise an array of one dimension from given array a.
+
+See example for [[array2d]]."
+  [x a] 
+  (call-fn 'array1d x a))
+(defn array2d
+  "Initialise a 2D array from given array a.
+
+Example:
+
+`(array2d (-- 1 3) (-- 1 2) [1 2 3 4 5 6])` is equivalent to 
+`(literal-array [1 2][3 4][5 6])` which is the MiniZinc array
+`[|1, 2 |3, 4 |5, 6|])`"
+  [x1 x2 a] 
+  (call-fn 'array2d x1 x2 a))
+(defn array3d
+  "Initialise a 3D array from given array a.
+
+See example for [[array2d]]."
+  [x1 x2 x3 a] 
+  (call-fn 'array3d x1 x2 x3 a))
+(defn array4d
+  "Initialise a 4D array from given array a.
+
+See example for [[array2d]]."
+  [x1 x2 x3 x4 a] 
+  (call-fn 'array4d x1 x2 x3 x4 a))
+(defn array5d
+  "Initialise a 5D array from given array a.
+
+See example for [[array2d]]."
+  [x1 x2 x3 x4 x5 a] 
+  (call-fn 'array5d x1 x2 x3 x4 x5 a))
+(defn array6d
+  "Initialise a 6D array from given array a.
+
+See example for [[array2d]]."
+  [x1 x2 x3 x4 x5 x6 a] 
+  (call-fn 'array6d x1 x2 x3 x4 x5 x6 a))
+
+;; (def-unary-function asin asin
+;;   "arcsine constraint")
+;; (def-unary-function asinh asinh
+;;   "hyperbolic arcsine constraint")
+;; (def-unary-function atan atan
+;;   "arctangent constraint")
+;; (def-unary-function atanh atanh
+;;   "hyperbolic arctangent constraint")
+(defn asin
+  "Arcsine"
+  [x] 
+  (call-fn 'asin x))
+(defn asinh
+  "Hyperbolic arcsine"
+  [x] 
+  (call-fn 'asinh x))
+(defn atan
+  "Arctangent"
+  [x] 
+  (call-fn 'atan x))
+(defn atanh
+  "Hyperbolic arctangent"
+  [x] 
+  (call-fn 'atanh x))
+
+;; (def-unary-function bool2int bool2int
+;;   " function constraint")
+;; (def-unary-function card card
+;;   " function constraint")
+;; (def-unary-function ceil ceil
+;;   " function constraint")
+;; (def-unary-function concat concat
+;;   " function constraint")
+;; (def-unary-function cos cos
+;;   "cosine constraint")
+;; (def-unary-function cosh cosh
+;;   "hyperbolic cosine constraint")
+
+(defn bool2int
+  "Boolean to integer conversion: 1 for true and 0 otherwise"
+  [b] 
+  (call-fn 'bool2int b))
+(defn card
+  "Set cardinality"
+  [s] 
+  (call-fn 'card s))
+(defn ceil
+  "Rounds float towards infinitiy"
+  [x] 
+  (call-fn 'ceil x))
+(defn concat
+  "Concatenate an array of strings. Equivalent to folding '++' over the array, but may be implemented more efficiently."
+  [x] 
+  (call-fn 'concat x))
+(defn cos
+  "Cosine"
+  [x] 
+  (call-fn 'cos x))
+(defn cosh
+  "Hyperbolic cosine"
+  [x] 
+  (call-fn 'cosh x))
+
+;; (def-unary-function dom dom
+;;   " function constraint")
+;; (def-unary-function dom_array dom_array
+;;   " function constraint")
+;; (def-unary-function dom_size dom_size
+;;   " function constraint")
+
+(defn dom
+  "Domain reflection: a safe approximation to the possible values of x (int)."
+  [x] 
+  (call-fn 'dom x))
+(defn dom_array
+  "Domain reflection: a safe approximation to the union of all possible values of the expressions appearing in the array x (ints)."
+  [x] 
+  (call-fn 'dom_array x))
+(defn dom_size
+  "Domain reflection: domain size, equivalent to (card (dom x))"
+  [x] 
+  (call-fn 'dom_size x))
+
 ;; NOTE: starred form of exists*, sum*, product*, max*, and min* to avoid conflict with macros of otherwise same name
 ;; (def-unary-function exist* exist
 ;;   " function constraint")
-(def-unary-function fix fix
-  " function constraint")
-(def-unary-function exp exp
-  "exponentiation of e constraint")
-(def-unary-function floor floor
-  " function constraint")
-(def-unary-function index_set index_set
-  " function constraint")
-(def-unary-function index_set_1of2 index_set_1of2
-  " function constraint")
-(def-unary-function index_set_2of2 index_set_2of2
-  " function constraint")
-(def-unary-function index_set_1of3 index_set_1of3
-  " function constraint")
-(def-unary-function index_set_2of3 index_set_2of3
-  " function constraint")
-(def-unary-function index_set_3of3 index_set_3of3
-  " function constraint")
-(def-unary-function int2float int2float
-  "Function to coerce integers to floating point numbers")
-(def-unary-function is_fixed is_fixed
-  " function constraint")
-(def-unary-function join join
-  " function constraint")
-(def-unary-function lb lb
-  " function constraint")
-(def-unary-function lb_array lb_array
-  " function constraint")
-(def-unary-function length length
-  "Returns the length of an array.")
-(def-unary-function ln ln
-  "natural logarithm constraint")
-(def-unary-function log log
-  " function constraint")
-(def-unary-function log2 log2
-  "logarithm base 2 constraint")
-(def-unary-function log10 log10
-  "logarithm base 10 constraint")
+;; (def-unary-function fix fix
+;;   " function constraint")
+;; (def-unary-function exp exp
+;;   "exponentiation of e constraint")
+;; (def-unary-function floor floor
+;;   " function constraint")
+
+(defn fix
+  "Check if the argument’s value is fixed at this point in evaluation. If not, abort; if so, return its value. This is most useful in output items when decision variables should be fixed -- it allows them to be used in places where a fixed value is needed, such as if-then-else conditions."
+  [x] 
+  (call-fn 'fix x))
+(defn exp
+  "Exponentiation of e"
+  [x] 
+  (call-fn 'exp x))
+(defn floor
+  "Rounds float towards negative infinitiy"
+  [x] 
+  (call-fn 'floor x))
+
+;; (def-unary-function index_set index_set
+;;   " function constraint")
+;; (def-unary-function index_set_1of2 index_set_1of2
+;;   " function constraint")
+;; (def-unary-function index_set_2of2 index_set_2of2
+;;   " function constraint")
+;; (def-unary-function index_set_1of3 index_set_1of3
+;;   " function constraint")
+;; (def-unary-function index_set_2of3 index_set_2of3
+;;   " function constraint")
+;; (def-unary-function index_set_3of3 index_set_3of3
+;;   " function constraint")
+
+(defn index_set
+  "Reflection function: the index set (set of indices) of a one dimensional array."
+  [x] 
+  (call-fn 'index_set x))
+(defn index_set_1of2
+  "Reflection function: the first index set of a 2D array."
+  [x] 
+  (call-fn 'index_set_1of2 x))
+(defn index_set_2of2
+  "Reflection function: the second index set of a 2D array."
+  [x] 
+  (call-fn 'index_set_2of2 x))
+(defn index_set_1of3
+  "Reflection function: the first index set of a 3D array."
+  [x] 
+  (call-fn 'index_set_1of3 x))
+(defn index_set_2of3
+  "Reflection function: the second index set of a 3D array."
+  [x] 
+  (call-fn 'index_set_2of3 x))
+(defn index_set_3of3
+  "Reflection function: the third index set of a 3D array."
+  [x] 
+  (call-fn 'index_set_3of3 x))
+
+;; (def-unary-function int2float int2float
+;;   "Function to coerce integers to floating point numbers")
+;; (def-unary-function is_fixed is_fixed
+;;   " function constraint")
+;; (def-unary-function join join
+;;   " function constraint")
+
+(defn int2float
+  "coerce int to float"
+  [x] 
+  (call-fn 'int2float x))
+(defn is_fixed
+  "As [[fix]], but return false if the argument’s value is not fixed."
+  [x] 
+  (call-fn 'is_fixed x))
+(defn join
+  "Concatenates an array of strings a, putting a seperator string s beween adjacent strings. Returns the empty string if the array is empty."
+  [s a] 
+  (call-fn 'join s a))
+
+;; (def-unary-function lb lb
+;;   " function constraint")
+;; (def-unary-function lb_array lb_array
+;;   " function constraint")
+
+(defn lb
+  "Domain reflection: a safe approximation to the lower bound value of x (int, float, or set of int)."
+  [x] 
+  (call-fn 'lb x))
+(defn lb_array
+  "Domain reflection: a safe approximation to the lower bound of all expressions appearing in the array x (of int, float, or set of int)."
+  [x] 
+  (call-fn 'lb_array x))
+
+;; (def-unary-function length length
+;;   "Returns the length of an array.")
+;; (def-unary-function ln ln
+;;   "natural logarithm constraint")
+;; (def-unary-function log log
+;;   " function constraint")
+;; (def-unary-function log2 log2
+;;   "logarithm base 2 constraint")
+;; (def-unary-function log10 log10
+;;   "logarithm base 10 constraint")
+
+(defn length
+  "Length of an array"
+  [x] 
+  (call-fn 'length x))
+(defn ln
+  "Natural logarithm"
+  [x] 
+  (call-fn 'ln x))
+(defn log
+  "General logarithm"
+  [base x] 
+  (call-fn 'log base x))
+(defn log2
+  "Logarithm base 2"
+  [x] 
+  (call-fn 'log2 x))
+(defn log10
+  "Logarithm base 10"
+  [x] 
+  (call-fn 'log10 x))
+
 ;; (def-unary-function max* max
 ;;   " function constraint")
 ;; (def-unary-function min* min
 ;;   " function constraint")
 ;; (def-unary-function product* product
 ;;   " function constraint")
-(def-unary-function round round
-  " function constraint")
-(def-unary-function set2array set2array
-  " function constraint")
-(def-unary-function show show
-  " function constraint")
-(def-unary-function show_int show_int
-  " function constraint")
-(def-unary-function show_float show_float
-  " function constraint")
-(def-unary-function sin sin
-  "sine constraint")
-(def-unary-function sinh sinh
-  "hyperbolic sine constraint")
-(def-unary-function sqrt sqrt
-  "square root constraint")
-;; (def-unary-function sum* sum
+;; (def-unary-function round round
 ;;   " function constraint")
-(def-unary-function tan tan
-  "tangent constraint")
-(def-unary-function tanh tanh
-  "hyperbolic tangent constraint")
-(def-unary-function trace trace
-  " function constraint")
-(def-unary-function ub ub
-  " function constraint")
-(def-unary-function ub_array ub_array
-  " function constraint")
 
-(def-binary-function pow pow
-  "power constraint")
+(defn round
+  "rounds float towards the the nearest integer"
+  [x] 
+  (call-fn 'round x))
+
+;; (def-unary-function set2array set2array
+;;   " function constraint")
+;; (def-unary-function show show
+;;   " function constraint")
+;; (def-unary-function show_int show_int
+;;   " function constraint")
+;; (def-unary-function show_float show_float
+;;   " function constraint")
+
+(defn set2array
+  "coerce set to array"
+  [x] 
+  (call-fn 'set2array x))
+(defn show
+  "To-string conversion. Converts any value to a string for output purposes. The exact form of the resulting string is implementation-dependent."
+  [x] 
+  (call-fn 'show x))
+(defn show_int
+  "Formatted to-string conversion for integers. Converts the integer `x` into a string right justified by the number of characters `justification` (int), or left justified if that argument is negative. If `x` is not fixed, the form of the string is implementation-dependent."
+  [justification x] 
+  (call-fn 'show_int justification x))
+(defn show_float
+  "Formatted to-string conversion for floats. Converts the float `x` into a string right justified by the number of characters given by `justification` (int), or left justified if that argument is negative. The number of digits to appear after the decimal point is given by `digits` (int). It is a run-time error for `digits` to be negative. If `x` is not fixed, the form of the string is implemenation-dependent."
+  [justification digits x] 
+  (call-fn 'show_float justification digits x))
+
+
+;; (def-unary-function sin sin
+;;   "sine constraint")
+;; (def-unary-function sinh sinh
+;;   "hyperbolic sine constraint")
+;; (def-unary-function sqrt sqrt
+;;   "square root constraint")
+;; ;; (def-unary-function sum* sum
+;; ;;   " function constraint")
+;; (def-unary-function tan tan
+;;   "tangent constraint")
+;; (def-unary-function tanh tanh
+;;   "hyperbolic tangent constraint")
+
+(defn sin
+  "Sine"
+  [x] 
+  (call-fn 'sin x))
+(defn sinh
+  "Hyperbolic sine"
+  [x] 
+  (call-fn 'sinh x))
+(defn sqrt
+  "Square root"
+  [x] 
+  (call-fn 'sqrt x))
+(defn tan
+  "Tangent"
+  [x] 
+  (call-fn 'tan x))
+(defn tanh
+  "Hyperbolic tangent"
+  [x] 
+  (call-fn 'tanh x))
+
+;; (def-unary-function trace trace
+;;   " function constraint")
+(defn trace
+  "Return x (any type). As a side-effect, an implementation may print the string s."
+  [s x] 
+  (call-fn 'trace s x))
+
+;; (def-unary-function ub ub
+;;   " function constraint")
+;; (def-unary-function ub_array ub_array
+;;   " function constraint")
+
+(defn ub
+  "Domain reflection: a safe approximation to the upper bound value of x (int, bool, float or set of int)."
+  [x] 
+  (call-fn 'ub x))
+(defn ub_array
+  "Domain reflection: a safe approximation to the upper bound of all expres- sions appearing in the array x x (of int, float, or set of int)."
+  [x] 
+  (call-fn 'ub_array x))
+
+;; (def-binary-function pow pow
+;;   "power constraint")
+
+(defn pow
+  "power: x^expt"
+  [x expt] 
+  (call-fn 'pow x expt))
 
 (defn assert 
   "Constraint to guard against certain errors (e.g., to double-check input from data files).
