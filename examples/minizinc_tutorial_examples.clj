@@ -418,3 +418,157 @@
  :print-mzn? true)
 
 
+;; TODO: sudoku, tutorial, p. 27
+;; Needs def of MiniZinc if
+
+
+
+;; jobshop, tutorial, p. 29
+(mz/minizinc 
+ (mz/clj2mnz
+  ;; every global constraint of the MiniZinc library is automatically included when that global constraint is used
+  ;; (mz/include "alldifferent.mzn") 
+  (let [jobs (mz/int 'jobs)   ; no of jobs
+        tasks (mz/int 'tasks) ; no of tasks per job
+        d (mz/array [(mz/-- 1 jobs) (mz/-- 1 tasks)] :int 'd)                ; task duration
+        total (mz/int 'total (mz/sum [i (mz/-- 1 jobs)
+                                      j (mz/-- 1 tasks)]  
+                                (mz/nth d i j)))                             ; total duration
+        ;; digs (mz/int 'digs (mz/ceil (mz/log 10.0, (mz/int2float total)))) ; digits for output
+        s (mz/array [(mz/-- 1 jobs) (mz/-- 1 tasks)] [:var (mz/-- 0 total)]) ; start times
+        end (mz/variable (mz/-- 0 total))]                                   ; total end time
+    ;; ensure the tasks occur in sequence
+    (mz/constraint (mz/forall [i (mz/-- 1 jobs)]
+                      (mz/and (mz/forall [j (mz/-- 1 (mz/- tasks 1))]
+                                 (mz/<= (mz/+ (mz/nth s i j) (mz/nth d i j))
+                                        (mz/nth s i (mz/+ j 1))))
+                              (mz/<= (mz/+ (mz/nth s i tasks) (mz/nth d i tasks))
+                                     end))))
+    ;; ensure no overlap of tasks
+    (mz/constraint (mz/forall [j (mz/-- 1 tasks)]
+                      (mz/forall [i (mz/-- 1 jobs)
+                                  k (mz/-- 1 jobs)
+                                  :where (mz/< i k)]
+                         (mz/or (mz/<= (mz/+ (mz/nth s i j) (mz/nth d i j))
+                                       (mz/nth s k j))
+                                (mz/<= (mz/+ (mz/nth s k j) (mz/nth d k j))
+                                       (mz/nth s i j))))))
+    (mz/solve :minimize end)
+    ;; TODO: revise output -- print array in several rows
+    (mz/output-map {:end end :s s})
+    ))
+ ;; :print-mzn? true
+ :data (mz/map2minizinc {:jobs 5
+                         :tasks 5
+                         :d [[1, 4, 5, 3, 6]
+                             [3, 2, 7, 1, 2]
+                             [4, 4, 4, 4, 4]
+                             [1, 1, 1, 6, 8]
+                             [7, 3, 2, 2, 1]]})
+ ;; :options ["-f fzn-gecode"] 
+ )
+
+
+;; stable-marriage, p. 31
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [n (mz/int 'n)
+        ;; Men (mz/set 'Men (mz/-- 1 n))
+        Men (mz/-- 1 n)        
+        ;; Women (mz/set 'Women (mz/-- 1 n))
+        Women (mz/-- 1 n)
+        rankWomen (mz/array [Women Men] :int 'rankWomen)
+        rankMen (mz/array [Men Women] :int 'rankMen)
+        wife (mz/array Men [:var Women])
+        husband (mz/array Women [:var Men])]
+    ;; assignment
+    (mz/constraint (mz/forall [m Men] (mz/= (mz/nth husband (mz/nth wife m)) m)))
+    (mz/constraint (mz/forall [w Women] (mz/= (mz/nth wife (mz/nth husband w)) w)))
+    ;; ranking
+    (mz/constraint (mz/forall [m Men
+                               o Women]
+                      (mz/-> (mz/< (mz/nth rankMen m o)
+                                   (mz/nth rankMen m (mz/nth wife m)))
+                             (mz/< (mz/nth rankWomen o (mz/nth husband o))
+                                   (mz/nth rankWomen o m)))))
+    (mz/constraint (mz/forall [w Women
+                               o Men]
+                      (mz/-> (mz/< (mz/nth rankWomen w o)
+                                   (mz/nth rankWomen w (mz/nth husband w)))
+                             (mz/< (mz/nth rankMen o (mz/nth wife o))
+                                   (mz/nth rankMen o w)))))
+    (mz/solve :satisfy)
+    (mz/output-map {:wifes wife :husbands husband})
+    ))
+ ;; :print-mzn? true
+ :data (mz/map2minizinc {:n 5
+                         :rankWomen [[1, 2, 4, 3, 5]
+                                     [3, 5, 1, 2, 4]
+                                     [5, 4, 2, 1, 3]
+                                     [1, 3, 5, 4, 2]
+                                     [4, 2, 3, 5, 1]]
+                         :rankMen [[5, 1, 2, 4, 3]
+                                   [4, 1, 3, 2, 5]
+                                   [5, 3, 2, 4, 1] 
+                                   [1, 5, 4, 3, 2]
+                                   [4, 3, 2, 1, 5]]})
+ )
+      
+
+;; magic-series, p. 33
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [n (mz/int 'n)
+        s (mz/array (mz/-- 0 (mz/- n 1)) [:var (mz/-- 0 n)])]
+    (mz/constraint (mz/forall [i (mz/-- 0 (mz/- n 1))]
+                      (mz/= (mz/nth s i)
+                            (mz/sum [j (mz/-- 0 (mz/- n 1))]
+                               (mz/bool2int (mz/= (mz/nth s j) i))))))
+    (mz/solve :satisfy)
+    (mz/output-map {:s s})))
+ :data (mz/map2minizinc {:n 4})
+ :options ["--all-solutions"] 
+ )
+
+
+;; knapsack, p. 33f
+(mz/minizinc 
+ (mz/clj2mnz
+  (let [n (mz/int 'n)
+        ;; Items (mz/set 'Items (mz/-- 1 n))
+        Items (mz/-- 1 n)
+        capacity (mz/int 'capacity)
+        profits (mz/array Items :int 'profits)
+        weights (mz/array Items :int 'weights)
+        knapsack (mz/variable [:set Items])]
+    ;; BUG: translation of sum args into list comprehension syntax causes error, while the corresponding alternative syntax sum(foo)(bar) works fine (tested directly in MiniZinc)
+    ;; TODO:
+    ;; - Create minimal MiniZinc example demonstrating problem with two different calls to sum (both syntax options)
+    ;; - Discuss with MiniZinc forum whether this is bug 
+    ;; - Likely, in clojure2minizinc I have for now to use the other syntax...
+    (mz/constraint (mz/sum [i Items]
+                     (mz/<= (mz/* (mz/bool2int (mz/in i knapsack))
+                                  (mz/nth weights i))
+                            capacity)))
+    (mz/solve :maximize (mz/sum [i Items] 
+                          (mz/* (mz/bool2int (mz/in i knapsack))
+                                (mz/nth profits i))))
+    (mz/output-map {:knapsack knapsack})))
+  :print-mzn? true
+  :data (mz/map2minizinc {:n 4
+                          :capacity 50
+                          :profits [4,7,3,9,3,8,3,8,2,7,9,2,6,2,8,6,4,8,4,3]
+                          :weights [6,3,7,3,7,9,3,5,1,6,2,6,1,4,2,7,3,2,5,1]}))
+
+
+
+;; TODO: social-golfers, p. 35f
+
+
+
+
+
+
+
+
+
