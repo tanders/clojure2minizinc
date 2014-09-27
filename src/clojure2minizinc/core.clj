@@ -451,7 +451,7 @@ Examples:
     (array (-- 1 10) [:var :set (-- 1 3)]) ; array of set variables with domain
     (array (-- 1 10) [:var :set #{1 3 5}]) ; array of set variables with domain   
 
-    (array (list (-- 1 10) (-- 1 10))  [:var :int (-- 1 3)]) ; two-dimensional array of int variables
+    (array [(-- 1 10) (-- 1 10)]  [:var :int (-- 1 3)]) ; two-dimensional array of int variables
 
     (array (-- 1 10) :int 'x)              ; array explicitly named x 
 
@@ -473,17 +473,18 @@ BUG: literal arrays not supported as init val.
                 ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
                 (aVar? index-set) (:name index-set)
                 (core/string? index-set) index-set
-                (list? index-set) (apply str
-                                         (interpose ", "
-                                                    (map #(cond 
-                                                           ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
-                                                           (aVar? %) (:name %)
-                                                           (core/string? %) %
-                                                           :else (throw 
-                                                                  (Exception. 
-                                                                   (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
-                                                                                     % (type %)))))
-                                                         index-set)))
+                (core/or (list? index-set) 
+                         (vector? index-set)) (apply str
+                                                   (interpose ", "
+                                                              (map #(cond 
+                                                                     ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
+                                                                     (aVar? %) (:name %)
+                                                                     (core/string? %) %
+                                                                     :else (throw 
+                                                                            (Exception. 
+                                                                             (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
+                                                                                               % (type %)))))
+                                                                   index-set)))
                 :else (throw (Exception. 
                               (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
                                                 index-set (type index-set)))))
