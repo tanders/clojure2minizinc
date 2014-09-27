@@ -2207,9 +2207,9 @@ Requires that the [[value_precede]] constraint is true for every pair of adjacen
   ([solver]
      {:pre [(#{:satisfy} solver)]}
      (tell-store! (format "solve %s;" (name solver))))
-  ([solver expr]
+  ([solver exp]
      {:pre [(#{:maximize :minimize} solver)]}
-     (tell-store! (format "solve %s %s;" (name solver) expr))))
+     (tell-store! (format "solve %s %s;" (name solver) (expr exp)))))
 
 
 (comment
