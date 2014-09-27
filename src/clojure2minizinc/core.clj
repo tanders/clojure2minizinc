@@ -1,20 +1,16 @@
-;; TODO: break into multiple namespaces for clarification, e.g., for integer, set and float domains and core defs.
-
-;; TODO: ? Add support for arrays
-
-;; TODO: Add some examples (in extra files) -- just start with examples from MiniZinc tutorial 
-
 ;; TODO: revise with FlatZinc spec at http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
-;; - Document all basic constraints with that spec
 ;; - ! Add support for search annotations as documented in the spec (but allow for more than given there)
-;; - DOuble-check all param and var declarations are there etc.
+;; OK - Document all basic constraints with that spec
+;; OK - Double-check all param and var declarations are there etc.
 
 
 (ns clojure2minizinc.core
+  "clojure2minizinc provides an interface between MiniZinc and Clojure. The clojure2minizinc user models in Clojure constraint satisfaction or optimisation problems over Boolean, integer, real number, and/or set variables. clojure2minizinc translates them into MiniZinc, they are solved in the background by a compatible solver, and the result is read back into Clojure. clojure2minizinc code can be very similar to the corresponding MiniZinc code, but in addition the full power of Clojure is at hand."
   ;; make explicit shadowing a range of core clojure functions etc
   (:refer-clojure :exclude [> >= <= < = == != -> + - * / mod assert concat min max 
                             int float set and or not nth
-                            string?]) 
+                            string?
+                            count range sort]) 
   (:require [clojure.core :as core]
             [clojure.java.shell :as shell]
             ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
@@ -110,6 +106,7 @@
   )
 
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Data structure definitions 
@@ -201,7 +198,9 @@
 ;; TODO: should this function be renamed perhaps?
 ;; 
 (defn- expr
-  "Translates a Clojure value into a MiniZinc value (e.g., a string with a MiniZinc expression). If x is aVar or similar record, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.)."
+  "Translates a Clojure value into a MiniZinc value (e.g., a string with a MiniZinc expression). If x is aVar or similar record, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.).
+
+BUG: arbitrary precision Clojure values not tested."
   [x]
   ;; (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
   (cond (core/or (aVar? x) (anArray? x)) (:name x)
@@ -540,11 +539,11 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
      ;; multi-dimensional array
      (seq? bounds) (map (fn [args] (apply nth my-array args))
                         (apply combi/cartesian-product
-                               (map (fn [bnds] (range (:min bnds) (core/+ 1 (:max bnds))))
+                               (map (fn [bnds] (core/range (:min bnds) (core/+ 1 (:max bnds))))
                                     bounds)))
      ;; one-dimensional array
      (map? bounds) (map (fn [i] (nth my-array i))
-                        (range (:min bounds) (core/+ 1 (:max bounds)))))))
+                        (core/range (:min bounds) (core/+ 1 (:max bounds)))))))
 
 (comment
   (array->clj-seq (array (-- 2 4) :bool))
@@ -715,7 +714,7 @@ Example:
 
 
 (defmacro forall
-   "forall with list comprehension support: Logical conjunction of aggregated Boolean expressions.
+   "Universal quantification with list comprehension support: Logical conjunction of aggregated Boolean expressions. When applied to an empty list, forall returns true.
 
 See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(forall [generators*] exp)]}
@@ -746,20 +745,12 @@ See [[aggregate]] for list comprehension syntax and examples."
 
 
 
-;; TODO: docs for all macros below
-
-;; Done the below?
-;; TODO: define missing aggregation functions for arithmetic arrays with their full syntax
-;; See MiniZinc tutorial p. 23 and surrounding pages
-;; arg vectors below are only sketch, and may not be what is needed in the end for full syntax
-;; All these macros and forall are very similar -- likely I need to define general case only once and then customise... 
-
 (defmacro exists
-  "Logical disjunction
+  "Existential quantification (logical disjunction of Boolean expressions). When applied to an empty list, exists returns false.
 
 Unary: MiniZinc function exists.
 
-Binary: exists with list comprehension support: Logical disjunction of aggregated Boolean expressions.
+Binary: exists with list comprehension support.
 
 See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(exists [generators*] exp)]}
@@ -774,7 +765,7 @@ See [[aggregate]] for list comprehension syntax and examples."
   )
 
 (defmacro xorall
-  "xorall with list comprehension support: odd number of aggregated Boolean expressions holds.
+  "N-ary exclusive disjunction with list comprehension support: odd number of aggregated Boolean expressions holds.
 
 See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(xorall [generators*] exp)]}
@@ -782,7 +773,7 @@ See [[aggregate]] for list comprehension syntax and examples."
   `(format "xorall(%s)" (aggregate ~generators ~exp)))
 
 (defmacro iffall
-  "iffall with list comprehension support: even number of aggregated Boolean expressions holds.
+  "N-ary bi-implication with list comprehension support: even number of aggregated Boolean expressions holds.
 
 See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(iffall [generators*] exp)]}
