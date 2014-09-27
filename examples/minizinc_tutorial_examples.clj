@@ -361,7 +361,7 @@
                                            (mz/div (mz/nth capacity r) (mz/nth consumption p r)))))
         ;; Variables: how much should we make of each product
         produce (mz/array (mz/-- 1 nproducts) [:var (mz/-- 0 mproducts)])
-        used (mz/array (mz/-- 1 nresources) [:var (mz/-- 0 (mz/max* capacity))])]
+        used (mz/array (mz/-- 1 nresources) [:var (mz/-- 0 (mz/max capacity))])]
     (mz/constraint (mz/assert (mz/forall [r (mz/-- 1 nresources)
                                           p (mz/-- 1 nproducts)]
                                 (mz/>= (mz/nth consumption p r) 0)) 
@@ -414,24 +414,5 @@
     (mz/output-map {:s s :e e :n n :d d :m m :o o :r r :y y})
     ))
  :print-mzn? true)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
