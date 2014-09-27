@@ -1,0 +1,20 @@
+
+* Version 0.2.0
+
+  The most important changes are listed below.
+  
+  - Code base :: 
+    - Added all global constraints that are part of the MiniZinc library (version 1.6)
+    - Added list (array) and set comprehension support (function =aggregate=)
+    - Added all MiniZinc aggregation functions (=forall= and friends) with their full syntax
+    - All literal Clojure values that correspond to certain MiniZinc values are now automatically translated (exception are strings, which require explicit conversion with function =string=)
+
+  - Documentation :: 
+    - Tutorial extended 
+
+   For a more detailed change log see the [[https://github.com/tanders/clojure2minizinc/commits/master][git commits]].
+
+
+* Version 0.1.0 (1 Sep 2014)
+
+  Initial release
