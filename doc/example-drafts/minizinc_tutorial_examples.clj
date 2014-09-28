@@ -543,6 +543,7 @@
         knapsack (mz/variable [:set Items])]
     ;; BUG: translation of sum args into list comprehension syntax causes error, while the corresponding alternative syntax sum(foo)(bar) works fine (tested directly in MiniZinc)
     ;; TODO:
+    ;; - Check with MiniZinc 2.0 whether problem persists
     ;; - Create minimal MiniZinc example demonstrating problem with two different calls to sum (both syntax options)
     ;; - Discuss with MiniZinc forum whether this is bug 
     ;; - Likely, in clojure2minizinc I have for now to use the other syntax...
