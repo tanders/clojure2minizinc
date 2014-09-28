@@ -2377,14 +2377,13 @@ BUG: only few value types supported."
 
 ;; ?? TODO: incorporate clj2mnz into minizinc (turning minizinc into a macro)? Perhaps having it separate is a good idea? Makes call more structured. 
 ;; TODO: Add solver arguments: parallel (unrecognized for mzn-g12fd), random-seed, solver-backend, flatzinc-flags (?), keep-files, ... 
-;; TODO: consider removing arg :print-mzn? -- this is the string that is given as argument...
 (defn minizinc 
   "Calls a MiniZinc solver on a given MiniZinc program and returns a list of one or more solutions.
 
 Options are
 
 - :mzn             (string) a MiniZinc program, which can be created with other functions of clojure2minizinc wrapped into clj2mnz
-- :print-solver-call? (boolean) whether or not to print the UNIX call of the solver (for debugging)
+- :print-cmd?      (boolean) whether or not to print the UNIX command call of the solver (for debugging)
 - :print-mzn?      (boolean) whether or not to print resulting MiniZinc data and model (for debugging)
 - :print-solution? (boolean) whether or not to print the result output by MiniZinc directly instead of reading it into a Clojure value (e.g., for debugging). Prints the map resulting from clojure.java.shell/sh.
 - :solver          (string) solver to call
@@ -2394,48 +2393,47 @@ Options are
 - :all-solutions   (boolean) If true, return all solutions
 - :options         (collection of strings) Arbitrary options given to the solver in UNIX shell syntax, e.g., [\"-a\"] for all solutions.
 
-BUG: printout of :print-solver-call? is not yet a valid shell command: data must be surrounded by quotes in printout (not actual call) and :dir must be processed with extra cd
-"
+BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
   [mzn & {:keys [solver mznfile data
-                 print-solver-call?
+                 print-cmd?
                  print-mzn?
                  print-solution? 
                  num-solutions all-solutions?
                  options] 
           :or {solver *fd-solver*
+               ;; BUG: tmp file not deleted later
                mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)
                data false
-               print-solver-call? false
+               print-cmd? false
                print-mzn? false
                print-solution? false
                num-solutions 1
                all-solutions? false
                options []}}]
-  ;; (println "mzn:" mzn "\nmznfile:" mznfile "\nsolver:" solver)
   (when print-mzn? 
-    (do (println "% data:")
-        (println data) 
-        (println "% model:")
-        (println mzn)))
-  ;; TMP: 
-  ;; (when data (throw (Exception. (format "minizinc: arg data not yet supported. %s" data))))
+    (do (println "% data:") (println data) (println "% model:") (println mzn)))
   (spit mznfile mzn)
   ;; mznfile split into filename (base-name) and dirname (parent), so that shell/sh first moves into that dir, because otherwise I got errors from *fd-solver*
-  (let [sh-args (core/concat [solver]
-                             [(if all-solutions?
-                                "--all-solutions"
-                                ;; I could not get long parameter names working 
-                                (format "-n%s" num-solutions))]
-                             options
+  (let [sh-args-1 (core/concat [solver]
+                               [(if all-solutions?
+                                  "--all-solutions"
+                                  ;; I could not get long parameter names working 
+                                  (format "-n%s" num-solutions))]
+                               options
+                               [(fs/base-name mznfile)])
+        sh-args (core/concat sh-args-1
                              (if data
                                [(format "-D%s" data)]
                                [])
-                             [(fs/base-name mznfile)]
                              [:dir (fs/parent mznfile)])
         ;; dummy (pprint/pprint sh-args)
         result (apply shell/sh sh-args)]
-    ;; BUG: :dir must be processed extra and data must be surrounded by quotes in printout (not actual call)
-    (when print-solver-call? (println (apply str (interpose " " sh-args))))
+    (when print-cmd? 
+      (do (println (format "cd %s" (fs/parent mznfile)))
+          (println (apply str (interpose " " (core/concat sh-args-1
+                                                          (if data 
+                                                            [(format "-D'%s'" data)]
+                                                            [])))))))
     (if print-solution?
       (pprint/pprint result)
       (if (core/= (:exit result) 0)
