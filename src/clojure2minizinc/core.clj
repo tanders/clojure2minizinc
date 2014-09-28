@@ -2407,7 +2407,11 @@ Options are
                all-solutions? false
                options []}}]
   ;; (println "mzn:" mzn "\nmznfile:" mznfile "\nsolver:" solver)
-  (when print-mzn? (println mzn))
+  (when print-mzn? 
+    (do (println "% data:")
+        (println data) 
+        (println "% model:")
+        (println mzn)))
   ;; TMP: 
   ;; (when data (throw (Exception. (format "minizinc: arg data not yet supported. %s" data))))
   (spit mznfile mzn)
