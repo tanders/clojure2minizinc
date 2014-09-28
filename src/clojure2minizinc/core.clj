@@ -1928,7 +1928,7 @@ element(var int: i, array[int] of var float:      x, var float:      y)
 element(var int: i, array[int] of var int:        x, var int:        y)
 element(var int: i, array[int] of var set of int: x, var set of int: y)
 
-The same as x[i] = y or (= (nth x i) y). That is, y is the ith element of the array x."
+The same as x[i] = y or (= (nth x i) y). That is, y is the ith element of the array x. The difference to nth is that i can be a variable."
   [i x y]
   (call-global-constraint 'element i x y))
 
@@ -2384,7 +2384,8 @@ BUG: only few value types supported."
 Options are
 
 - :mzn             (string) a MiniZinc program, which can be created with other functions of clojure2minizinc wrapped into clj2mnz
-- :print-mzn?      (boolean) whether or not to print resulting MiniZinc program (for debugging)
+- :print-solver-call? (boolean) whether or not to print the UNIX call of the solver (for debugging)
+- :print-mzn?      (boolean) whether or not to print resulting MiniZinc data and model (for debugging)
 - :print-solution? (boolean) whether or not to print the result output by MiniZinc directly instead of reading it into a Clojure value (e.g., for debugging). Prints the map resulting from clojure.java.shell/sh.
 - :solver          (string) solver to call
 - :mznfile         (string or file) MiniZinc file path to generate and use in the background
@@ -2392,8 +2393,11 @@ Options are
 - :num-solutions   (int) An upper bound on the number of solutions to output
 - :all-solutions   (boolean) If true, return all solutions
 - :options         (collection of strings) Arbitrary options given to the solver in UNIX shell syntax, e.g., [\"-a\"] for all solutions.
+
+BUG: printout of :print-solver-call? is not yet a valid shell command: data must be surrounded by quotes in printout (not actual call) and :dir must be processed with extra cd
 "
   [mzn & {:keys [solver mznfile data
+                 print-solver-call?
                  print-mzn?
                  print-solution? 
                  num-solutions all-solutions?
@@ -2401,6 +2405,7 @@ Options are
           :or {solver *fd-solver*
                mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)
                data false
+               print-solver-call? false
                print-mzn? false
                print-solution? false
                num-solutions 1
@@ -2429,6 +2434,8 @@ Options are
                              [:dir (fs/parent mznfile)])
         ;; dummy (pprint/pprint sh-args)
         result (apply shell/sh sh-args)]
+    ;; BUG: :dir must be processed extra and data must be surrounded by quotes in printout (not actual call)
+    (when print-solver-call? (println (apply str (interpose " " sh-args))))
     (if print-solution?
       (pprint/pprint result)
       (if (core/= (:exit result) 0)
