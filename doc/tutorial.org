@@ -16,6 +16,10 @@
 
 #+INFOJS_OPT: view:info toc:t ltoc:t mouse:underline buttons:t path:http://thomasf.github.io/solarized-css/org-info.min.js
 
+# Global tangle settings
+# Global option seemingly does not work
+#+PROPERTY: header-args:clojure :comments org :noweb tangle
+
 * Introduction 
 
    The [[http://clojure.org/][Clojure]] library /clojure2minizinc/ provides an interface to MiniZinc. [[http://www.minizinc.org/][MiniZinc]] is a domain-specific language (DSL) for modelling constraint satisfaction and optimisation problems (CSP) over Boolean, integer, real number, and set variables. MiniZinc has the potential to become the lingua franca of the Constraint Programming community. For developers of existing constraint solvers it is rather easy to define a MiniZinc interface for their solvers, [[http://www.minizinc.org/software.html][several state-of-the-art solvers already support MiniZinc]] via the simpler language FlatZinc (even more solvers listed [[http://www.hakank.org/minizinc/][here]]), and they compete in a yearly [[http://www.minizinc.org/challenge.html][MiniZinc Challenge]]. More information on MiniZinc, in particular many related links can be found at http://www.hakank.org/minizinc/
@@ -31,22 +35,27 @@
 
    For example, a clojure2minizinc program is defined in a Clojure namespace. The following code block defines a namespace for this tutorial. Note that clojure2minizinc "overwrites" many standard Clojure functions. You may want to use the library with a namespace prefix. The definitions below uses the alias =mz= (for MiniZinc). 
 
-#+begin_src clojure :results silent
+#+begin_src clojure :results silent :tangle no :noweb-ref ns-decl
 (ns clojure2minizinc.tutorial
   (:require [clojure2minizinc.core :as mz]  ; loading clojure2minizinc.core 
             [clojure.pprint :as pprint]))   ; pprint is needed later...
+
 #+end_src
    
    The library =clojure.pprint= will be needed later. We already add them here for convenience.
 
 
 ** Our First Example (MiniZinc tutorial, p. 3ff)
+   :PROPERTIES:
+   :header-args: :tangle "examples/aust.clj"
+   :END:
 
 The first example defines a map-colouring of Australia. The [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]], p. 3ff, motivates and explains this model. This tutorial assumes that you read the MiniZinc tutorial alongside. To help you with that, even the same headlines are used.
 
 Notice that most functions in this example are in the =mz= namespace, but the decision variables (and an int) of the model are stored with the standard Clojure =let= form -- clojure2minizinc allows to store MiniZinc variables and parameters (constants) in arbitrary Clojure data structures.
 
-#+begin_src clojure 
+#+begin_src clojure
+<<ns-decl>> 
 (def aust
   (mz/clj2mnz
    (let [nc (mz/int 'nc 3)              ; number of colours
@@ -71,7 +80,7 @@ Notice that most functions in this example are in the =mz= namespace, but the de
 
 We can solve this MiniZinc model as follows.
 
-#+begin_src clojure 
+#+begin_src clojure
 (mz/minizinc aust)
 #+end_src
 
@@ -140,7 +149,7 @@ The generated code is almost exactly the same as the MiniZinc model =aust.mzn= s
 
 If you want better readable MiniZinc code, just explicitly tell =mz/variable= (or its friends like =mz/int=) your MiniZinc variable name. 
 
-#+begin_src clojure 
+#+begin_src clojure :tangle no
 (mz/variable (mz/-- 1 10) 'x)
 #+end_src
 
@@ -150,10 +159,14 @@ Section [[*Similarity%20and%20Differences%20between%20MiniZinc%20and%20clojure2m
 
 
 *** Storing Variables in Other Data Structures 
+   :PROPERTIES:
+   :header-args: :comments org :tangle "examples/aust-clojurized.clj" 
+   :END:
 
 As mentioned above, clojure2minizinc can store MiniZinc variables and parameters in arbitrary Clojure data structures. The following example stores the variables for the colours of Australian states in a map. The same inequality constraints are applied by mapping over pairs of keywords representing these inequalities somewhat more concisely. 
 
 #+begin_src clojure 
+<<ns-decl>> 
 (mz/minizinc 
  (mz/clj2mnz
   (let [nc (mz/int 'nc 3)
@@ -170,12 +183,16 @@ The resulting MiniZinc code is basically the same, and thus also the result.
 
 
 ** An Arithmetic Optimisation Example (MiniZinc tutorial, p. 6ff)
+   :PROPERTIES:
+   :header-args: :tangle "examples/cakes.clj" 
+   :END:
 
 The MiniZinc tutorial continues with an optimisation example, that computes the number of banana (=b=) and chocolate (=c=) cakes to bake for maximum profit given the recipes for these cakes, the amount of ingredients, and the price at which each cake can be sold. 
 
 The corresponding clojure2minizinc code is shown below. Please see the MiniZinc tutorial for an explanation of this model. 
 
 #+begin_src clojure
+<<ns-decl>> 
 (mz/minizinc 
  (mz/clj2mnz
   (let [b (mz/variable (mz/-- 1 100))
@@ -207,6 +224,9 @@ The optimal solution are two cakes of each kind.
 
 
 ** Datafiles and Assertions (MiniZinc tutorial, p. 8ff)
+   :PROPERTIES:
+   :header-args: :tangle "examples/cakes2.clj" 
+   :END:
 
 In the previous example, the amount of each ingredient was fixed in the model. MiniZinc supports parameterising models, where MiniZinc parameters or variables are declared but not further initialised. Values for this parameters/variables are specified outside of the model to the solver, usually with MiniZinc data files. 
 
@@ -215,6 +235,7 @@ The clojure2minizinc version of the parameterised model is shown below. Again, p
 Note that we must specify explicit names for the parameters of a parameterised model (here =flour=, =banana=, =sugar=, and so forth), so that these names are the same as in the parameter file (i.e., automatically generated names would not work).
 
 #+begin_src clojure
+<<ns-decl>> 
 (def cakes2
   (mz/clj2mnz
    (let [flour (mz/int 'flour)
@@ -271,6 +292,9 @@ Different amounts have a different optimal result.
 
 
 ** Real Number Solving (MiniZinc tutorial, p. 11ff)
+   :PROPERTIES:
+   :header-args: :tangle "examples/loan.clj" 
+   :END:
 
 The next example demonstrates constraint programming on "real numbers" (floating point variables). The example models the repayment of a loan with interest over four quarters.
 
@@ -278,6 +302,7 @@ The model is also parameterised -- values for variables =r=, =p= and so forth ca
 
 # TODO: revise m/output-map -- no parentheses. What about parentheses around expressions at values?
 #+begin_src clojure 
+<<ns-decl>> 
 (def loan
   (mz/clj2mnz
    (let [r (mz/variable :float 'r)           ; quarterly repayment
@@ -339,12 +364,16 @@ If you do not have Gecode installed, you can also use the solver =mzn-g12mip=, w
 * More Complex Models
 
 ** Arrays and Sets (MiniZinc tutorial, p. 15ff)
+   :PROPERTIES:
+   :header-args: :tangle "examples/laplace.clj" 
+   :END:
 
 This example demonstrates the use of a two-dimensional array of float variables. It models temperatures on a rectangular sheet of metal. The MiniZinc tutorial explains the details. 
 
 In order to make the result better comprehensible, we will print it in table form instead of just returning the result. We need an auxiliary function that prints a table. Lets use =print-table= that is shown as an example for =get-pretty-writer= at [[http://clojure.github.io/clojure/clojure.pprint-api.html][http://clojure.github.io]] (=print-table= is only slightly edited here). This function is the reason why we =require='d =clojure.pprint= in the name space definition above.
 
 #+begin_src clojure 
+<<ns-decl>> 
 (defn print-table [column-width aseq]
   (binding [*out* (pprint/get-pretty-writer *out*)]
     (doseq [row aseq]
