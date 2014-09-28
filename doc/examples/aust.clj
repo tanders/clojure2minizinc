@@ -33,6 +33,10 @@
      (mz/solve :satisfy)
      (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t}))))
 
+;; We can solve this MiniZinc model as follows.
+
+(mz/minizinc aust)
+
 ;; It returns the following result. Different numbers encode different colours on the map for the Australian states.
 
 ;;   =; => ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1})=

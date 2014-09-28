@@ -80,7 +80,7 @@ Notice that most functions in this example are in the =mz= namespace, but the de
 
 We can solve this MiniZinc model as follows.
 
-#+begin_src clojure
+#+begin_src clojure 
 (mz/minizinc aust)
 #+end_src
 
