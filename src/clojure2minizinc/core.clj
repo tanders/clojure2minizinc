@@ -569,7 +569,7 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 (defn call-operator 
   "A MiniZinc operator call supporting arities of 2 or more. For higher arities multiple operators are used (e.g., a ternary plus is translated into x + y + z)"
   [operator x y & more]
-  (apply str (interpose (str " " operator " ") (map expr (cons x (cons y more))))))
+  (str "(" (apply str (interpose (str " " operator " ") (map expr (cons x (cons y more))))) ")"))
 
 (comment
   (call-operator '+) ; error as intended
