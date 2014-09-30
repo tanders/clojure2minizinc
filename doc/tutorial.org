@@ -18,7 +18,7 @@
 
 # Global tangle settings
 # Global option seemingly does not work
-#+PROPERTY: header-args:clojure :comments org :noweb tangle
+#+PROPERTY: header-args:clojure :comments org :noweb strip-export
 
 * Introduction 
 
