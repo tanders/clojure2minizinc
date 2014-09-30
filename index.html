@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title><img src="./graphics/clojure2minizinc-handdrawn-cut.png" alt="clojure2minizinc-handdrawn-cut.png" /></title>
-<!-- 2014-09-02 Tue 09:15 -->
+<!-- 2014-09-30 Tue 20:02 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Torsten Anders" />
@@ -220,7 +220,7 @@ for the JavaScript code in this tag.
 <li><a href="#sec-3">3. Installation</a>
 <ul>
 <li><a href="#sec-3-1">3.1. Installation of MiniZinc tools</a></li>
-<li><a href="#sec-3-2">3.2. Installation of clojure2minizincg</a></li>
+<li><a href="#sec-3-2">3.2. Installation of clojure2minizinc</a></li>
 </ul>
 </li>
 <li><a href="#sec-4">4. Documentation</a></li>
@@ -290,6 +290,12 @@ The model asks for three solutions, and the default solver outputs the following
 <div class="outline-text-3" id="text-3-1">
 <ul class="org-ul">
 <li>Install the <a href="http://www.minizinc.org/g12distrib.html">G12 MiniZinc Distribution</a> (includes software that translates MiniZinc to the intermediate simpler format FlatZinc, which is understood by 3rd-party solvers, but also ready-to-use solvers)
+<ul class="org-ul">
+<li>Follow the installation instructions and do not forget to run the install script as described
+</li>
+<li>The default clojure2minizinc settings expect executables <code>minizinc</code> and its friends are in your <a href="http://en.wikipedia.org/wiki/PATH_(variable)">PATH</a>
+</li>
+</ul>
 </li>
 
 <li>Optionally, install additional solvers. For example, see FlatZinc implementations at <a href="http://www.minizinc.org/software.html">http://www.minizinc.org/software.html</a>
@@ -300,7 +306,7 @@ The model asks for three solutions, and the default solver outputs the following
 
 
 <div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2"><span class="section-number-3">3.2</span> Installation of clojure2minizincg</h3>
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> Installation of clojure2minizinc</h3>
 <div class="outline-text-3" id="text-3-2">
 <p>
 Add this <a href="https://github.com/technomancy/leiningen">Leiningen</a> dependency to your project:
@@ -308,7 +314,7 @@ Add this <a href="https://github.com/technomancy/leiningen">Leiningen</a> depend
 
 <div class="org-src-container">
 
-<pre class="src src-clojure">[<span style="color: #228b22;">minizinc</span>/clojure2minizinc <span style="color: #8b2252;">"0.1.0"</span>]
+<pre class="src src-clojure">[<span style="color: #228b22;">minizinc</span>/clojure2minizinc <span style="color: #8b2252;">"0.2.0"</span>]
 </pre>
 </div>
 </div>
@@ -410,7 +416,7 @@ Copyright © 2014 Torsten Anders
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Torsten Anders</p>
-<p class="date">Created: 2014-09-02 Tue 09:15</p>
+<p class="date">Created: 2014-09-30 Tue 20:02</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.3.50.2 (<a href="http://orgmode.org">Org</a> mode 8.2.7b)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

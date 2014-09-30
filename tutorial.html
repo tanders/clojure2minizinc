@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>A clojure2minizinc Tutorial</title>
-<!-- 2014-09-01 Mon 20:54 -->
+<!-- 2014-09-30 Tue 19:40 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Torsten Anders" />
@@ -308,6 +308,7 @@ The library <code>clojure.pprint</code> will be needed later. We already add the
 <div id="outline-container-sec-2-2" class="outline-3">
 <h3 id="sec-2-2"><span class="section-number-3">2.2</span> Our First Example (MiniZinc tutorial, p. 3ff)</h3>
 <div class="outline-text-3" id="text-2-2">
+
 <p>
 The first example defines a map-colouring of Australia. The <a href="http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf">MiniZinc tutorial</a>, p. 3ff, motivates and explains this model. This tutorial assumes that you read the MiniZinc tutorial alongside. To help you with that, even the same headlines are used.
 </p>
@@ -472,6 +473,7 @@ Section <i>Similarity and Differences between MiniZinc and clojure2minizinc</i> 
 <div id="outline-container-sec-2-2-2" class="outline-4">
 <h4 id="sec-2-2-2"><span class="section-number-4">2.2.2</span> Storing Variables in Other Data Structures</h4>
 <div class="outline-text-4" id="text-2-2-2">
+
 <p>
 As mentioned above, clojure2minizinc can store MiniZinc variables and parameters in arbitrary Clojure data structures. The following example stores the variables for the colours of Australian states in a map. The same inequality constraints are applied by mapping over pairs of keywords representing these inequalities somewhat more concisely. 
 </p>
@@ -502,6 +504,7 @@ The resulting MiniZinc code is basically the same, and thus also the result.
 <div id="outline-container-sec-2-3" class="outline-3">
 <h3 id="sec-2-3"><span class="section-number-3">2.3</span> An Arithmetic Optimisation Example (MiniZinc tutorial, p. 6ff)</h3>
 <div class="outline-text-3" id="text-2-3">
+
 <p>
 The MiniZinc tutorial continues with an optimisation example, that computes the number of banana (<code>b</code>) and chocolate (<code>c</code>) cakes to bake for maximum profit given the recipes for these cakes, the amount of ingredients, and the price at which each cake can be sold. 
 </p>
@@ -552,6 +555,7 @@ The optimal solution are two cakes of each kind.
 <div id="outline-container-sec-2-4" class="outline-3">
 <h3 id="sec-2-4"><span class="section-number-3">2.4</span> Datafiles and Assertions (MiniZinc tutorial, p. 8ff)</h3>
 <div class="outline-text-3" id="text-2-4">
+
 <p>
 In the previous example, the amount of each ingredient was fixed in the model. MiniZinc supports parameterising models, where MiniZinc parameters or variables are declared but not further initialised. Values for this parameters/variables are specified outside of the model to the solver, usually with MiniZinc data files. 
 </p>
@@ -639,6 +643,7 @@ Different amounts have a different optimal result.
 <div id="outline-container-sec-2-5" class="outline-3">
 <h3 id="sec-2-5"><span class="section-number-3">2.5</span> Real Number Solving (MiniZinc tutorial, p. 11ff)</h3>
 <div class="outline-text-3" id="text-2-5">
+
 <p>
 The next example demonstrates constraint programming on "real numbers" (floating point variables). The example models the repayment of a loan with interest over four quarters.
 </p>
@@ -741,6 +746,7 @@ If you do not have Gecode installed, you can also use the solver <code>mzn-g12mi
 </div><div id="outline-container-sec-3-1" class="outline-3">
 <h3 id="sec-3-1"><span class="section-number-3">3.1</span> Arrays and Sets (MiniZinc tutorial, p. 15ff)</h3>
 <div class="outline-text-3" id="text-3-1">
+
 <p>
 This example demonstrates the use of a two-dimensional array of float variables. It models temperatures on a rectangular sheet of metal. The MiniZinc tutorial explains the details. 
 </p>
@@ -842,6 +848,11 @@ Note that in the actual Laplace equation in the code above, the <code>mz/+</code
 
 <div id="outline-container-sec-3-2" class="outline-3">
 <h3 id="sec-3-2"><span class="section-number-3">3.2</span> <span class="todo TODO">TODO</span> Complete this Tutorial&#x2026;</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+However, you can already move on to the next section&#x2026;
+</p>
+</div>
 </div>
 </div>
 
@@ -907,7 +918,7 @@ There are a few exceptions, where certain MiniZinc operator etc. names cannot be
 <tbody>
 <tr>
 <td class="left"><code>var</code></td>
-<td class="left"><code>variable</code> and different syntax</td>
+<td class="left"><code>variable</code>, and special syntax</td>
 </tr>
 
 <tr>
@@ -927,15 +938,103 @@ There are a few exceptions, where certain MiniZinc operator etc. names cannot be
 
 <tr>
 <td class="left"><code>array</code></td>
-<td class="left">different syntax</td>
+<td class="left">special syntax</td>
 </tr>
 
 <tr>
-<td class="left"><code>forall</code></td>
-<td class="left">different syntax</td>
+<td class="left">list comprehension</td>
+<td class="left"><code>aggregate</code>, and special syntax</td>
+</tr>
+
+<tr>
+<td class="left">aggregation functions:  <code>forall</code>, <code>exists</code>, <code>xorall</code>, <code>iffall</code>, <code>sum</code>, <code>product</code>, <code>max</code>, <code>min</code></td>
+<td class="left">special syntax</td>
+</tr>
+
+<tr>
+<td class="left">aggregation functions overload unary functions: <code>exists</code>, <code>sum</code>, <code>product</code>, <code>max</code>, <code>min</code></td>
+<td class="left">unary functions: <code>exists*</code>, <code>sum*</code>, <code>product*</code>, <code>max*</code>, <code>min*</code></td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
 </tr>
 </tbody>
 </table>
+
+
+<p>
+Several literal Clojure types can be used directly in clojure2minizinc for corresponding literal MiniZinc parameter types. The exception are Clojure strings.
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">MiniZinc</th>
+<th scope="col" class="left">clojure2minizinc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left"><code>42</code></td>
+<td class="left"><code>42</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>3.14</code></td>
+<td class="left"><code>3.14</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>true</code></td>
+<td class="left"><code>true</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>[1, 2, 3]</code></td>
+<td class="left"><code>[1 2 3]</code></td>
+</tr>
+
+<tr>
+<td class="left"><code>{1, 2, 3}</code></td>
+<td class="left"><code>#{1 2 3}</code></td>
+</tr>
+
+<tr>
+<td class="left">"my string"</td>
+<td class="left"><code>(string "my string")</code></td>
+</tr>
+</tbody>
+</table>
+
+
+<p>
+Two-dimensional MiniZinc arrays can be encoded by nested Clojure vectors. The nested vectors
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">[[1.0 2.0] [3.0 4.0]]
+</pre>
+</div>
+
+<p>
+corresponds to the MiniZinc code
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-minizinc">[| 1.0, 2.0 | 3.0, 4.0 |]
+</pre>
+</div>
 </div>
 
 
@@ -966,15 +1065,15 @@ Further, an equivalent for the MiniZinc <code>output</code> does not exist, use 
 <h4 id="sec-5-1-1"><span class="section-number-4">5.1.1</span> Integration in a General-Purpose Programming Language</h4>
 <div class="outline-text-4" id="text-5-1-1">
 <p>
-clojure2minizinc allows you to do a number of things that are impossible (or at least much more difficult) in plain MiniZinc. MiniZinc is a highly specialised domain-specific language. clojure2minizinc is embedded in a general-purpose programming language and complements MiniZinc by standard programming features such as input/output, graphical user-interfaces, interfaces to the underlying operating system, and so forth. Basically, all Clojure and Java libraries are at your disposal when using clojure2minizinc. Also, the functionality of Clojure editors available for defining MiniZinc models. For example, auto-completion and documentation accessible in your editor will help you (<a href="http://www.minizinc.org/ide/index.html">MiniZinc editors</a> do not support such functionality).
+clojure2minizinc allows you to do a number of things that are impossible (or at least much more difficult) in plain MiniZinc. MiniZinc is a highly specialised domain-specific language. clojure2minizinc is embedded in a general-purpose programming language and complements MiniZinc by standard programming features such as input/output, graphical user-interfaces, interfaces to the underlying operating system, and so forth. Basically, all Clojure and Java libraries are at your disposal when using clojure2minizinc. Also, the functionality of Clojure editors are available for defining MiniZinc models. For example, auto-completion and documentation accessible in your editor will help you (<a href="http://www.minizinc.org/ide/index.html">MiniZinc editors</a> do not support such functionality).
 </p>
 
 <p>
-Perhaps most importantly, constraint problems can be created dynamically (before the search starts). For example, a constraint problem may depend on user input. Imagine a scheduling problem where different kinds of tasks to schedule are represented by different arrays, and depending on user input you may need a few additional arrays. While MiniZinc already provides some means for abstraction (predicates and functions), these are restricted in their capabilities. Adding a few global arrays is at least difficult: MiniZinc data structures cannot be nested, so the result of a function could at most be one array (but it could be multi-dimensional). By contrast, clojure2minizinc makes it easy to create constraint problems dynamically &#x2013; Lisps are very good at generating code on the fly.
+Perhaps most importantly, constraint problems can be created dynamically (before the search starts). For example, a constraint problem may depend on user input. Imagine a scheduling problem where different kinds of tasks to schedule are represented by different arrays, and depending on user input you may need a few additional arrays. While MiniZinc already provides some means for abstraction (predicates and functions), these are restricted in their capabilities. Adding a few global arrays dynamically depending on user input is at least difficult: MiniZinc data structures cannot be nested, so the result of a function could at most be one array (but it could be multi-dimensional). By contrast, clojure2minizinc makes it easy to create constraint problems dynamically &#x2013; Lisps are very good at generating code on the fly.
 </p>
 
 <p>
-It was mentioned already above that decision variables can be stored in arbitrary Clojure data structures, and then constraints be applied to these data structures (see section <i>Storing Variables in Other Data Structures</i>). MiniZinc does not see the Clojure data structure, but it may help to express information about the constraint problem to model (e.g., to express how certain variables are related).  
+It was mentioned already above that decision variables can be stored in arbitrary Clojure data structures, and then constraints are applied to these data structures (see section <i>Storing Variables in Other Data Structures</i>). MiniZinc does not see the Clojure data structure, but your Clojure data structure may help to express information about the constraint problem to model (e.g., to express how certain variables are related).  
 </p>
 </div>
 </div>
@@ -1070,7 +1169,7 @@ A useful and easy debugging strategy is to disable a set of constraints and to e
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Torsten Anders</p>
-<p class="date">Created: 2014-09-01 Mon 20:54</p>
+<p class="date">Created: 2014-09-30 Tue 19:40</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.3.50.2 (<a href="http://orgmode.org">Org</a> mode 8.2.7b)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
