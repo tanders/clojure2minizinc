@@ -1,5 +1,5 @@
 
-* Version 0.2.0
+* Version 0.2.0 (30 Sep 2014)
 
   The most important changes are listed below.
   
