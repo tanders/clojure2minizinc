@@ -2411,7 +2411,7 @@ BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
                all-solutions? false
                options []}}]
   (when print-mzn? 
-    (do (println "% data:") (println data) (println "% model:") (println mzn)))
+    (do (when data (do (println "% data:") (println data) (println "% model:")))  (println mzn)))
   (spit mznfile mzn)
   ;; mznfile split into filename (base-name) and dirname (parent), so that shell/sh first moves into that dir, because otherwise I got errors from *fd-solver*
   (let [sh-args-1 (core/concat [solver]
