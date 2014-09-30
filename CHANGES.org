@@ -8,10 +8,11 @@
     - Added list (array) and set comprehension support (function =aggregate=)
     - Added all MiniZinc aggregation functions (=forall= and friends) with their full syntax
     - All literal Clojure values that correspond to certain MiniZinc values are now automatically translated (exception are strings, which require explicit conversion with function =string=)
+    - Various bugs fixed
 
   - Documentation :: 
-    # - Tutorial extended
     - Greatly improved reference documentation
+# - Tutorial extended
 
    For a more detailed change log see the [[https://github.com/tanders/clojure2minizinc/commits/master][git commits]].
 
