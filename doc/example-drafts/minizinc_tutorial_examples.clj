@@ -575,3 +575,55 @@
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; Demonstration of a first take on predicates and similar abstraction means
+;; Based on http://hakank.org/clojure2minizinc/alldifferent_except_0_me.clj
+
+;; MiniZinc equivalent:
+;; predicate alldifferent_except_0(array[int] of var int: vs) = 
+;;     forall(i, j in index_set(vs) where i != j) (
+;;        (vs[i] != 0 /\ vs[j] != 0) -> vs[i] != vs[j]
+;;     );
+(mz/def-submodel alldifferent_except_0
+;;   "Constrains the elements of the array 'vs' to be all different except those
+;; elements that are assigned the value 0."
+  [vs]
+  (mz/forall [i (mz/index_set vs)
+              j (mz/index_set vs)
+              :where (mz/!= i j)]
+    (mz/-> (mz/and (mz/!= (mz/nth vs i) 0)
+                   (mz/!= (mz/nth vs j) 0))
+           (mz/!= (mz/nth vs i) (mz/nth vs j)))))
+
+(comment ; test
+  (let [n 3]
+    (mz/constraint (alldifferent_except_0 (mz/array (mz/-- 1 n) [:var (mz/-- 0 n)] 'x))))
+  )
+
+(defn alldifferent_except_0_test_model[n]
+  (mz/minizinc 
+   (mz/clj2mnz
+    (let [x (mz/array (mz/-- 1 n) [:var (mz/-- 0 n)] 'x)]
+      (mz/constraint (alldifferent_except_0 x))
+      ;; The array should be increasing (except the 0s)
+      (mz/constraint (mz/forall [i (mz/-- 1 n) j (mz/-- 1 n) :where (mz/< i j)]
+                       (mz/-> 
+                        (mz/and (mz/!= (mz/nth x i) 0) (mz/!= (mz/nth x j) 0))
+                        (mz/<= (mz/nth x i) (mz/nth x j)))))
+      ;; there should be exactly 2 0s
+      (mz/constraint (mz/count x 0 2))
+      (mz/solve :satisfy)
+      (mz/output-var x)
+      ))
+   :print-mzn? true
+   ;; :print-cmd? true
+   :options ["--all-solutions" "-f fzn-gecode" "-G gecode"] 
+   ))
+
+
+(comment
+  (alldifferent_except_0_test_model 4)
+  )
+
