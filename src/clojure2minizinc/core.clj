@@ -49,8 +49,8 @@
   "A thread-local store for collecting all information about a CSP."
   false)
 
-(defn- tell-store! 
-  "Extends *mzn-store* by given constraint and returns constraint (only extends *mzn-store* at thread-local level, otherwise does nothing)."
+(defn ^:no-doc tell-store! 
+  "[Aux function] Extends *mzn-store* by given constraint and returns constraint (only extends *mzn-store* at thread-local level, otherwise does nothing)."
   [constraint]
   (if *mzn-store*
     (do (set! *mzn-store* (conj *mzn-store* constraint))
@@ -2335,7 +2335,7 @@ BUG: only few value types supported."
   )
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Communicating with MiniZinc 
 ;;;
@@ -2449,7 +2449,7 @@ BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
 
 
 (comment
-  ;; !! NB: first mini version running :)
+  ;; mini example
   (minizinc
    (clj2mnz
     (let [a (variable (-- -1 1)) 
@@ -2463,93 +2463,26 @@ BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
    :num-solutions 3
    ;; :all-solutions? true
    )
-
-  
-
-  ;; aust CSP in Clojure using a Clojure vector of variables
-  ;; TODO: incomplete -- constraints and integer decl missing
-  ;; TODO: not yet working?
-  (minizinc 
-   (clj2mnz
-    ;; TODO: Create map instead of vector for named variables. Give vector of keys and by and by extend map {} by adding keys with vars (e.g., using fun reduce)
-    (let [vars (map #(variable (domain 1 3) %) [:wa :nt :sa :q :nsw :v :t])]
-      (solve :satisfy)
-      ;; TODO: use map created above
-      (output-map
-       (apply hash-map 
-              (flatten (map #(cons (keyword (:name %)) (list %))
-                            vars))))
-      ;; (pprint/pprint *mzn-store*)
-      ))
-   )  
-  ;; (apply hash-map 
-  ;;        (flatten (map #(cons (keyword (:name %)) (list %))
-  ;;                      (map #(variable (domain 1 3) %) [:wa :nt :sa :q :nsw :v :t]))))
-
-
-  ;; dummy example
-  (minizinc 
-   "var 0..2: x;
-solve satisfy;"
-   )
-
-  (minizinc aust-csp)
-
-
-  ;; NB: string literals in MiniZinc must not contain linebreaks -- so do not resolve \n 
-  (def aust-csp
-    "int: nc = 3;
-
-var 1..nc: wa; var 1..nc: nt; var 1..nc: sa; var 1..nc: q;
-var 1..nc: nsw; var 1..nc: v; var 1..nc: t;
-
-constraint wa != nt; 
-constraint wa != sa; 
-constraint nt != sa; 
-constraint nt != q; 
-constraint sa != q; 
-constraint sa != nsw; 
-constraint sa != v; 
-constraint q != nsw; 
-constraint nsw != v; 
-solve satisfy;
-
-
-output [\"wa=\", show(wa), \"\t nt=\", show(nt),
-\"\t sa=\", show(sa), \"\\n\", \"q=\", show(q),
-\"\t nsw=\", show(nsw), \"\t v=\", show(v), \"\\n\",
-\"t=\", show(t), \"\\n\"];"
-    )
-  
-  ;; (minizinc candles-csp)
-
-  ;; (def candles-csp "include \"globals.mzn\"; 
-  ;; int: n = 7;
-
-  ;; % decision variables
-  ;; array[1..n] of var 1..20: vars;
-  ;; % var 0..100: now          = sum(vars);  % number of candles this year
-  ;; var 0..100: now;  % number of candles this year
-  ;; var 0..100: twoyearsago  =  now - 2*n; % number of candles two years ago
-
-  ;; solve satisfy;
-  ;; % solve :: int_search(vars ++ [now, twoyearsago], first_fail, indomain_min, complete) satisfy;
-
-  ;; constraint
-  ;;    forall(i in 2..n) (
-  ;;       vars[i-1] = vars[i]+1 
-  ;;    )
-  ;;    /\\
-  ;;    twoyearsago*2 = now
-  ;;    /\\ 
-  ;;    now = sum(vars)
-  ;; ;
-
-  ;; output
-  ;; [
-  ;;   \"{\" ++ \":vars \" ++ show(vars) ++ \"\\n\" ++
-  ;;   \":twoyearsago \" ++ show(twoyearsago) ++ \"\\n\" ++
-  ;;   \":now \" ++ show(now) ++ \"}\"
-  ;; ];")
-
   )
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Abstractions like predicates 
+;;;
+
+;; TODO: 
+;; - Make the doc more easy to comprehend.
+;; - Consider renaming 
+(defmacro def-submodel
+  "Abstracts a part of a MiniZinc model as a Clojure function. Such submodels can be used as a substitute for MiniZinc predicates and functions, but calls to any submodel are resolved in the actual MiniZinc code. A submodel call returns a (MiniZinc code) string.
+
+BUG: Unfinished def -- does not yet support the full set of arguments of clojure.core/defn. (e.g., no doc string.)"
+  [name args & body]
+  ;; *mzn-store* is false outside of a call to mz/clj2mnz
+  `(def ~name
+     (fn ~args
+       (clj2mnz 
+        (tell-store! 
+         ~@body)))))
