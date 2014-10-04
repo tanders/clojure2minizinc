@@ -31,7 +31,7 @@
     (mz/solve :satisfy)
     (mz/output-map {:wa wa :nt nt :sa sa :q q :nsw nsw :v v :t t})
     ))
- ;; :print-mzn? true
+ ;;:print-mzn? true
  :num-solutions 3
  ;; :all-solutions? true
  )
@@ -527,7 +527,8 @@
     (mz/solve :satisfy)
     (mz/output-map {:s s})))
  :data (mz/map2minizinc {:n 4})
- :options ["--all-solutions"] 
+ ;; :options ["--all-solutions"] 
+ :options ["-f fzn-gecode" "--no-optimize"] 
  ;; :print-mzn? true
  ;; :print-cmd? true
  )
