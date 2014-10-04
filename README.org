@@ -30,8 +30,6 @@
 
 ** Installation 
 
-   See the [[./doc/installation][installation notes]
-
 *** Installation of MiniZinc tools
 
      - Install the [[http://www.minizinc.org/g12distrib.html][G12 MiniZinc Distribution]] (includes software that translates MiniZinc to the intermediate simpler format FlatZinc, which is understood by 3rd-party solvers, but also ready-to-use solvers)
@@ -46,7 +44,7 @@
    Add this [[https://github.com/technomancy/leiningen/blob/stable/doc/TUTORIAL.md][Leiningen]] dependency to your project:
 
 #+begin_src clojure :results silent
-[minizinc/clojure2minizinc "0.1.0"]
+[minizinc/clojure2minizinc "0.2.0"]
 #+end_src
 
 # [![Clojars Project](http://clojars.org/minizinc/clojure2minizinc/latest-version.svg)](http://clojars.org/minizinc/clojure2minizinc)
