@@ -1,19 +1,67 @@
 
-* Relevant documentation
+* TODO !! Revise clojure2minizinc with new MiniZinc documentation
 
-  See FlatZinc, MiniZinc, and Zinc documentation
+  http://www.minizinc.org/resources.html
 
-  Specification of FlatZinc
-  http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
+
+** Relevant documentation
+
+   Note: there is meanwhile revised and fuller documentation available 
+
+
+   See FlatZinc, MiniZinc, and Zinc documentation
+
+   Specification of FlatZinc
+   http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
   
-  Converting MiniZinc to FlatZinc
-  http://www.minizinc.org/downloads/doc-1.6/mzn2fzn.pdf
+   Converting MiniZinc to FlatZinc
+   http://www.minizinc.org/downloads/doc-1.6/mzn2fzn.pdf
 
-  MiniZinc Tutorial
-  http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf
+   MiniZinc Tutorial
+   http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf
 
-  Specifications
-  http://www.minizinc.org/specifications.html
+   Specifications
+   http://www.minizinc.org/specifications.html
+
+
+* Soft constraints
+
+  Check out / test MiniBrass for soft constraints
+  http://isse-augsburg.github.io/constraint-relationships/
+  https://github.com/isse-augsburg/constraint-relationships
+  Local
+  [[file:///Users/torsten/Clojure/Clojure2MiniZinc/clojure2minizinc/resources/MiniBrass/][MiniBrass]]
+
+  Contact: Alexander Schiendorfer, Augsburg University 
+  https://github.com/Alexander-Schiendorfer
+  https://www.informatik.uni-augsburg.de/lehrstuehle/swt/se/staff/aschiendorfer/
+
+  They use MiniSearch -- A meta-search language for MiniZinc
+  http://www.minizinc.org/minisearch/
+
+
+* TODO Again, naming convention
+
+  loco has leading $ before all its function, e.g., $=, $+ etc.
+  https://github.com/aengelberg/loco
+
+  Consider using that.
+
+  Also, consider alternative shorter names for functions like variable (var), constraint (c ?) etc.
+
+
+
+* Improving performance
+
+  Compilation of MiniZinc to FlatZinc can take quite some time, as I know already from experience, while solving the problem expressed in FlatZinc can be comparatively fast (depending on the problem). 
+
+  I already considered for realtime applications to save the generated FlatZinc output, and to jus replace some variables (or data file?) there to run the same problem multiple times in a realtime application (remember how I did realtime constraint programming with Strasheela...)
+
+  Alternatively, Hakan Kjellerstrand suggested to translate to FlatZinc directly, but I put that on the backburner for quite some time.
+
+
+  https://www.minizinc.org/forum/viewtopic.php?f=4&t=670
+
 
 
 * DONE Naming conventions 
