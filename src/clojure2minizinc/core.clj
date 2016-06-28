@@ -30,6 +30,7 @@
             ;; https://github.com/clojure/math.combinatorics/
             ;; https://clojure.github.io/math.combinatorics/
             [clojure.math.combinatorics :as combi]
+            [clojure.string :as str]
             ))
 
 ;; (require '[clojure2minizinc.core :as mzn])
@@ -45,6 +46,12 @@
 (def ^:dynamic *fd-solver* "Path to default constraint solver for finite domain (integers)" 
   "minizinc")
 
+(def *on-windows?*
+  "Whether this code is running on Windows (true) or another OS
+  (false). For now, in case of false a UNIX incl. Mac OS is assumed."
+  (str/includes?
+   (str/lower-case (System/getProperty "os.name"))
+   "win"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -2643,7 +2650,10 @@ BUG: this fn is currently far too inflexible."
           ;; See, e.g., Clojure Cookbook, sec. 4.14: "use read to read large data structures from a stream"
           ;; and later secs. e.g., 4.15, 4.16, 4.17
           (map read-string
-               (clojure.string/split (:out result) #"(\n----------\n|==========\n)")))
+               (if *on-windows?*
+                 ;; Take Windows vs. UNIX line break differences into account
+                 (clojure.string/split (:out result) #"(\r\n----------\r\n|==========\r\n)")
+                 (clojure.string/split (:out result) #"(\n----------\n|==========\n)"))))
         (throw (Exception. (format "MiniZinc: %s" (:err result))))))))
 
 
