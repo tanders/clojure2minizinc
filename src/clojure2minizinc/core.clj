@@ -12,6 +12,7 @@
                             string?
                             count range sort]) 
   (:require [clojure.core :as core]
+            ;; TODO: consider replacing with org.clojars.hozumi/clj-commons-exec, see Clojure Cookbook
             [clojure.java.shell :as shell]
             ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
             [clojure.pprint :as pprint]
@@ -151,7 +152,8 @@
             (cond 
              ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
              (aVar? index-set) (index-set->boundaries (:name index-set))
-             (core/string? index-set) (index-set->boundaries index-set) 
+             (core/string? index-set) (index-set->boundaries index-set)
+             ;; TODO: consider replacing list? with the more general seq?, just in case (to include cons's, lazy seq's etc.
              (list? index-set) (map #(index-set->boundaries
                                       (cond 
                                        ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
@@ -473,6 +475,7 @@ BUG: literal arrays not supported as init val.
                 ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
                 (aVar? index-set) (:name index-set)
                 (core/string? index-set) index-set
+                ;; TODO: consider replacing list? with the more general seq?, just in case (to include cons's, lazy seq's etc.
                 (core/or (list? index-set) 
                          (vector? index-set)) (apply str
                                                    (interpose ", "
@@ -2402,6 +2405,7 @@ BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
                  options] 
           :or {solver *fd-solver*
                ;; BUG: tmp file not deleted later
+               ;; TODO: delete directly after done witgh fn .delete (see Clojure Cookbook, Sec. 4.10)
                mznfile (doto (java.io.File/createTempFile "clojure2minizinc" ".mzn") .deleteOnExit)
                data false
                print-cmd? false
@@ -2442,6 +2446,9 @@ BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
           ;; In case there is an error as part of a warning then show that. How can I show a warning and still return the final result?
           (if (core/not= (:err result) "")
             (throw (Exception. (format "MiniZinc: %s" (:err result)))))
+          ;; TODO: Consider replacing read-string with clojure.edn/read-string or read 
+          ;; See, e.g., Clojure Cookbook, sec. 4.14: "use read to read large data structures from a stream"
+          ;; and later secs. e.g., 4.15, 4.16, 4.17
           (map read-string
                (clojure.string/split (:out result) #"(\n----------\n|==========\n)")))
         (throw (Exception. (format "MiniZinc: %s" (:err result))))))))
