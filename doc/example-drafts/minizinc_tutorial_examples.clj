@@ -550,10 +550,14 @@
     ;; - Create minimal MiniZinc example demonstrating problem with two different calls to sum (both syntax options)
     ;; - Discuss with MiniZinc forum whether this is bug 
     ;; - Likely, in clojure2minizinc I have for now to use the other syntax...
-    (mz/constraint (mz/sum [i Items]
-                     (mz/<= (mz/* (mz/bool2int (mz/in i knapsack))
-                                  (mz/nth weights i))
-                            capacity)))
+    ;; (mz/constraint (mz/sum [i Items]
+    ;;                  (mz/<= (mz/* (mz/bool2int (mz/in i knapsack))
+    ;;                               (mz/nth weights i))
+    ;;                         capacity)))
+    (mz/constraint (mz/<= (mz/sum [i Items]
+                            (mz/* (mz/bool2int (mz/in i knapsack))
+                                  (mz/nth weights i)))
+                            capacity))
     (mz/solve :maximize (mz/sum [i Items] 
                           (mz/* (mz/bool2int (mz/in i knapsack))
                                 (mz/nth profits i))))
