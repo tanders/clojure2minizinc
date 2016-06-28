@@ -8,7 +8,9 @@
   ;; Difficulties: 
   ;; - The MiniZinc distribution and solvers are platform specific, so I would need an extra project for each platform.
   ;; - The MiniZinc distribution installation requires running some install script locally
-  :dependencies [[org.clojure/clojure "1.6.0"]
+  :dependencies [;; [org.clojure/clojure "1.9.0-alpha7"]
+                 [org.clojure/clojure "1.8.0"]
+                 ;; [org.clojure/clojure "1.6.0"]
                  [me.raynes/fs "1.4.5"]
                  [org.clojure/math.combinatorics "0.0.7"]
                  ;; https://github.com/clojure-emacs/cider-tracing
