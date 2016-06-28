@@ -5,7 +5,14 @@
 
 
 (ns clojure2minizinc.core
-  "clojure2minizinc provides an interface between MiniZinc and Clojure. The clojure2minizinc user models in Clojure constraint satisfaction or optimisation problems over Boolean, integer, real number, and/or set variables. clojure2minizinc translates them into MiniZinc, they are solved in the background by a compatible solver, and the result is read back into Clojure. clojure2minizinc code can be very similar to the corresponding MiniZinc code, but in addition the full power of Clojure is at hand."
+  "clojure2minizinc provides an interface between MiniZinc and
+  Clojure. The clojure2minizinc user models in Clojure constraint
+  satisfaction or optimisation problems over Boolean, integer, real
+  number, and/or set variables. clojure2minizinc translates them into
+  MiniZinc, they are solved in the background by a compatible solver,
+  and the result is read back into Clojure. clojure2minizinc code can
+  be very similar to the corresponding MiniZinc code, but in addition
+  the full power of Clojure is at hand."
   ;; make explicit shadowing a range of core clojure functions etc
   (:refer-clojure :exclude [> >= <= < = == != -> + - * / mod assert concat min max 
                             int float set and or not nth
@@ -51,7 +58,9 @@
   false)
 
 (defn ^:no-doc tell-store! 
-  "[Aux function] Extends *mzn-store* by given constraint and returns constraint (only extends *mzn-store* at thread-local level, otherwise does nothing)."
+  "[Aux function] Extends *mzn-store* by given constraint and returns
+  constraint (only extends *mzn-store* at thread-local level,
+  otherwise does nothing)."
   [constraint]
   (if *mzn-store*
     (do (set! *mzn-store* (conj *mzn-store* constraint))
@@ -84,7 +93,8 @@
 
 ;; Extends *included-files* by given file and tells store to include that file, but only if that file was not included already. (Only extends *included-files* at thread-local level, otherwise does nothing).
 (defn include 
-  "Include the given file. Does automatic book keeping whether file was already included, and includes it only once."
+  "Include the given file. Does automatic book keeping whether file
+  was already included, and includes it only once."
   [file]
   (if (core/and *included-files*
                 (core/not (contains? *included-files* file)))
@@ -139,8 +149,10 @@
 ;; NOTE: ->anArray and map->anArray are created automatically, and it is included in the doc, because I cannot set ^:no-doc to it 
 (defrecord ^:no-doc anArray [name mzn-string boundaries])
 (defn ^:private index-set->boundaries 
-  "Retrieves the max and min of index-set. Example:
-(index-set->boundaries (-- 0 10)) ; > {:min 0 :max 10}"
+  "Retrieves the max and min of index-set. 
+
+  Example:
+  (index-set->boundaries (-- 0 10)) ; > {:min 0 :max 10}"
   [index-set]
   (let [coll (map read-string (clojure.string/split index-set #"\.\."))]
     {:min (core/nth coll 0) :max (core/nth coll 1)}))
@@ -200,9 +212,12 @@
 ;; TODO: should this function be renamed perhaps?
 ;; 
 (defn- expr
-  "Translates a Clojure value into a MiniZinc value (e.g., a string with a MiniZinc expression). If x is aVar or similar record, it returns its name. Otherwise it returns the value that corresponds to x (e.g., a string remains that string etc.).
+  "Translates a Clojure value into a MiniZinc value (e.g., a string
+  with a MiniZinc expression). If x is aVar or similar record, it
+  returns its name. Otherwise it returns the value that corresponds to
+  x (e.g., a string remains that string etc.).
 
-BUG: arbitrary precision Clojure values not tested."
+  BUG: arbitrary precision Clojure values not tested."
   [x]
   ;; (pprint/pprint (list literal-tests (some #(% x) literal-tests))) 
   (cond (core/or (aVar? x) (anArray? x)) (:name x)
@@ -262,7 +277,11 @@ BUG: arbitrary precision Clojure values not tested."
 ;; BUG: I may need to declare a parameter with an explicitly given name, but not initialisation -- initialisation happens in init file. This case is more important than being able to initialise a variable without giving it a name - giving it a name unnecessarily does not hurt too much (but is inconvenient). By contrast, initialising it unnecessarily makes initialisation in datafile impossible. 
 ;; More flexible, but more verbose: using keyword args. Even better: making key-args also an option.
 (defn- par   
-  "Declares a parameter (quasi a constant) with the given type (a string, symbol or keyword; can be int, float, bool and 'set of int'), an optional init-value (default nil, meaning no initialisation), and optional var name (a string, symbol or keyword, default is a gensym-ed name)."
+  "Declares a parameter (quasi a constant) with the given type (a
+  string, symbol or keyword; can be int, float, bool and 'set of
+  int'), an optional init-value (default nil, meaning no
+  initialisation), and optional var name (a string, symbol or keyword,
+  default is a gensym-ed name)."
   ([param-type] (par param-type (gensym (name param-type))))
   ([param-type par-name] (par param-type par-name nil))
   ([param-type par-name init-value]
@@ -291,19 +310,25 @@ BUG: arbitrary precision Clojure values not tested."
   )
 
 (defn int 
-  "Declares an initeger parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
+  "Declares an initeger parameter (quasi a constant) with an optional
+  init-value (default nil, meaning no initialisation), and optional
+  name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :int)) 
   ([par-name] (par :int par-name))
   ([par-name init-value] (par :int par-name init-value)))
 
 (defn float 
-  "Declares a float parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
+  "Declares a float parameter (quasi a constant) with an optional
+  init-value (default nil, meaning no initialisation), and optional
+  name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :float)) 
   ([par-name] (par :float par-name))
   ([par-name init-value] (par :float par-name init-value)))
 
 (defn bool 
-  "Declares a bool parameter (quasi a constant) with an optional init-value (default nil, meaning no initialisation), and optional name (a string, symbol or keyword, default is a gensym-ed name)."
+  "Declares a bool parameter (quasi a constant) with an optional
+  init-value (default nil, meaning no initialisation), and optional
+  name (a string, symbol or keyword, default is a gensym-ed name)."
   ([] (par :bool)) 
   ([par-name] (par :bool par-name))
   ([par-name init-value] (par :bool par-name init-value)))
@@ -356,7 +381,11 @@ BUG: arbitrary precision Clojure values not tested."
 ;; TODO: add distinction between parameter and variable declaration
 ;; etc -- in short, cover all type-inst variants in the flatzinc-spec, see link above
 (defn set
-  "Declares a set of integers parameter (quasi a constant) with an optional init-value and optional name (a string, symbol or keyword, default is a gensym-ed name). The init value is a range, e.g., `(-- 1 10)` meaning the set contains all integers in the range. The default is nil, meaning no initialisation."
+  "Declares a set of integers parameter (quasi a constant) with an
+  optional init-value and optional name (a string, symbol or keyword,
+  default is a gensym-ed name). The init value is a range, e.g., `(--
+  1 10)` meaning the set contains all integers in the range. The
+  default is nil, meaning no initialisation."
   ([] (set (gensym "Set"))) 
   ([par-name] (set par-name nil))
   ([par-name init-value] (par "set of int" par-name init-value)))
@@ -377,7 +406,9 @@ BUG: arbitrary precision Clojure values not tested."
 
 ;; No explicit support for mapping needed, as I already have the mappable clojure data structure as input to literal-array
 (defn literal-array 
-  "Specifies a one- or two-dimensional array that contains the given MiniZinc expressions as elements. Two-dimensional arrays are defined by a list of expressions."
+  "Specifies a one- or two-dimensional array that contains the given
+  MiniZinc expressions as elements. Two-dimensional arrays are defined
+  by a list of expressions." 
   [& exprs]
   (if (every? #(core/or (vector? %) (seq? %)) exprs)
     (str "[|" (apply str (flatten (interpose " | " (map (fn [sub-exprs]
@@ -429,37 +460,58 @@ BUG: arbitrary precision Clojure values not tested."
 (defn array   
   "Declares a one- or multi-dimensional array.
 
-Arguments:
+  Arguments:
 
-- index-set: The explicitly declared indices of the array. Either an integer range (declared with function --), a set variable initialised to an integer range, or for multi-dimensional arrays a list of integer ranges and/or MiniZinc sets.
-- type-inst: Specifies the parameter type or variable domain 
-The type of the variables contained in the array (a string, symbol or keyword; can be int, float, bool, string and \"set of int\").
-- array-name (optional): a name for the array (a string, symbol or keyword). Default is a \"gensym-ed\" name.
-- init-value (optional): a vector of MiniZinc-supported values. Defaults to nil.
+  - index-set: The explicitly declared indices of the array. Either an
+    integer range (declared with function --), a set variable
+    initialised to an integer range, or for multi-dimensional arrays a
+    list of integer ranges and/or MiniZinc sets. 
+  - type-inst: Specifies the parameter type or variable domain  
+    The type of the variables contained in the array (a string, symbol
+    or keyword; can be int, float, bool, string and \"set of int\"). 
+  - array-name (optional): a name for the array (a string, symbol or
+    keyword). Default is a \"gensym-ed\" name. 
+  - init-value (optional): a vector of MiniZinc-supported
+    values. Defaults to nil. 
 
-Examples:
+  Examples:
+  
+  ; array of bools at indices 1-10 (not decision variables!)
+  (array (-- 1 10) :bool)               
+  ; array of ints at indices 1-10
+  (array (-- 1 10) :int)               
+  ; array of sets of integers 
+  (array (-- 1 10) [:set :int])        
+  ; array of integers in given range  
+  (array (-- 1 10) (-- -1 2))           
+  ; array of floats in range
+  (array (-- 1 10) (-- 2.0 4.0))        
+  ; array of subsets of set range
+  (array (-- 1 10) [:set (-- -1 2)])    
 
-    (array (-- 1 10) :bool)               ; array of bools at indices 1-10 (not decision variables!)
-    (array (-- 1 10) :int)                ; array of ints at indices 1-10
-    (array (-- 1 10) [:set :int])         ; array of sets of integers
-    (array (-- 1 10) (-- -1 2))           ; array of integers in given range  
-    (array (-- 1 10) (-- 2.0 4.0))        ; array of floats in range
-    (array (-- 1 10) [:set (-- -1 2)])    ; array of subsets of set range
+  ; array of int variables
+  (array (-- 1 10) [:var :int])        
+  ; array of int variables with given domain  
+  (array (-- 1 10) [:var (-- 1 3)])    
+  ; array of int variables with given domain
+  (array (-- 1 10) [:var #{1 3 5}])     
+  ; array of float variables with given domain
+  (array (-- 1 10) [:var (-- 1.0 3.0)]) 
+  ; array of set variables with domain
+  (array (-- 1 10) [:var :set (-- 1 3)]) 
+  ; array of set variables with domain   
+  (array (-- 1 10) [:var :set #{1 3 5}]) 
 
-    (array (-- 1 10) [:var :int])         ; array of int variables
-    (array (-- 1 10) [:var (-- 1 3)])     ; array of int variables with given domain
-    (array (-- 1 10) [:var #{1 3 5}])     ; array of int variables with given domain
-    (array (-- 1 10) [:var (-- 1.0 3.0)]) ; array of float variables with given domain
-    (array (-- 1 10) [:var :set (-- 1 3)]) ; array of set variables with domain
-    (array (-- 1 10) [:var :set #{1 3 5}]) ; array of set variables with domain   
+  ; two-dimensional array of int variables
+  (array [(-- 1 10) (-- 1 10)]  [:var :int (-- 1 3)]) 
 
-    (array [(-- 1 10) (-- 1 10)]  [:var :int (-- 1 3)]) ; two-dimensional array of int variables
+  ; array explicitly named x 
+  (array (-- 1 10) :int 'x)              
 
-    (array (-- 1 10) :int 'x)              ; array explicitly named x 
+  ; array of ins with init value
+  (array (-- 1 3) :int 'x [5 6 7])      
 
-    (array (-- 1 3) :int 'x [5 6 7])       ; array of ins with init value
-
-BUG: literal arrays not supported as init val.
+  BUG: literal arrays not supported as init val.
 "
   ([index-set type-inst] (array index-set type-inst (gensym "array")))
   ([index-set type-inst array-name] (array index-set type-inst array-name nil))
@@ -534,9 +586,14 @@ BUG: literal arrays not supported as init val.
 ;; TODO: 
 ;; - Should return nested sequence for multi-dimensional array. (see BUG report in doc below)
 (defn array->clj-seq
-  "Transforms a one or more dimensional MiniZinc array into a Clojure list (of MiniZinc code strings representing the array elements), so that MiniZinc functions can  be applied to individual MiniZinc elements (e.g., by mapping).
+  "Transforms a one or more dimensional MiniZinc array into a Clojure
+  list (of MiniZinc code strings representing the array elements), so
+  that MiniZinc functions can  be applied to individual MiniZinc
+  elements (e.g., by mapping). 
 
-BUG: multi-dimensional array should return nested sequence to clearly highlight the dimensions. Currently, simply a flat sequence with all elements (the cartesian product) is returned."
+  BUG: multi-dimensional array should return nested sequence to clearly
+  highlight the dimensions. Currently, simply a flat sequence with all
+  elements (the cartesian product) is returned." 
   [my-array]
   (let [bounds (:boundaries my-array)]
     (cond 
@@ -570,7 +627,9 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 ;;;
 
 (defn call-operator 
-  "A MiniZinc operator call supporting arities of 2 or more. For higher arities multiple operators are used (e.g., a ternary plus is translated into x + y + z)"
+  "A MiniZinc operator call supporting arities of 2 or more. For
+  higher arities multiple operators are used (e.g., a ternary plus is
+  translated into x + y + z)." 
   [operator x y & more]
   (str "(" (apply str (interpose (str " " operator " ") (map expr (cons x (cons y more))))) ")"))
 
@@ -591,7 +650,7 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
   )
 
 (defn call-fn 
-  "A MiniZinc function call supporting a function arity of 1 or more."
+  "A MiniZinc function call supporting a function arity of 1 or more." 
   [fn & args]
   (format (str fn "(%s)") (apply str (interpose ", " (map expr args)))))
 
@@ -626,7 +685,8 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 
 
 (defn ^:no-doc aggregation-format 
-  "[Aux for aggregation functions like forall] This function is only public, because it is needed in a public macro."
+  "[Aux for aggregation functions like forall] This function is only
+  public, because it is needed in a public macro." 
   [set-or-array vars where-expr exp]
   (format (case set-or-array 
             :array "[%s | %s]"
@@ -652,19 +712,26 @@ BUG: multi-dimensional array should return nested sequence to clearly highlight 
 
 
 (defmacro aggregate
-  "List (array) and set comprehension. Generates a MiniZinc array/set containing the possible combinations of locally declared MiniZinc parameters (generators) used in the expression (exp). 
+  "List (array) and set comprehension. Generates a MiniZinc array/set
+  containing the possible combinations of locally declared MiniZinc
+  parameters (generators) used in the expression (exp).  
 
-Example:
+  Example:
 
     (aggregate [i (-- 1 3)] 
       (* i i))
     ; means [1*1, 2*2, 3*3]  (in MiniZinc syntax)
 
-Note that every generator (e.g., `(-- 1 3)`) declares always only a single MiniZinc parameter (`i` in the example above). This follows standard Clojure conventions (e.g., similar to `let` and friends), while MiniZinc allows for declaring multiple parameters together.
+  Note that every generator (e.g., `(-- 1 3)`) declares always only a
+  single MiniZinc parameter (`i` in the example above). This follows
+  standard Clojure conventions (e.g., similar to `let` and friends),
+  while MiniZinc allows for declaring multiple parameters together. 
 
-A where-expression can be added after the generators, which acts as a filter. Only elements satisfying this Boolean expression are used to construct elements in the output array/set.
+A where-expression can be added after the generators, which acts as a
+  filter. Only elements satisfying this Boolean expression are used to
+  construct elements in the output array/set. 
 
-Example:
+  Example:
 
     (def a (array (-- 1 3) :int))
     (aggregate [i (-- 1 3)
@@ -673,9 +740,11 @@ Example:
       (!= (nth a i) (nth a j)))  
     ; means [a[1] != a[2], a[2] != a[3]] (in MiniZinc syntax)
 
-The optional arguments `set-or-array` specifies whether result is array or set. It must be either `:array` or `:set`, default is `:array`.  
-
-Example:
+  The optional arguments `set-or-array` specifies whether result is
+  array or set. It must be either `:array` or `:set`, default is
+  `:array`. 
+  
+  Example:
 
     (aggregate [i (-- 1 3)]
       (= (nth a i) 0)
@@ -718,9 +787,11 @@ Example:
 
 
 (defmacro forall
-   "Universal quantification with list comprehension support: Logical conjunction of aggregated Boolean expressions. When applied to an empty list, forall returns true.
+   "Universal quantification with list comprehension support: Logical
+  conjunction of aggregated Boolean expressions. When applied to an
+  empty list, forall returns true. 
 
-See [[aggregate]] for list comprehension syntax and examples."
+  See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(forall [generators*] exp)]}
   [generators exp]
   `(format "forall(%s)" (aggregate ~generators ~exp)))
@@ -750,13 +821,14 @@ See [[aggregate]] for list comprehension syntax and examples."
 
 
 (defmacro exists
-  "Existential quantification (logical disjunction of Boolean expressions). When applied to an empty list, exists returns false.
+  "Existential quantification (logical disjunction of Boolean
+  expressions). When applied to an empty list, exists returns false.
 
-Unary: MiniZinc function exists.
+  Unary: MiniZinc function exists.
 
-Binary: exists with list comprehension support.
+  Binary: exists with list comprehension support.
 
-See [[aggregate]] for list comprehension syntax and examples."
+  See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(exists [generators*] exp)]}
   ([x] (call-fn 'exists x))
   ([generators exp]
@@ -769,17 +841,19 @@ See [[aggregate]] for list comprehension syntax and examples."
   )
 
 (defmacro xorall
-  "N-ary exclusive disjunction with list comprehension support: odd number of aggregated Boolean expressions holds.
+  "N-ary exclusive disjunction with list comprehension support: odd
+  number of aggregated Boolean expressions holds.
 
-See [[aggregate]] for list comprehension syntax and examples."
+  See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(xorall [generators*] exp)]}
   [generators exp]
   `(format "xorall(%s)" (aggregate ~generators ~exp)))
 
 (defmacro iffall
-  "N-ary bi-implication with list comprehension support: even number of aggregated Boolean expressions holds.
+  "N-ary bi-implication with list comprehension support: even number
+  of aggregated Boolean expressions holds.
 
-See [[aggregate]] for list comprehension syntax and examples."
+  See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(iffall [generators*] exp)]}
   [generators exp]
   `(format "iffall(%s)" (aggregate ~generators ~exp)))
@@ -787,11 +861,12 @@ See [[aggregate]] for list comprehension syntax and examples."
 (defmacro sum
   "Summation
 
-Unary: MiniZinc function sum.
+  Unary: MiniZinc function sum.
+  
+  Binary: sum with list comprehension support: adds aggregated
+  expressions. If aggregated expressions are empty returns 0. 
 
-Binary: sum with list comprehension support: adds aggregated expressions. If aggregated expressions are empty returns 0.
-
-See [[aggregate]] for list comprehension syntax and examples."
+  See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(sum [generators*] exp)]}
   ([x] (call-fn 'sum x))
   ([generators exp]
@@ -800,11 +875,13 @@ See [[aggregate]] for list comprehension syntax and examples."
 (defmacro product
   "Multiplication
 
-Unary: MiniZinc function Multiplication.
+  Unary: MiniZinc function Multiplication.
 
-Binary: product with list comprehension support: multiplies aggregated expressions. If aggregated expressions are empty returns 1.
-
-See [[aggregate]] for list comprehension syntax and examples."
+  Binary: product with list comprehension support: multiplies
+  aggregated expressions. If aggregated expressions are empty returns
+  1.
+  
+  See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(product [generators*] exp)]}
   ([x] (call-fn 'product x))
   ([generators exp]
@@ -813,11 +890,13 @@ See [[aggregate]] for list comprehension syntax and examples."
 (defmacro min
   "Minimal value
 
-Unary: MiniZinc function min.
+  Unary: MiniZinc function min.
 
-Binary: min with list comprehension support: least element in aggregated expressions. If aggregated expressions are empty gives MiniZinc error.
+  Binary: min with list comprehension support: least element in
+  aggregated expressions. If aggregated expressions are empty gives
+  MiniZinc error.
 
-See [[aggregate]] for list comprehension syntax and examples."
+  See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(min [generators*] exp)]}
   ([x] (call-fn 'min x))
   ([generators exp]
@@ -826,11 +905,13 @@ See [[aggregate]] for list comprehension syntax and examples."
 (defmacro max
   "Maximal value
 
-Unary: MiniZinc function max.
+  Unary: MiniZinc function max.
 
-Binary: max with list comprehension support: greatest element in aggregated expressions. If aggregated expressions are empty gives MiniZinc error.
+  Binary: max with list comprehension support: greatest element in
+  aggregated expressions. If aggregated expressions are empty gives
+  MiniZinc error.
 
-See [[aggregate]] for list comprehension syntax and examples."
+  See [[aggregate]] for list comprehension syntax and examples."
   {:forms '[(max [generators*] exp)]}
   ([x] (call-fn 'max x))
   ([generators exp]
@@ -887,7 +968,8 @@ See [[aggregate]] for list comprehension syntax and examples."
 
 ;; TODO: find out whether there is a way in MiniZinc to restrict the domain of an integer to only a given list of integers (i.e., "cut holes" into the domain)
 (defn --
-  "Expects a minimum an a maximum value (ints or floats) and returns a domain specification for a decision variable (ints or floats)."
+  "Expects a minimum an a maximum value (ints or floats) and returns a
+  domain specification for a decision variable (ints or floats)."
   [min max]
   (format  "%s..%s" (expr min) (expr max))
   ;; (pprint/cl-format nil "~S..~S" (expr min) (expr max))
@@ -904,20 +986,31 @@ See [[aggregate]] for list comprehension syntax and examples."
 
 ;; I cannot shadow special forms, and therefore a function cannot be called var. Thus use function name "variable", even though MiniZinc keyword is "var".
 (defn variable
-    "Declares a decision variable (bool, int, float, or set of int) with the given domain, and an optional variable name (string, symbol or keyword). 
+    "Declares a decision variable (bool, int, float, or set of int)
+  with the given domain, and an optional variable name (string, symbol
+  or keyword). 
 
-Examples:
+  Examples:
 
-    (variable :bool)             ; a Boolean variable (no further domain specification supported)
-    (variable :int)              ; an integer variable with maximum supported domain size 
-    (variable (-- -1 10))        ; an integer variable with domain [-1, 10]
-    (variable #{1 3 6 8})        ; an integer variable with the domain {1, 3, 6, 8}
-    (variable (-- 1.0 10.0))     ; a float variable with domain [1.0, 10.0]
-    (variable [:set (-- 1 3)])   ; a set of integers with the given domain (set is subset of domain)
-    (variable [:set #{1 3 6 8}]) ; a set of integers with the given domain (set is subset of domain)
-    (variable [:int (-- 1 3)])   ; same as (variable (-- -1 10))
+  ; a Boolean variable (no further domain specification supported)
+  (variable :bool)             
+  ; an integer variable with maximum supported domain size 
+  (variable :int)             
+  ; an integer variable with domain [-1, 10]  
+  (variable (-- -1 10))       
+  ; an integer variable with the domain {1, 3, 6, 8}
+  (variable #{1 3 6 8})        
+  ; a float variable with domain [1.0, 10.0]
+  (variable (-- 1.0 10.0))     
+  ; a set of integers with the given domain (set is subset of domain)
+  (variable [:set (-- 1 3)])  
+  ; a set of integers with the given domain (set is subset of domain)  
+  (variable [:set #{1 3 6 8}])
+  ; same as (variable (-- -1 10))
+  (variable [:int (-- 1 3)])   
 
-    (variable (-- 1 10) 'x)      ; an integer variable named x (instead of an automatically assigned name)
+  ; an integer variable named x (instead of an automatically assigned name)
+  (variable (-- 1 10) 'x)    
 "
     ([type-inst] (variable type-inst (gensym "var")))
     ([type-inst var-name]
@@ -989,7 +1082,8 @@ Examples:
 ;;;
 
 (defn constraint 
-  "Expects a constraint expression (a string) and turns it into a constraint statement."
+  "Expects a constraint expression (a string) and turns it into a
+  constraint statement."
   [constraint-expr]
   (tell-store! (format "constraint %s;" (expr constraint-expr))))
 
@@ -1305,41 +1399,41 @@ Examples:
 (defn array1d
   "Initialise an array of one dimension from given array a.
 
-See example for [[array2d]]."
+  See example for [[array2d]]."
   [x a] 
   (call-fn 'array1d x a))
 (defn array2d
   "Initialise a 2D array from given array a.
-
-Example:
-
-`(array2d (-- 1 3) (-- 1 2) [1 2 3 4 5 6])` is equivalent to 
-`(literal-array [1 2][3 4][5 6])` which is the MiniZinc array
-`[|1, 2 |3, 4 |5, 6|])`"
+  
+  Example:
+  
+  `(array2d (-- 1 3) (-- 1 2) [1 2 3 4 5 6])` is equivalent to 
+  `(literal-array [1 2][3 4][5 6])` which is the MiniZinc array
+  `[|1, 2 |3, 4 |5, 6|])`"
   [x1 x2 a] 
   (call-fn 'array2d x1 x2 a))
 (defn array3d
   "Initialise a 3D array from given array a.
 
-See example for [[array2d]]."
+  See example for [[array2d]]."
   [x1 x2 x3 a] 
   (call-fn 'array3d x1 x2 x3 a))
 (defn array4d
   "Initialise a 4D array from given array a.
 
-See example for [[array2d]]."
+  See example for [[array2d]]."
   [x1 x2 x3 x4 a] 
   (call-fn 'array4d x1 x2 x3 x4 a))
 (defn array5d
   "Initialise a 5D array from given array a.
 
-See example for [[array2d]]."
+  See example for [[array2d]]."
   [x1 x2 x3 x4 x5 a] 
   (call-fn 'array5d x1 x2 x3 x4 x5 a))
 (defn array6d
   "Initialise a 6D array from given array a.
 
-See example for [[array2d]]."
+  See example for [[array2d]]."
   [x1 x2 x3 x4 x5 x6 a] 
   (call-fn 'array6d x1 x2 x3 x4 x5 x6 a))
 
@@ -1394,7 +1488,8 @@ See example for [[array2d]]."
   [x] 
   (call-fn 'ceil x))
 (defn concat
-  "Concatenate an array of strings. Equivalent to folding '++' over the array, but may be implemented more efficiently."
+  "Concatenate an array of strings. Equivalent to folding '++' over
+  the array, but may be implemented more efficiently."
   [x] 
   (call-fn 'concat x))
 (defn cos
@@ -1414,11 +1509,13 @@ See example for [[array2d]]."
 ;;   " function constraint")
 
 (defn dom
-  "Domain reflection: a safe approximation to the possible values of x (int)."
+  "Domain reflection: a safe approximation to the possible values of x
+  (int)." 
   [x] 
   (call-fn 'dom x))
 (defn dom_array
-  "Domain reflection: a safe approximation to the union of all possible values of the expressions appearing in the array x (ints)."
+  "Domain reflection: a safe approximation to the union of all
+  possible values of the expressions appearing in the array x (ints)."
   [x] 
   (call-fn 'dom_array x))
 (defn dom_size
@@ -1437,7 +1534,11 @@ See example for [[array2d]]."
 ;;   " function constraint")
 
 (defn fix
-  "Check if the argument’s value is fixed at this point in evaluation. If not, abort; if so, return its value. This is most useful in output items when decision variables should be fixed -- it allows them to be used in places where a fixed value is needed, such as if-then-else conditions."
+  "Check if the argument’s value is fixed at this point in
+  evaluation. If not, abort; if so, return its value. This is most
+  useful in output items when decision variables should be fixed -- it
+  allows them to be used in places where a fixed value is needed, such
+  as if-then-else conditions."
   [x] 
   (call-fn 'fix x))
 (defn exp
@@ -1463,7 +1564,8 @@ See example for [[array2d]]."
 ;;   " function constraint")
 
 (defn index_set
-  "Reflection function: the index set (set of indices) of a one dimensional array."
+  "Reflection function: the index set (set of indices) of a one
+  dimensional array."
   [x] 
   (call-fn 'index_set x))
 (defn index_set_1of2
@@ -1503,7 +1605,9 @@ See example for [[array2d]]."
   [x] 
   (call-fn 'is_fixed x))
 (defn join
-  "Concatenates an array of strings a, putting a seperator string s beween adjacent strings. Returns the empty string if the array is empty."
+  "Concatenates an array of strings a, putting a seperator string s
+  beween adjacent strings. Returns the empty string if the array is
+  empty."
   [s a] 
   (call-fn 'join s a))
 
@@ -1513,11 +1617,14 @@ See example for [[array2d]]."
 ;;   " function constraint")
 
 (defn lb
-  "Domain reflection: a safe approximation to the lower bound value of x (int, float, or set of int)."
+  "Domain reflection: a safe approximation to the lower bound value of
+  x (int, float, or set of int)." 
   [x] 
   (call-fn 'lb x))
 (defn lb_array
-  "Domain reflection: a safe approximation to the lower bound of all expressions appearing in the array x (of int, float, or set of int)."
+  "Domain reflection: a safe approximation to the lower bound of all
+  expressions appearing in the array x (of int, float, or set of
+  int)." 
   [x] 
   (call-fn 'lb_array x))
 
@@ -1581,15 +1688,27 @@ See example for [[array2d]]."
   [x] 
   (call-fn 'set2array x))
 (defn show
-  "To-string conversion. Converts any value to a string for output purposes. The exact form of the resulting string is implementation-dependent."
+  "To-string conversion. Converts any value to a string for output
+  purposes. The exact form of the resulting string is
+  implementation-dependent."
   [x] 
   (call-fn 'show x))
 (defn show_int
-  "Formatted to-string conversion for integers. Converts the integer `x` into a string right justified by the number of characters `justification` (int), or left justified if that argument is negative. If `x` is not fixed, the form of the string is implementation-dependent."
+  "Formatted to-string conversion for integers. Converts the integer
+  `x` into a string right justified by the number of characters
+  `justification` (int), or left justified if that argument is
+  negative. If `x` is not fixed, the form of the string is
+  implementation-dependent."
   [justification x] 
   (call-fn 'show_int justification x))
 (defn show_float
-  "Formatted to-string conversion for floats. Converts the float `x` into a string right justified by the number of characters given by `justification` (int), or left justified if that argument is negative. The number of digits to appear after the decimal point is given by `digits` (int). It is a run-time error for `digits` to be negative. If `x` is not fixed, the form of the string is implemenation-dependent."
+  "Formatted to-string conversion for floats. Converts the float `x`
+  into a string right justified by the number of characters given by
+  `justification` (int), or left justified if that argument is
+  negative. The number of digits to appear after the decimal point is
+  given by `digits` (int). It is a run-time error for `digits` to be
+  negative. If `x` is not fixed, the form of the string is
+  implemenation-dependent."
   [justification digits x] 
   (call-fn 'show_float justification digits x))
 
@@ -1631,7 +1750,8 @@ See example for [[array2d]]."
 ;; (def-unary-function trace trace
 ;;   " function constraint")
 (defn trace
-  "Return x (any type). As a side-effect, an implementation may print the string s."
+  "Return x (any type). As a side-effect, an implementation may print
+  the string s."
   [s x] 
   (call-fn 'trace s x))
 
@@ -1641,11 +1761,14 @@ See example for [[array2d]]."
 ;;   " function constraint")
 
 (defn ub
-  "Domain reflection: a safe approximation to the upper bound value of x (int, bool, float or set of int)."
+  "Domain reflection: a safe approximation to the upper bound value of
+  x (int, bool, float or set of int)."
   [x] 
   (call-fn 'ub x))
 (defn ub_array
-  "Domain reflection: a safe approximation to the upper bound of all expres- sions appearing in the array x x (of int, float, or set of int)."
+  "Domain reflection: a safe approximation to the upper bound of all
+  expres- sions appearing in the array x x (of int, float, or set of
+  int)."
   [x] 
   (call-fn 'ub_array x))
 
@@ -1658,12 +1781,14 @@ See example for [[array2d]]."
   (call-fn 'pow x expt))
 
 (defn assert 
-  "Constraint to guard against certain errors (e.g., to double-check input from data files).
+  "Constraint to guard against certain errors (e.g., to double-check
+  input from data files). 
 
-mz-expr      (string) a MiniZinc expression returning a Boolean value
-error-msg    (string) an error message printed in case mz-expr is false
+  mz-expr      (string) a MiniZinc expression returning a Boolean value
+  error-msg    (string) an error message printed in case mz-expr is false
 
-BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error message."
+  BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not
+  print the error message."
   [mz-expr, error-msg]
   (format "assert(%s, \"%s\")" (expr mz-expr) (expr error-msg)))
 
@@ -1715,9 +1840,9 @@ BUG: mzn2fzn (version 1.6.0) detects inconsistency, but does not print the error
 
 (defn alldifferent 
   "alldifferent(array[int] of var int: x)
-alldifferent(array[int] of var set of int: x)
+  alldifferent(array[int] of var set of int: x)
 
-Constrains the array of objects x to be all different."
+  Constrains the array of objects x to be all different."
   [x]
   (call-global-constraint 'alldifferent x))
 
@@ -1734,39 +1859,40 @@ Constrains the array of objects x to be all different."
   (alldifferent x))
 
 (defn alldifferent_except_0 
-  "alldifferent_except_0(array[int] of var int: x)
+  "alldifferent_except_0(array[int] of var int: x) 
 
-Constrains the elements of the array x to be all different except those elements that are assigned the value 0."
+  Constrains the elements of the array x to be all different except
+  those elements that are assigned the value 0."
   [x]
   (call-global-constraint 'alldifferent_except_0 x))
 
 (defn all_disjoint 
   "all_disjoint(array[int] of var set of int: x)
 
-Ensures that every pair of sets in the array x is disjoint."
+  Ensures that every pair of sets in the array x is disjoint."
   [x]
   (call-global-constraint 'all_disjoint x))
 
 (defn all_equal 
-  "all_equal(array[int] of var int:          x)
-all_equal(array[int] of var set of int:   x)
+  "all_equal(array[int] of var int:          x) 
+  all_equal(array[int] of var set of int:   x)
 
-Constrains the array of objects x to have the same value."
+  Constrains the array of objects x to have the same value."
   [x]
   (call-global-constraint 'all_equal x))
 
 (defn among 
   "among(var int: n, array[int] of var int: x, set of int: v)
 
-Requires exactly n variables in x to take one of the values in v."
+  Requires exactly n variables in x to take one of the values in v."
   [n x v]
   (call-global-constraint 'among n x v))
 
 (defn at_least 
   "at_least(int: n, array[int] of var int:        x, int:        v)
-at_least(int: n, array[int] of var set of int: x, set of int: v)
+  at_least(int: n, array[int] of var set of int: x, set of int: v)
 
-Requires at least n variables in x to take the value v."
+  Requires at least n variables in x to take the value v."
   [n x v]
   (call-global-constraint 'at_least x))
 
@@ -1777,9 +1903,9 @@ Requires at least n variables in x to take the value v."
 
 (defn at_most
   "at_most(int: n, array[int] of var int:        x, int:        v)
-at_most(int: n, array[int] of var set of int: x, set of int: v)
+  at_most(int: n, array[int] of var set of int: x, set of int: v)
 
-Requires at most n variables in x to take the value v."
+  Requires at most n variables in x to take the value v."
   [n x v]
   (call-global-constraint 'at_most n x v))
 
@@ -1791,7 +1917,7 @@ Requires at most n variables in x to take the value v."
 (defn at_most1 
   "at_most1(array[int] of var set of int: s)
 
-Requires that each pair of sets in s overlap in at most one element."
+  Requires that each pair of sets in s overlap in at most one element."
   [s]
   (call-global-constraint 'at_most1 s))
 
@@ -1803,42 +1929,49 @@ Requires that each pair of sets in s overlap in at most one element."
 (defn bin_packing
   "bin_packing(int: c, array[int] of var int: bin, array[int] of int: w)
 
-Requires that each item i be put into bin bin[i] such that the sum of the weights of each item, w[i], in each bin does not exceed the capacity c.
-Aborts if an item has a negative weight or if the capacity is negative.
-Aborts if the index sets of bin and w are not identical."
+  Requires that each item i be put into bin bin[i] such that the sum of
+  the weights of each item, w[i], in each bin does not exceed the
+  capacity c. 
+  Aborts if an item has a negative weight or if the capacity is negative.
+  Aborts if the index sets of bin and w are not identical."
   [c bin w]
   (call-global-constraint 'bin_packing c bin w))
 
 (defn bin_packing_capa 
   "bin_packing_capa(array[int] of int: c, array[int] of var int: bin, array[int] of int:w)
 
-Requires that each item i be put into bin bin[i] such that the sum of the weights of each item, w[i], in each bin b does not exceed the capacity c[b].
-Aborts if an item has negative weight.
-Aborts if the index sets of bin and w are not identical."
+  Requires that each item i be put into bin bin[i] such that the sum
+  of the weights of each item, w[i], in each bin b does not exceed the
+  capacity c[b]. 
+  Aborts if an item has negative weight.
+  Aborts if the index sets of bin and w are not identical."
   [c bin w]
   (call-global-constraint 'bin_packing_capa c bin w))
 
 (defn bin_packing_load 
   "bin_backing_load(array[int] of var int: l, array[int] of var int: bin, array[int] of int: w)
 
-Requires that each item i be put into bin bin[i] such that the sum of the weights of each item, w[i], in each bin b is equal to the load l[b].
-Aborts if an item has negative weight.
-Aborts if the index sets of bin and w are not identical."
+  Requires that each item i be put into bin bin[i] such that the sum
+  of the weights of each item, w[i], in each bin b is equal to the
+  load l[b]. 
+  Aborts if an item has negative weight.
+  Aborts if the index sets of bin and w are not identical."
   [l bin w]
   (call-global-constraint 'bin_packing_load l bin w))
 
 (defn circuit
   "circuit[array[int] of var int: x)
 
-Constraints the elements of x to define a circuit where x[i] = j mean that j is the successor of i."
+  Constraints the elements of x to define a circuit where x[i] = j
+  mean that j is the successor of i."
   [x]
   (call-global-constraint 'circuit x))
 
 (defn count_eq
   "count_eq(array[int] of var int: x, var int: y, var int: c)
 
-Constrains c to be the number of occurrences of y in x.
-Also available by the name count."
+  Constrains c to be the number of occurrences of y in x.
+  Also available by the name count." 
   [x y c]
   (call-global-constraint 'count_eq x y c))
 
@@ -1850,54 +1983,59 @@ Also available by the name count."
 (defn count_geq
   "count_geq(array[int] of var int: x, var int: y, var int: c)
 
-Constrains c to greater than or equal to the number of occurrences of y in x."
+  Constrains c to greater than or equal to the number of occurrences
+  of y in x."
   [x y c]
   (call-global-constraint 'count_geq x y c))
 
 (defn count_gt
   "count_gt(array[int] of var int: x, var int: y, var int: c)
 
-Constrains c to strictly greater than the number of occurrences of y in x."
+  Constrains c to strictly greater than the number of occurrences of y
+  in x." 
   [x y c]
   (call-global-constraint 'count_gt x y c))
 
 (defn count_leq
   "count_leq(array[int] of var int: x, var int: y, var int: c)
 
-Constrains c to less than or equal to the number of occurrences of y in x."
+  Constrains c to less than or equal to the number of occurrences of y
+  in x."
   [x y c]
   (call-global-constraint 'count_leq x y c))
 
 (defn count_lt
   "count_lt(array[int] of var int: x, var int: y, var int: c)
 
-Constrains c to strictly less than the number of occurrences of y in x."
+  Constrains c to strictly less than the number of occurrences of y in x."
   [x y c]
   (call-global-constraint 'count_lt x y c))
 
 (defn count_neq
   "count_neq(array[int] of var int: x, var int: y, var int: c)
 
-Constrains c to not be the number of occurrences of y in x."
+  Constrains c to not be the number of occurrences of y in x."
   [x y c]
   (call-global-constraint 'count_neq x y c))
 
 (defn cumulative
   "cumulative(array[int] of var int: s, array[int] of var int: d, array[int] of var int: r, var int: b)
 
-Requires that a set of tasks given by start times s, durations d, and resource requirements r, never require more than a global resource bound b at any one time.
-Aborts if s, d, and r do not have identical index sets.
-Aborts if a duration or resource requirement is negative."
+  Requires that a set of tasks given by start times s, durations d,
+  and resource requirements r, never require more than a global
+  resource bound b at any one time. 
+  Aborts if s, d, and r do not have identical index sets.
+  Aborts if a duration or resource requirement is negative."
   [s d r b]
   (call-global-constraint 'cumulative s d r b))
 
 (defn decreasing
   "decreasing(array[int] of var bool:       x)
-decreasing(array[int] of var float:      x)
-decreasing(array[int] of var int:        x)
-decreasing(array[int] of var set of int: x)
-
-Requires that the array x is in (non-strictly) decreasing order."
+  decreasing(array[int] of var float:      x)
+  decreasing(array[int] of var int:        x)
+  decreasing(array[int] of var set of int: x)
+  
+  Requires that the array x is in (non-strictly) decreasing order."
   [x]
   (call-global-constraint 'decreasing x))
 
@@ -1905,269 +2043,294 @@ Requires that the array x is in (non-strictly) decreasing order."
   "diffn(array[int] of var int: x,  array[int] of var int: y,
       array[int] of var int: dx, array[int] of var int: dy)
 
-Constrains rectangles, given by their origins x,y and sizes dx,dy, to be non-overlapping."
+  Constrains rectangles, given by their origins x,y and sizes dx,dy, to be non-overlapping."
   [x y dx dy]
   (call-global-constraint 'diffn x y dx dy))
 
 (defn disjoint
   "disjoint(var set of int: s, var set of int: t)
-
-Requires that sets s and t do not intersect."
+  
+  Requires that sets s and t do not intersect."
   [s t]
   (call-global-constraint 'disjoint s t))
 
 (defn distribute
   "distribute(array[int] of var int: card, array[int] of var int: value, array[int] of var int: base)
 
-Requires that card[i] is the number of occurrences of value[i] in base.
-In this implementation the values in value need not be distinct.
-Aborts if card and value do not have identical index sets."
+  Requires that card[i] is the number of occurrences of value[i] in base.
+  In this implementation the values in value need not be distinct.
+  Aborts if card and value do not have identical index sets."
   [card value base]
   (call-global-constraint 'distribute card value base))
 
 (defn element
   "element(var int: i, array[int] of var bool:       x, var bool:       y)
-element(var int: i, array[int] of var float:      x, var float:      y)
-element(var int: i, array[int] of var int:        x, var int:        y)
-element(var int: i, array[int] of var set of int: x, var set of int: y)
-
-The same as x[i] = y or (= (nth x i) y). That is, y is the ith element of the array x. The difference to nth is that i can be a variable."
+  element(var int: i, array[int] of var float:      x, var float:      y)
+  element(var int: i, array[int] of var int:        x, var int:        y)
+  element(var int: i, array[int] of var set of int: x, var set of int: y)
+  
+  The same as x[i] = y or (= (nth x i) y). That is, y is the ith
+  element of the array x. The difference to nth is that i can be a
+  variable."
   [i x y]
   (call-global-constraint 'element i x y))
 
 (defn exactly
   "exactly(int: n, array[int] of var int:        x, int:        v)
-exactly(int: n, array[int] of var set of int: x, set of int: v)
+  exactly(int: n, array[int] of var set of int: x, set of int: v)
 
-Requires exactly n variables in x to take the value v."
+  Requires exactly n variables in x to take the value v."
   [n x v]
   (call-global-constraint 'exactly n x v))
 
 (defn global_cardinality
   "global_cardinality(array[int] of var int: x, array[int] of int: cover, array[int] of var int: counts)
 
-Requires that the number of occurrences of cover[i] in x is counts[i].
-Aborts if cover and counts do not have identical index sets."
+  Requires that the number of occurrences of cover[i] in x is counts[i].
+  Aborts if cover and counts do not have identical index sets."
   [x cover counts]
   (call-global-constraint 'global_cardinality x cover counts))
 
 (defn global_cardinality_closed
   "global_cardinality_closed(array[int] of var int: x, array[int] of int: cover, array[int] of var int: counts)
 
-Requires that the number of occurrences of cover[i] in x is counts[i].
-The elements of x must take their values from cover.
-Aborts if cover and counts do not have identical index sets."
+  Requires that the number of occurrences of cover[i] in x is counts[i].
+  The elements of x must take their values from cover.
+  Aborts if cover and counts do not have identical index sets."
   [x cover counts]
   (call-global-constraint 'global_cardinality_closed x cover counts))
 
 (defn global_cardinality_low_up
   "global_cardinality_low_up(array[int] of var int: x, array[int] of int: cover, array[int] of int: lb, array[int] of int: ub)
 
-Requires that for all i, the value cover[i] appears at least lb[i] and at most ub[i] times in the array x."
+  Requires that for all i, the value cover[i] appears at least lb[i]
+  and at most ub[i] times in the array x."
   [x cover lb ub]
   (call-global-constraint 'global_cardinality_low_up x cover lb ub))
 
 (defn global_cardinality_low_up_closed
   "global_cardinality_low_up_closed(array[int] of var int: x, array[int] of int: cover, array[int] of int: lb, array[int] of int: ub)
 
-Requires that for all i, the value cover[i] appears at least lb[i] and at most ub[i] times in the array x.
-The elements of x must take their values from cover."
+  Requires that for all i, the value cover[i] appears at least lb[i]
+  and at most ub[i] times in the array x. 
+  The elements of x must take their values from cover."
   [x cover lb ub]
   (call-global-constraint 'global_cardinality_low_up_closed x cover lb ub))
 
 (defn increasing
   "increasing(array[int] of var bool:       x)
-increasing(array[int] of var float:      x)
-increasing(array[int] of var int:        x)
-increasing(array[int] of var set of int: x)
-
-Requires that the array x is in (non-strictly) increasing order."
+  increasing(array[int] of var float:      x)
+  increasing(array[int] of var int:        x)
+  increasing(array[int] of var set of int: x)
+  
+  Requires that the array x is in (non-strictly) increasing order."
   [x]
   (call-global-constraint 'increasing x))
 
 (defn int_set_channel
   "int_set_channel(array[int] of var int: x, array[int] of var set of int: y)
 
-Requires that x[i] = j if and only if i is an element of y[j]."
+  Requires that x[i] = j if and only if i is an element of y[j]."
   [x y]
   (call-global-constraint 'int_set_channel x y))
 
 (defn inverse
   "inverse(array[int] of var int: f, array[int] of var int: invf)
 
-Constrains two arrays to represent inverse functions of each other. All the values in each array must be within the index set of the other array."
+  Constrains two arrays to represent inverse functions of each
+  other. All the values in each array must be within the index set of
+  the other array." 
   [f invf]
   (call-global-constraint 'inverse f invf))
 
 (defn inverse_set
   "inverse_set(array[int] of var set of int: f, array[int] of var set of int: invf)
 
-Constrains the two arrays f and invf so that a j is an element of f[i] if and only if i is an element of invf[j]. All the values in each array's sets must be within the index set of the other array."
+  Constrains the two arrays f and invf so that a j is an element of
+  f[i] if and only if i is an element of invf[j]. All the values in
+  each array's sets must be within the index set of the other array."
   [f invf]
   (call-global-constraint 'inverse_set f invf))
 
 (defn lex_greater
   "lex_greater(array[int] of var bool:       x, array[int] of var bool:       y)
-lex_greater(array[int] of var float:      x, array[int] of var float:      y)
-lex_greater(array[int] of var int:        x, array[int] of var int:        y)
-lex_greater(array[int] of var set of int: x, array[int] of var set of int: y)
+  lex_greater(array[int] of var float:      x, array[int] of var float:      y)
+  lex_greater(array[int] of var int:        x, array[int] of var int:        y)
+  lex_greater(array[int] of var set of int: x, array[int] of var set of int: y)
 
-Requires that the array x is strictly lexicographically greater than array y.
-Compares them from first to last element, regardless of indices."
+  Requires that the array x is strictly lexicographically greater than
+  array y. Compares them from first to last element, regardless of indices."
   [x y]
   (call-global-constraint 'lex_greater x y))
 
 (defn lex_greatereq
   "lex_greatereq(array[int] of var bool:       x, array[int] of var bool:       y)
-lex_greatereq(array[int] of var float:      x, array[int] of var float:      y)
-lex_greatereq(array[int] of var int:        x, array[int] of var int:        y)
-lex_greatereq(array[int] of var set of int: x, array[int] of var set of int: y)
-
-Requires that the array x is lexicographically greater than or equal to array y.
-Compares them from first to last element, regardless of indices."
+  lex_greatereq(array[int] of var float:      x, array[int] of var float:      y)
+  lex_greatereq(array[int] of var int:        x, array[int] of var int:        y)
+  lex_greatereq(array[int] of var set of int: x, array[int] of var set of int: y)
+  
+  Requires that the array x is lexicographically greater than or equal to array y.
+  Compares them from first to last element, regardless of indices." 
   [x y]
   (call-global-constraint 'lex_greatereq x y))
 
 (defn lex_less
   "lex_less(array[int] of var bool:       x, array[int] of var bool:       y)
-lex_less(array[int] of var float:      x, array[int] of var float:      y)
-lex_less(array[int] of var int:        x, array[int] of var int:        y)
-lex_less(array[int] of var set of int: x, array[int] of var set of int: y)
-
-Requires that the array x is strictly lexicographically less than array y.
-Compares them from first to last element, regardless of indices."
+  lex_less(array[int] of var float:      x, array[int] of var float:      y)
+  lex_less(array[int] of var int:        x, array[int] of var int:        y)
+  lex_less(array[int] of var set of int: x, array[int] of var set of int: y)
+  
+  Requires that the array x is strictly lexicographically less than
+  array y. Compares them from first to last element, regardless of indices."
   [x y]
   (call-global-constraint 'lex_less x y))
 
 (defn lex_lesseq
   "lex_lesseq(array[int] of var bool:       x, array[int] of var bool:       y)
-lex_lesseq(array[int] of var float:      x, array[int] of var float:      y)
-lex_lesseq(array[int] of var int:        x, array[int] of var int:        y)
-lex_lesseq(array[int] of var set of int: x, array[int] of var set of int: y)
-
-Requires that the array x is lexicographically less than or equal to array y.
-Compares them from first to last element, regardless of indices."
+  lex_lesseq(array[int] of var float:      x, array[int] of var float:      y)
+  lex_lesseq(array[int] of var int:        x, array[int] of var int:        y)
+  lex_lesseq(array[int] of var set of int: x, array[int] of var set of int: y)
+  
+  Requires that the array x is lexicographically less than or equal to array y.
+  Compares them from first to last element, regardless of indices."
   [x y]
   (call-global-constraint 'lex_lesseq x y))
 
 (defn lex2
   "lex2(array[int, int] of var int: x)
 
-Require adjacent rows and adjacent columns in the the array x to be lexicographically ordered. Adjacent rows and adjacent columns may be equal."
+  Require adjacent rows and adjacent columns in the the array x to be
+  lexicographically ordered. Adjacent rows and adjacent columns may be
+  equal."
   [x]
   (call-global-constraint 'lex2 x))
 
 (defn link_set_to_booleans
   "link_set_to_booleans(var set of int: s, array[int] of var bool: b)
 
-The array of booleans b is the characteristic representation of the set s.
-Aborts if the index set of b is not a superset of the possible values of s."
+  The array of booleans b is the characteristic representation of the set s.
+  Aborts if the index set of b is not a superset of the possible values of s."
   [s b]
   (call-global-constraint 'link_set_to_booleans s b))
 
 (defn maximum
   "maximum(var int:   m, array[int] of var int:   x)
-maximum(var float: m, array[int] of var float: x)
+  maximum(var float: m, array[int] of var float: x)
 
-Constrains m to be the maximum of the values in x. (The array x must have at least one element.)"
+  Constrains m to be the maximum of the values in x. (The array x must
+  have at least one element.)"
   [m x]
   (call-global-constraint 'maximum m x))
 
 (defn member
   "member(array[int] of var bool:       x, var bool:       y)
-member(array[int] of var float:      x, var float:      y)
-member(array[int] of var int:        x, var int:        y)
-member(array[int] of var set of int: x, var set of int: y)
-member(var set of int:               x, var int:        y)
+  member(array[int] of var float:      x, var float:      y)
+  member(array[int] of var int:        x, var int:        y)
+  member(array[int] of var set of int: x, var set of int: y)
+  member(var set of int:               x, var int:        y)
 
-Requires that y occurs in the array or set x."
+  Requires that y occurs in the array or set x."
   [x y]
   (call-global-constraint 'member x y))
 
 (defn minimum
   "minimum(var float: m, array[int] of var float: x)
-minimum(var int:   m, array[int] of var int:   x)
-
-Constrains m to be the minimum of the values in x. (The array x must have at least one element.)"
+  minimum(var int:   m, array[int] of var int:   x)
+  
+  Constrains m to be the minimum of the values in x. (The array x must
+  have at least one element.)"
   [m x]
   (call-global-constraint 'minimum m x))
 
 (defn nvalue
   "nvalue(var int: n, array[int] of var int: x)
 
-Requires that the number of distinct values in x is n."
+  Requires that the number of distinct values in x is n."
   [x]
   (call-global-constraint 'nvalue x))
 
 (defn partition_set
   "partition_set(array[int] of var set of int: s, set of int: universe)
 
-Partitions universe into disjoint sets."
+  Partitions universe into disjoint sets."
   [s universe]
   (call-global-constraint 'partition_set s universe))
 
 (defn range
   "range(array[int] of var int: x, var set of int: s, var set of int: t)
 
-Requires that the image of function x (represented as an array) on set of values s is t.
-Aborts if ub(s) is not a subset of the index set of x."
+  Requires that the image of function x (represented as an array) on set of values s is t.
+  Aborts if ub(s) is not a subset of the index set of x."
   [x s t]
   (call-global-constraint 'range x s t))
 
 (defn regular
   "regular(array[int] of var int: x, int: Q, int: S, array[int,int] of int: d, int: q0, set of int: F)
 
-The sequence of values in array x (which must all be in the range 1..S) is accepted by the DFA of Q states with input 1..S and transition function d (which maps ⟨1..Q, 1..S⟩ to 0..Q) and initial state q0 (which must be in 1..Q) and accepting states F (which all must be in 1..Q). State 0 is reserved to be an always failing state.
-Aborts if Q < 1.
-Aborts if S < 1.
-Aborts if the transition function d is not in [1..Q, 1..s].
-Aborts if the start state, q0, is not in 1..Q.
-Aborts if F is not a subset of 1..Q."
+  The sequence of values in array x (which must all be in the range
+  1..S) is accepted by the DFA of Q states with input 1..S and
+  transition function d (which maps ⟨1..Q, 1..S⟩ to 0..Q) and initial
+  state q0 (which must be in 1..Q) and accepting states F (which all
+  must be in 1..Q). State 0 is reserved to be an always failing
+  state.
+  Aborts if Q < 1.
+  Aborts if S < 1.
+  Aborts if the transition function d is not in [1..Q, 1..s].
+  Aborts if the start state, q0, is not in 1..Q.
+  Aborts if F is not a subset of 1..Q."
   [x Q S d q0 F]
   (call-global-constraint 'regular x Q S d q0 F))
 
 (defn roots
   "roots(array[int] of var int: x, var set of int: s, var set of int: t)
 
-Requires that x[i] is an element of t for all i element of s.
-Aborts if ub(s) is not a subset of the index set of x."
+  Requires that x[i] is an element of t for all i element of s.
+  Aborts if ub(s) is not a subset of the index set of x."
   [x s t]
   (call-global-constraint 'roots x s t))
 
 (defn sliding_sum
   "sliding_sum(int: low, int: up, int: seq, array[int] of var int: vs)
 
-Requires that in each subsequence vs[i], ..., vs[i + seq - 1] the sum of the values belongs to the interval [low, up]."
+  Requires that in each subsequence vs[i], ..., vs[i + seq - 1] the
+  sum of the values belongs to the interval [low, up]."
   [low up seq vs]
   (call-global-constraint 'sliding_sum low up seq vs))
 
 (defn sort
   "sort(array[int] of var int: x, array[int] of var int: y)
 
-Requires that the multiset of values in x is the same as the multiset of values in y but y is in sorted order.
-Aborts if the cardinality of the index sets of x and y is not equal."
+  Requires that the multiset of values in x is the same as the
+  multiset of values in y but y is in sorted order. 
+  Aborts if the cardinality of the index sets of x and y is not equal." 
   [x y]
   (call-global-constraint 'sort x y))
 
 (defn strict_lex2
   "strict_lex2(array[int, int] of var int: x)
 
-Require adjacent rows and adjacent columns in the the array x to be lexicographically ordered. Adjacent rows and adjacent columns cannot be equal."
+  Require adjacent rows and adjacent columns in the the array x to be
+  lexicographically ordered. Adjacent rows and adjacent columns cannot
+  be equal."
   [x]
   (call-global-constraint 'strict_lex2 x))
 
 (defn subcircuit
   "subcircuit(array[int] of var int: x)
 
-Constrains the elements of x to define a subcircuit where x[i] = j means that j is the successor of i and x[i] = i means that i is not in the circuit."
+  Constrains the elements of x to define a subcircuit where x[i] = j
+  means that j is the successor of i and x[i] = i means that i is not
+  in the circuit."
   [x]
   (call-global-constraint 'subcircuit x))
 
 (defn sum_pred
   "sum_pred(var int: i, array[int] of set of int: sets, array[int] of int: c, var int: s)
 
-Requires that the sum of c[i1]...c[iN] equals s, where i1..iN are the elements of the ith set in sets.
-This constraint is usually named sum, but using that would conflict with the MiniZinc built-in function of the same name."
+  Requires that the sum of c[i1]...c[iN] equals s, where i1..iN are
+  the elements of the ith set in sets. This constraint is usually
+  named sum, but using that would conflict with the MiniZinc built-in
+  function of the same name."   
   [i sets c s]
   (call-global-constraint 'sum_pred i sets c s))
 
@@ -2175,27 +2338,35 @@ This constraint is usually named sum, but using that would conflict with the Min
   "table(array[int] of var bool: x, array[int, int] of bool: t)
 table(array[int] of var int:  x, array[int, int] of int:  t)
 
-Represents the constraint x is element of t where we consider each row in t to be a tuple and t as a set of tuples.
-Aborts if the second dimension of t does not equal the number of variables in x.
-The default decomposition of this constraint cannot be flattened if it occurs in a reified context."
+  Represents the constraint x is element of t where we consider each
+  row in t to be a tuple and t as a set of tuples.
+  Aborts if the second dimension of t does not equal the number of
+  variables in x. 
+  The default decomposition of this constraint cannot be flattened if
+  it occurs in a reified context."
   [x t]
   (call-global-constraint 'table x t))
 
 (defn value_precede
   "value_precede(int: s, int: t, array[int] of var int: x)
-value_precede(int: s, int: t, array[int] of var set of int: x)
+  value_precede(int: s, int: t, array[int] of var set of int: x)
 
-Requires that s precede t in the array x.
-For integer variables this constraint requires that if an element of x is equal to t, then another element of x with a lower index is equal to s.
-For set variables this constraint requires that if an element of x contains t but not s, then another element of x with lower index contains s but not t."
+  Requires that s precede t in the array x.
+  For integer variables this constraint requires that if an element of
+  x is equal to t, then another element of x with a lower index is
+  equal to s.
+  For set variables this constraint requires that if an element of x
+  contains t but not s, then another element of x with lower index
+  contains s but not t."
   [s t x]
   (call-global-constraint 'value_precede s t x))
 
 (defn value_precede_chain
   "value_precede_chain(array[int] of int: c, array[int] of var int: x)
-value_precede_chain(array[int] of int: c, array[int] of var set of int: x)
+  value_precede_chain(array[int] of int: c, array[int] of var set of int: x)
 
-Requires that the [[value_precede]] constraint is true for every pair of adjacent integers in c in the array x."
+  Requires that the [[value_precede]] constraint is true for every pair
+  of adjacent integers in c in the array x."
   [c x]
   (call-global-constraint 'value_precede_chain c x))
 
@@ -2207,7 +2378,9 @@ Requires that the [[value_precede]] constraint is true for every pair of adjacen
 ;;;
 
 (defn solve 
-  "Solve items specify what kind of solution is being looked for. Supported values for solver are :satisfy, :maximize, and :minimize (a keyword)."
+  "Solve items specify what kind of solution is being looked
+  for. Supported values for solver are :satisfy, :maximize, and
+  :minimize (a keyword)."
   ([solver]
      {:pre [(#{:satisfy} solver)]}
      (tell-store! (format "solve %s;" (name solver))))
@@ -2237,7 +2410,8 @@ Requires that the [[value_precede]] constraint is true for every pair of adjacen
 ;; ??? TODO: replace by more general variant that supports arbitrary Clojure data strutures.
 ;; NOTE: “fancy” output can be (very) slow (http://web.it.kth.se/~cschulte/events/SweConsNet-2012/hakan.pdf)
 (defn output-map
-  "Expects a map containing MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure map for Clojure to read."
+  "Expects a map containing MiniZinc variables and returns a string
+  formatted for MiniZinc to output a Clojure map for Clojure to read."
   [my-map]
   (tell-store! 
    (str "output [\"{\", " 
@@ -2253,7 +2427,9 @@ Requires that the [[value_precede]] constraint is true for every pair of adjacen
   )
 
 (defn output-vector
-  "Expects a vector of MiniZinc variables and returns a string formatted for MiniZinc to output a Clojure vector for Clojure to read."
+  "Expects a vector of MiniZinc variables and returns a string
+  formatted for MiniZinc to output a Clojure vector for Clojure to
+  read."
   [my-vec]
   (tell-store! 
    (str "output [\"[\", " 
@@ -2269,7 +2445,8 @@ Requires that the [[value_precede]] constraint is true for every pair of adjacen
   )
 
 (defn output-var 
-  "Outputs a single MiniZinc variable. For example, a one-dimensional MiniZinc array can be read into a Clojure vector directly."
+  "Outputs a single MiniZinc variable. For example, a one-dimensional
+  MiniZinc array can be read into a Clojure vector directly."
   [my-var]
   (tell-store! (format "output [ show(%s) ];" (expr my-var))))
 
@@ -2293,7 +2470,8 @@ BUG: this fn is currently far too inflexible."
   ;; TODO: then revise definition such that it always results in a string expressing a clojure value such as a map.
   ;; Idea: input is also a map, where the values at keys are variables, or some other clojure data structure containing variables. This data structure is then expressed as a string.
   (defn output-clj
-    "Output items are for nicely presenting the results of the model execution. Output expects any number of strings or variables."
+    "Output items are for nicely presenting the results of the model
+  execution. Output expects any number of strings or variables."
     [arg]
     arg)
 
@@ -2322,9 +2500,10 @@ BUG: this fn is currently far too inflexible."
 
 
 (defn map2minizinc 
-  "Utility function for creating data files (*.dzn files) that map keys (MiniZinc variable names) to values.
-
-BUG: only few value types supported."
+  "Utility function for creating data files (*.dzn files) that map
+  keys (MiniZinc variable names) to values.
+  
+  BUG: only few value types supported."
   [mzn-map]
   (apply str (map (fn [[key val]] (str (format "%s = %s" (expr key) (expr val)) "; "))
                   mzn-map)))
@@ -2347,7 +2526,10 @@ BUG: only few value types supported."
 ;; TODO: Possibly I late embed this in minizinc below? Then it needs to become a macro itself.
 ;; TODO: should macros be defined elsewhere as caution?
 (defmacro clj2mnz 
-  "Translates a constraint problem defined in Clojure into the corresponding MiniZinc code. Expects any number of variable/parameter declarations, any number of constraints, one output, and one solver declaration, all in any order."
+  "Translates a constraint problem defined in Clojure into the
+  corresponding MiniZinc code. Expects any number of
+  variable/parameter declarations, any number of constraints, one
+  output, and one solver declaration, all in any order."
   [& constraints]
   `(binding [*mzn-store* []
              *included-files* #{}]
@@ -2381,22 +2563,33 @@ BUG: only few value types supported."
 ;; ?? TODO: incorporate clj2mnz into minizinc (turning minizinc into a macro)? Perhaps having it separate is a good idea? Makes call more structured. 
 ;; TODO: Add solver arguments: parallel (unrecognized for mzn-g12fd), random-seed, solver-backend, flatzinc-flags (?), keep-files, ... 
 (defn minizinc 
-  "Calls a MiniZinc solver on a given MiniZinc program and returns a list of one or more solutions.
+  "Calls a MiniZinc solver on a given MiniZinc program and returns a
+  list of one or more solutions.
+  
+  Options are
+  
+  - :mzn             (string) a MiniZinc program, which can be created
+    with other functions of clojure2minizinc wrapped into clj2mnz 
+  - :print-cmd?      (boolean) whether or not to print the UNIX
+    command call of the solver (for debugging) 
+  - :print-mzn?      (boolean) whether or not to print resulting
+    MiniZinc data and model (for debugging) 
+  - :print-solution? (boolean) whether or not to print the result
+    output by MiniZinc directly instead of reading it into a Clojure
+    value (e.g., for debugging). Prints the map resulting from
+    clojure.java.shell/sh. 
+  - :solver          (string) solver to call
+  - :mznfile         (string or file) MiniZinc file path to generate
+    and use in the background 
+  - :data            (string) Content for a MiniZinc data file (*.dzn
+    file). Can conveniently be created with map2minizinc  
+  - :num-solutions   (int) An upper bound on the number of solutions to output
+  - :all-solutions   (boolean) If true, return all solutions
+  - :options         (collection of strings) Arbitrary options given
+    to the solver in UNIX shell syntax, e.g., [\"-a\"] for all
+    solutions. 
 
-Options are
-
-- :mzn             (string) a MiniZinc program, which can be created with other functions of clojure2minizinc wrapped into clj2mnz
-- :print-cmd?      (boolean) whether or not to print the UNIX command call of the solver (for debugging)
-- :print-mzn?      (boolean) whether or not to print resulting MiniZinc data and model (for debugging)
-- :print-solution? (boolean) whether or not to print the result output by MiniZinc directly instead of reading it into a Clojure value (e.g., for debugging). Prints the map resulting from clojure.java.shell/sh.
-- :solver          (string) solver to call
-- :mznfile         (string or file) MiniZinc file path to generate and use in the background
-- :data            (string) Content for a MiniZinc data file (*.dzn file). Can conveniently be created with map2minizinc 
-- :num-solutions   (int) An upper bound on the number of solutions to output
-- :all-solutions   (boolean) If true, return all solutions
-- :options         (collection of strings) Arbitrary options given to the solver in UNIX shell syntax, e.g., [\"-a\"] for all solutions.
-
-BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
+  BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
   [mzn & {:keys [solver mznfile data
                  print-cmd?
                  print-mzn?
@@ -2483,9 +2676,13 @@ BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
 ;; - Make the doc more easy to comprehend.
 ;; - Consider renaming 
 (defmacro def-submodel
-  "Abstracts a part of a MiniZinc model as a Clojure function. Such submodels can be used as a substitute for MiniZinc predicates and functions, but calls to any submodel are resolved in the actual MiniZinc code. A submodel call returns a (MiniZinc code) string.
+  "Abstracts a part of a MiniZinc model as a Clojure function. Such
+  submodels can be used as a substitute for MiniZinc predicates and
+  functions, but calls to any submodel are resolved in the actual
+  MiniZinc code. A submodel call returns a (MiniZinc code) string. 
 
-BUG: Unfinished def -- does not yet support the full set of arguments of clojure.core/defn. (e.g., no doc string.)"
+  BUG: Unfinished def -- does not yet support the full set of
+  arguments of clojure.core/defn. (e.g., no doc string.)"
   [name args & body]
   ;; *mzn-store* is false outside of a call to mz/clj2mnz
   `(def ~name
