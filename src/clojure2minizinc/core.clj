@@ -46,7 +46,7 @@
 (def ^:dynamic *fd-solver* "Path to default constraint solver for finite domain (integers)" 
   "minizinc")
 
-(def *on-windows?*
+(def on-windows?
   "Whether this code is running on Windows (true) or another OS
   (false). For now, in case of false a UNIX incl. Mac OS is assumed."
   (str/includes?
@@ -2673,7 +2673,7 @@ BUG: this fn is currently far too inflexible."
           ;; See, e.g., Clojure Cookbook, sec. 4.14: "use read to read large data structures from a stream"
           ;; and later secs. e.g., 4.15, 4.16, 4.17
           (map read-string
-               (if *on-windows?*
+               (if on-windows?
                  ;; Take Windows vs. UNIX line break differences into account
                  (clojure.string/split (:out result) #"(\r\n----------\r\n|==========\r\n)")
                  (clojure.string/split (:out result) #"(\n----------\n|==========\n)"))))
