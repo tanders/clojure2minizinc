@@ -11,15 +11,16 @@
   :dependencies [;; [org.clojure/clojure "1.9.0-alpha7"]
                  [org.clojure/clojure "1.8.0"]
                  ;; [org.clojure/clojure "1.6.0"]
-                 [me.raynes/fs "1.4.5"]
-                 [org.clojure/math.combinatorics "0.0.7"]
+                 [me.raynes/fs "1.4.6"]
+                 [org.clojure/math.combinatorics "0.1.3"]
                  ;; https://github.com/clojure-emacs/cider-tracing
                  ;; https://github.com/clojure/tools.trace
                  ;; [org.clojure/tools.trace "0.7.5"]
                  ]
   ;; see https://github.com/weavejester/codox
-  :codox {:defaults {:doc "TODO: write docs"
+  :codox {:metadata {:doc "TODO: write docs"
                      :doc/format :markdown}
-          :output-dir "doc/reference"
-          :src-dir-uri "https://github.com/tanders/clojure2minizinc/tree/master/"
+          :output-path "doc/reference"
+          ;; TODO: update URI for soures 
+          :source-uri "https://github.com/tanders/clojure2minizinc/tree/master/"
           :src-linenum-anchor-prefix "L"})
