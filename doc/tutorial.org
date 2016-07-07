@@ -97,7 +97,7 @@ In this example, a solution is wrapped in a Clojure map. You can ask for multipl
   =; => ({:wa 1, :nt 2, :sa 3, :q 1, :nsw 2, :v 1, :t 1} {:wa 2, :nt 1, :sa 3, :q 2, :nsw 2, :v 1, :t 1} {:wa 1, :nt 3, :sa 2, :q 1, :nsw 3, :v 1, :t 1})=
 
 
-In fact, you can specify arbitrary options supported by the =minizinc= shell command. The next code line specifies to use (the FlatZinc interpreter of) [[http://www.gecode.org/flatzinc.html][Gecode]] (which must of could be installed). This solver won many [[http://www.minizinc.org/challenge.html][MiniZinc Challenges]] and is much more efficient than the solver that =minizinc= uses by default. For this simple model this makes no real difference (most time is spend on the [[http://ww2.cs.mu.oz.au/~sbrand/project/minizinc07.pdf][translation of MiniZinc to FlatZinc]] here), but for more complex problems the difference can be huge.   
+In fact, you can specify arbitrary options supported by the =minizinc= shell command. The next code line specifies to use (the FlatZinc interpreter of) [[http://www.gecode.org/flatzinc.html][Gecode]] (which must of course be installed). This solver won many [[http://www.minizinc.org/challenge.html][MiniZinc Challenges]] in the past and is more efficient than the solver that =minizinc= uses by default. For this simple model this makes no real difference (most time is spend on the [[http://ww2.cs.mu.oz.au/~sbrand/project/minizinc07.pdf][translation of MiniZinc to FlatZinc]] here), but for more complex problems the difference can be huge.   
 
 #+begin_src clojure 
 (mz/minizinc aust :options ["-f fzn-gecode"])
@@ -526,7 +526,7 @@ corresponds to the MiniZinc code
 
 *** TODO Keep this Note Up To Date
 
-    Note also that not all MiniZinc operators, keywords etc. are supported in the early releases of clojure2minizinc yet. For example, the table below will grow once the MiniZinc =let= and =if= are supported (both need different clojure2minizinc names as well). Also, in future versions many binary MiniZinc operators will be n-ary in clojure2minizinc.
+    Note also that not all MiniZinc operators, keywords etc. are supported in the early releases of clojure2minizinc yet. For example, the table above will grow once the MiniZinc =let= and =if= are supported (both need different clojure2minizinc names as well). Also, in future versions many binary MiniZinc operators may be n-ary in clojure2minizinc.
 
     Further, an equivalent for the MiniZinc =output= does not exist, use =output-map= instead.
     
@@ -538,7 +538,7 @@ corresponds to the MiniZinc code
 
 *** Integration in a General-Purpose Programming Language
      
-    clojure2minizinc allows you to do a number of things that are impossible (or at least much more difficult) in plain MiniZinc. MiniZinc is a highly specialised domain-specific language. clojure2minizinc is embedded in a general-purpose programming language and complements MiniZinc by standard programming features such as input/output, graphical user-interfaces, interfaces to the underlying operating system, and so forth. Basically, all Clojure and Java libraries are at your disposal when using clojure2minizinc. Also, the functionality of Clojure editors are available for defining MiniZinc models. For example, auto-completion and documentation accessible in your editor will help you ([[http://www.minizinc.org/ide/index.html][MiniZinc editors]] do not support such functionality).
+    clojure2minizinc allows you to do a number of things that are impossible (or at least much more difficult) in plain MiniZinc. MiniZinc is a highly specialised domain-specific language. clojure2minizinc is embedded in a general-purpose programming language and complements MiniZinc by standard programming features such as input/output, graphical user-interfaces, interfaces to the underlying operating system, and so forth. Basically, all Clojure and Java libraries are at your disposal when using clojure2minizinc. Also, the functionality of Clojure editors are available for defining MiniZinc models. For example, auto-completion and documentation accessible in your editor will help you ([[http://www.minizinc.org/ide/index.html][MiniZinc editors]] do not support such functionality yet).
 
      Perhaps most importantly, constraint problems can be created dynamically (before the search starts). For example, a constraint problem may depend on user input. Imagine a scheduling problem where different kinds of tasks to schedule are represented by different arrays, and depending on user input you may need a few additional arrays. While MiniZinc already provides some means for abstraction (predicates and functions), these are restricted in their capabilities. Adding a few global arrays dynamically depending on user input is at least difficult: MiniZinc data structures cannot be nested, so the result of a function could at most be one array (but it could be multi-dimensional). By contrast, clojure2minizinc makes it easy to create constraint problems dynamically -- Lisps are very good at generating code on the fly.
 
