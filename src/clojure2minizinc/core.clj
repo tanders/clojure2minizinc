@@ -381,7 +381,7 @@
 (defn literal-set
   "Specifies a set of explicitly given integers (can be MiniZinc expressions) as elements."
   [& exprs]
-  (format "{%s}" (apply str (interpose ", " (map expr exprs)))))
+  (format "{%s}" (apply str (interpose ", " (core/sort (map expr exprs))))))
 
 (comment
   (literal-set 1 2 3)
@@ -423,10 +423,10 @@
   (int 'test 3)
   (bool)
 
-  (set-of-int)
-  (set-of-int "MySet")
-  (set-of-int "MySet" (-- 1 10))
-  (set-of-int "MySet" (literal-set-of-int 1 3 5))
+  (set)
+  (set "MySet")
+  (set "MySet" (-- 1 10))
+  (set "MySet" #{1 3 5})
   )
 
 
@@ -467,7 +467,7 @@
     (apply str (interpose " " (map mk-type-inst-string type-inst)))
     (cond (core/= :var type-inst) "var"
           (core/= :set type-inst) "set of"        
-          (set? type-inst) (str "{" (apply str (interpose ", " type-inst)) "}")
+          (set? type-inst) (apply literal-set type-inst)
           :else (name type-inst))))
 
 (comment
