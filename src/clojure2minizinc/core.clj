@@ -319,7 +319,9 @@
 (defn int 
   "Declares an initeger parameter (quasi a constant) with an optional
   init-value (default nil, meaning no initialisation), and optional
-  name (a string, symbol or keyword, default is a gensym-ed name)."
+  name (a string, symbol or keyword, default is a gensym-ed name).
+
+  Note: use `variable` for creating an integer variable."
   ([] (par :int)) 
   ([par-name] (par :int par-name))
   ([par-name init-value] (par :int par-name init-value)))
@@ -327,7 +329,9 @@
 (defn float 
   "Declares a float parameter (quasi a constant) with an optional
   init-value (default nil, meaning no initialisation), and optional
-  name (a string, symbol or keyword, default is a gensym-ed name)."
+  name (a string, symbol or keyword, default is a gensym-ed name).
+
+  Note: use `variable` for creating a float variable."
   ([] (par :float)) 
   ([par-name] (par :float par-name))
   ([par-name init-value] (par :float par-name init-value)))
@@ -335,7 +339,9 @@
 (defn bool 
   "Declares a bool parameter (quasi a constant) with an optional
   init-value (default nil, meaning no initialisation), and optional
-  name (a string, symbol or keyword, default is a gensym-ed name)."
+  name (a string, symbol or keyword, default is a gensym-ed name).
+
+  Note: use `variable` for creating a Boolean variable."
   ([] (par :bool)) 
   ([par-name] (par :bool par-name))
   ([par-name init-value] (par :bool par-name init-value)))
@@ -392,10 +398,24 @@
   optional init-value and optional name (a string, symbol or keyword,
   default is a gensym-ed name). The init value is a range, e.g., `(--
   1 10)` meaning the set contains all integers in the range. The
-  default is nil, meaning no initialisation."
+  default is nil, meaning no initialisation.
+
+  Note: use `variable` for creating a set variable.
+
+  Examples: 
+
+  ; A set of integers with automatically generated name and no specified value
+  (set)
+  ; A named integer set
+  (set \"MySet\")
+  ; A named set of integers with the given range
+  (set \"MySet\" (-- 1 10))
+  ; A named set of integers with the given value
+  (set \"MySet\" #{1 3 5})
+  "
   ([] (set (gensym "Set"))) 
   ([par-name] (set par-name nil))
-  ([par-name init-value] (par "set of int" par-name init-value)))
+  ([par-name init-value] (par "set of int" par-name (apply literal-set init-value))))
 
 (comment
   (int)
@@ -465,7 +485,8 @@
 
 ;; Semi BUG: somewhat questionable: the [dimension] of the set (e.g., "1..10") is temporarily stored as aVar name to make it easily accessible for the array construction. Later the set-of-int is not used at all. Possibly better to completely avoid this potential cause of confusion, i.e., not to use a set for the array construction (or to clean up the internal use of sets here). 
 (defn array   
-  "Declares a one- or multi-dimensional array.
+  "Declares a one- or multi-dimensional array of constant values or  
+  decision variables of various types.
 
   Arguments:
 
@@ -996,6 +1017,8 @@ A where-expression can be added after the generators, which acts as a
     "Declares a decision variable (bool, int, float, or set of int)
   with the given domain, and an optional variable name (string, symbol
   or keyword). 
+
+  Use `array` for creating an array of variables. 
 
   Examples:
 
