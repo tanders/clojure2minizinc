@@ -29,6 +29,7 @@
             [clojure.java.io :as io] ;; only required for testing here
             ;; https://github.com/clojure/math.combinatorics/
             ;; https://clojure.github.io/math.combinatorics/
+            ;; !! Warning: WARNING: #'clojure.core/update replaced by #'clojure.math.combinatorics/update
             [clojure.math.combinatorics :as combi]
             [clojure.string :as str]
             ))
@@ -321,7 +322,7 @@
   init-value (default nil, meaning no initialisation), and optional
   name (a string, symbol or keyword, default is a gensym-ed name).
 
-  Note: use `variable` for creating an integer variable."
+  Note: use [[variable]] for creating an integer variable."
   ([] (par :int)) 
   ([par-name] (par :int par-name))
   ([par-name init-value] (par :int par-name init-value)))
@@ -331,7 +332,7 @@
   init-value (default nil, meaning no initialisation), and optional
   name (a string, symbol or keyword, default is a gensym-ed name).
 
-  Note: use `variable` for creating a float variable."
+  Note: use [[variable]] for creating a float variable."
   ([] (par :float)) 
   ([par-name] (par :float par-name))
   ([par-name init-value] (par :float par-name init-value)))
@@ -341,7 +342,7 @@
   init-value (default nil, meaning no initialisation), and optional
   name (a string, symbol or keyword, default is a gensym-ed name).
 
-  Note: use `variable` for creating a Boolean variable."
+  Note: use [[variable]] for creating a Boolean variable."
   ([] (par :bool)) 
   ([par-name] (par :bool par-name))
   ([par-name init-value] (par :bool par-name init-value)))
@@ -400,7 +401,7 @@
   1 10)` meaning the set contains all integers in the range. The
   default is nil, meaning no initialisation.
 
-  Note: use `variable` for creating a set variable.
+  Note: use [[variable]] for creating a set variable.
 
   Examples: 
 
@@ -1018,7 +1019,7 @@ A where-expression can be added after the generators, which acts as a
   with the given domain, and an optional variable name (string, symbol
   or keyword). 
 
-  Use `array` for creating an array of variables. 
+  Use [[array]] for creating an array of variables. 
 
   Examples:
 
