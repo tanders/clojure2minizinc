@@ -460,27 +460,173 @@
 
   )
 
-(defn- mk-type-inst-string [type-inst]
-  ;; {:pre [(if (vector? type-inst) 
-  ;;          ((first type-inst) #{:var :set :int :float})
+
+(defn- mk-type-inst-string [my-type-inst]
+  "Translates a Clojure type-inst specification into a type-inst string
+ in MiniZinc syntax. `my-type-inst` is either a single specification or 
+a vector of specifications.
+
+  Examples:
+
+  (mk-type-inst-string :bool)
+  ;; ->  \"bool\"
+  (mk-type-inst-string (-- 1 3))
+  ;; ->  \"1..3\"
+  (mk-type-inst-string #{1 3 5})
+  ;; ->  \"{1, 3, 5}\"
+  (mk-type-inst-string [:set (-- 1 3)])
+  ;; ->  \"set of 1..3\"
+  (mk-type-inst-string [:var #{1 3 5}])
+  (mk-type-inst-string [:var :set #{1 3 5}])
+  (mk-type-inst-string [:int #{1 3 6 8}])
+  (mk-type-inst-string [:par :int])
+  (mk-type-inst-string [:var :int])
+  (mk-type-inst-string [:set :float])
+  (mk-type-inst-string [:var :set :int])
+
+  The keyword :of is syntactic sugar for readability, e.g., in set 
+  declarations. The following two type-insts are equivalent.
+
+  (mk-type-inst-string [:var :set :int])
+  (mk-type-inst-string [:var :set :of :int]) 
+
+  The index type of an array first specifies the array’s index set.
+  The type of the contained values is specified with a nexted type-inst.
+
+  (mk-type-inst-string [:array (-- 1 3) [:var :int]])
+  (mk-type-inst-string [:array :int [:var :int]])
+"
+  ;; {:pre [(if (vector? my-type-inst) 
+  ;;          ((first my-type-inst) #{:var :set :int :float})
   ;;          true)]}
-  (if (vector? type-inst)
-    (apply str (interpose " " (map mk-type-inst-string type-inst)))
-    (cond (core/= :var type-inst) "var"
-          (core/= :set type-inst) "set of"        
-          (set? type-inst) (apply literal-set type-inst)
-          :else (name type-inst))))
+  (cond
+    ;; array -- format largely similar to array function args 
+    (core/and (vector? my-type-inst)
+              (core/= :array (first my-type-inst)))
+    (str "array["
+         (let [x (second my-type-inst)]
+           (if (keyword? x)
+             (name x)
+             x))
+         "] of "
+         (mk-type-inst-string (core/nth my-type-inst 2)))
+    ;; composite spec
+    (vector? my-type-inst)
+    (apply str (interpose " " (map mk-type-inst-string my-type-inst)))
+    ;; individual spec
+    :else (cond (core/= :var my-type-inst) "var"
+                (core/= :set my-type-inst) "set of"
+                (core/= :of my-type-inst) "" ;; :of can be inserted optionally for readability
+                (set? my-type-inst) (apply literal-set my-type-inst)
+                (core/= :variable my-type-inst) "var" ;; for consistency with fn variable
+                :else (name my-type-inst))))
+
 
 (comment
   (mk-type-inst-string :bool)
+  ;; ->  "bool"
   (mk-type-inst-string (-- 1 3))
+  ;; ->  "1..3"
   (mk-type-inst-string #{1 3 5})
+  ;; ->  "{1, 3, 5}"
   (mk-type-inst-string [:set (-- 1 3)])
+  ;; ->  "set of 1..3"
+  (mk-type-inst-string [:var #{1 3 5}])
+  ;; ->  
+  (mk-type-inst-string [:var :set #{1 3 5}])
+  ;; ->  
+  (mk-type-inst-string [:int #{1 3 6 8}])
+  ;; ->  
+  (mk-type-inst-string [:par :int])
+  ;; ->  
+  (mk-type-inst-string [:var :int])
+  ;; ->  
+  (mk-type-inst-string [:var :set :of :int])
+  ;; ->  
+  (mk-type-inst-string [:set :float])
+  ;; ->  
+  (mk-type-inst-string [:array (-- 1 3) [:var :int]])
+  ;; ->  
+  (mk-type-inst-string [:array :int [:var :int]])
+  ;; ->  
+
+  (def xx 10)
+  (mk-type-inst-string [:array (-- 1 xx) [:var :int]])
+  
+  )
+
+
+(comment ; previous versions
+
+  (defn- mk-type-inst-string [my-type-inst]
+    "Translates a Clojure type-inst specification into a type-inst string in MiniZinc syntax. `my-type-inst` is either a single specification or a vector of specifications.
+
+Examples:
+
+  (mk-type-inst-string :bool)
+  ;; ->  \"bool\"
+  (mk-type-inst-string (-- 1 3))
+  ;; ->  \"1..3\"
+  (mk-type-inst-string #{1 3 5})
+  ;; ->  \"{1, 3, 5}\"
+  (mk-type-inst-string [:set (-- 1 3)])
+  ;; ->  \"set of 1..3\"
   (mk-type-inst-string [:var #{1 3 5}])
   (mk-type-inst-string [:var :set #{1 3 5}])
-
   (mk-type-inst-string [:int #{1 3 6 8}])
+  (mk-type-inst-string [:par :int])
+  (mk-type-inst-string [:var :int])
+  (mk-type-inst-string [:var :set :of :int])
+  (mk-type-inst-string [:set :float])
+
+Note that the index type of an array is enclosed in a string with the array keyword.
+
+  (mk-type-inst-string '[(:array (-- 1 3)) :of :var :int])
+  (mk-type-inst-string '[(:array :int) :of :var :int])
+
+The keyword :of is optional for readability. 
+"
+    ;; {:pre [(if (vector? my-type-inst) 
+    ;;          ((first my-type-inst) #{:var :set :int :float})
+    ;;          true)]}
+    (if (vector? my-type-inst)
+      (apply str (interpose " " (map mk-type-inst-string my-type-inst)))
+      (cond (core/= :var my-type-inst) "var"
+            ;; array test
+            (clojure.core/and (list? my-type-inst)
+                              ;; argument agains eval: no lexical context
+                              (core/= :array (first my-type-inst)))
+            ;; how to translate arrays
+            (str "array["
+                 (let [x (second my-type-inst)]
+                   (cond (keyword? x) (name x)
+                         (list? x)
+                         ;; BUG: elements in (rest x) not resolved
+                         (apply (resolve (first x)) (rest x))))
+                 "] of")
+            (core/= :set my-type-inst) "set of"
+            (core/= :of my-type-inst) "" ;; :of can be inserted optionally for readability
+            (set? my-type-inst) (apply literal-set my-type-inst)
+            (core/= :variable my-type-inst) "var" ;; for consistency with fn variable
+            :else (name my-type-inst))))
+
+
+  
+  (defn- mk-type-inst-string [type-inst]
+    ;; {:pre [(if (vector? type-inst) 
+    ;;          ((first type-inst) #{:var :set :int :float})
+    ;;          true)]}
+    (if (vector? type-inst)
+      (apply str (interpose " " (map mk-type-inst-string type-inst)))
+      (cond (core/= :var type-inst) "var"
+            (core/and (list? type-inst)
+                      ;; argument agains eval: no lexical context
+                      (core/= :array (first type-inst))) (str "array[" (eval (second type-inst)) "] of")
+            (core/= :set type-inst) "set of"       
+            (set? type-inst) (apply literal-set type-inst)
+            :else (name type-inst))))
   )
+
 
 
 
