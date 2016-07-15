@@ -778,7 +778,8 @@ A where-expression can be added after the generators, which acts as a
     (aggregate [i (-- 1 3)]
       (= (nth a i) 0)
       :set)
-"
+  "
+  {:style/indent [1 [[:defn]] :form]}
   ([generators exp] `(aggregate ~generators ~exp :array)) 
   ([generators exp set-or-array]
      (let [all-var-val-pairs (partition 2 generators)
@@ -821,7 +822,8 @@ A where-expression can be added after the generators, which acts as a
   empty list, forall returns true. 
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(forall [generators*] exp)]}
+  {:forms '[(forall [generators*] exp)]
+   :style/indent [1 [[:defn]] :form]}
   [generators exp]
   `(format "forall(%s)" (aggregate ~generators ~exp)))
 
@@ -858,7 +860,8 @@ A where-expression can be added after the generators, which acts as a
   Binary: exists with list comprehension support.
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(exists [generators*] exp)]}
+  {:forms '[(exists [generators*] exp)]
+   :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'exists x))
   ([generators exp]
   `(format "exists(%s)" (aggregate ~generators ~exp))))
@@ -874,7 +877,8 @@ A where-expression can be added after the generators, which acts as a
   number of aggregated Boolean expressions holds.
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(xorall [generators*] exp)]}
+  {:forms '[(xorall [generators*] exp)]
+   :style/indent [1 [[:defn]] :form]}
   [generators exp]
   `(format "xorall(%s)" (aggregate ~generators ~exp)))
 
@@ -883,7 +887,8 @@ A where-expression can be added after the generators, which acts as a
   of aggregated Boolean expressions holds.
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(iffall [generators*] exp)]}
+  {:forms '[(iffall [generators*] exp)]
+   :style/indent [1 [[:defn]] :form]}
   [generators exp]
   `(format "iffall(%s)" (aggregate ~generators ~exp)))
 
@@ -896,7 +901,8 @@ A where-expression can be added after the generators, which acts as a
   expressions. If aggregated expressions are empty returns 0. 
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(sum [generators*] exp)]}
+  {:forms '[(sum [generators*] exp)]
+   :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'sum x))
   ([generators exp]
      `(format "sum(%s)" (aggregate ~generators ~exp))))
@@ -911,7 +917,8 @@ A where-expression can be added after the generators, which acts as a
   1.
   
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(product [generators*] exp)]}
+  {:forms '[(product [generators*] exp)]
+   :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'product x))
   ([generators exp]
      `(format "product(%s)" (aggregate ~generators ~exp))))
@@ -926,7 +933,8 @@ A where-expression can be added after the generators, which acts as a
   MiniZinc error.
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(min [generators*] exp)]}
+  {:forms '[(min [generators*] exp)]
+   :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'min x))
   ([generators exp]
      `(format "min(%s)" (aggregate ~generators ~exp))))
@@ -941,7 +949,8 @@ A where-expression can be added after the generators, which acts as a
   MiniZinc error.
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(max [generators*] exp)]}
+  {:forms '[(max [generators*] exp)]
+   :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'max x))
   ([generators exp]
      `(format "max(%s)" (aggregate ~generators ~exp))))
