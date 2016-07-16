@@ -481,20 +481,23 @@ constraint x + y != z;
 
 ** Exceptions to the Similarity
 
-   There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure due to certain restrictions of Clojure. The differences between MiniZinc operators, keywords etc. and the corresponding Clojure functions are listed in the table below.
+   There are a few exceptions, where certain MiniZinc operator etc. names cannot be translated into Clojure due to certain restrictions of Clojure. The differences between MiniZinc operators, keywords etc. and the corresponding Clojure functions are listed in the table below. 
 
    | MiniZinc                                           | clojure2minizinc                                   |
    |----------------------------------------------------+----------------------------------------------------|
-   | =var=                                              | =variable=, and special syntax                     |
+   | =var=                                              | =variable= with special syntax                     |
+   | =let=                                              | =local= with special syntax                        |
+   | =if=                                               | =ifte= (if-then-else)                              |
    | =..=                                               | =--=                                               |
    | =/\=                                               | =and=                                              |
    | =\/=                                               | =or=                                               |
    | =array=                                            | special syntax                                     |
-   | list comprehension                                 | =aggregate=, and special syntax                 |
+   | list comprehension                                 | =aggregate= with special syntax                    |
    | aggregation functions:  =forall=, =exists=, =xorall=, =iffall=, =sum=, =product=, =max=, =min= | special syntax                                     |
    | aggregation functions overload unary functions: =exists=, =sum=, =product=, =max=, =min= | unary functions: =exists*=, =sum*=, =product*=, =max*=, =min*= |
-   |                                                    |                                                    |
+   | predicate                                          | special syntax                                     |
    | <50>                                               | <50>                                               |
+   #+TBLFM: $2=ifte= (if-then-else)
 
 
    Several literal Clojure types can be used directly in clojure2minizinc for corresponding literal MiniZinc parameter types. The exception are Clojure strings.
@@ -510,26 +513,19 @@ constraint x + y != z;
    | "my string"                                        | =(string "my string")=                             |
    | <50>                                               | <50>                                               |
 
-
-Two-dimensional MiniZinc arrays can be encoded by nested Clojure vectors. The nested vectors
+   Two-dimensional MiniZinc arrays can be encoded by nested Clojure vectors. The nested vectors
 
 #+begin_src clojure
 [[1.0 2.0] [3.0 4.0]]
 #+end_src
 
-corresponds to the MiniZinc code
+   corresponds to the MiniZinc code
 
 #+BEGIN_SRC minizinc
 [| 1.0, 2.0 | 3.0, 4.0 |]
 #+END_SRC
    
-
-*** TODO Keep this Note Up To Date
-
-    Note also that not all MiniZinc operators, keywords etc. are supported in the early releases of clojure2minizinc yet. For example, the table above will grow once the MiniZinc =let= and =if= are supported (both need different clojure2minizinc names as well). Also, in future versions many binary MiniZinc operators may be n-ary in clojure2minizinc.
-
-    Further, an equivalent for the MiniZinc =output= does not exist, use =output-map= instead.
-    
+   Also, many binary MiniZinc operators are n-ary in clojure2minizinc. Further, an equivalent for the MiniZinc =output= does not exist, use =output-map= instead.
 
 
 * What Makes clojure2minizinc Special?

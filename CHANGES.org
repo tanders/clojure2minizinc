@@ -1,4 +1,16 @@
 
+* Version 0.2.1 (TODO)
+
+  The most important changes are listed below.
+  
+  - Code base :: 
+    - Added predicate definitions (=predicate=)
+    - Added local MiniZinc variables (=local=, corresponds to MiniZinc's =let=)
+    - Added if-then-else expression (=ifte=, corresponds to MiniZinc's =if=)
+
+  For a more detailed change log see the [[https://github.com/tanders/clojure2minizinc/commits/master][git commits]].
+
+
 * Version 0.2.0 (30 Sep 2014)
 
   The most important changes are listed below.
