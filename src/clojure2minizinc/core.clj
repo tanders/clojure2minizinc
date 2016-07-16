@@ -1,9 +1,11 @@
-;; TODO: revise with FlatZinc spec at http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
+;; TODO: revise with meanwhile available MiniZinc spec
+;; OLD TODO: revise with FlatZinc spec at http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
 ;; - ! Add support for search annotations as documented in the spec (but allow for more than given there)
 ;; OK - Document all basic constraints with that spec
 ;; OK - Double-check all param and var declarations are there etc.
 
 
+;; ns-cheatsheet.clj: https://gist.github.com/ghoseb/287710
 (ns clojure2minizinc.core
   "clojure2minizinc provides an interface between MiniZinc and
   Clojure. The clojure2minizinc user models in Clojure constraint
@@ -30,7 +32,9 @@
             ;; https://github.com/clojure/math.combinatorics/
             ;; https://clojure.github.io/math.combinatorics/
             ;; !! Warning: WARNING: #'clojure.core/update replaced by #'clojure.math.combinatorics/update
-            [clojure.math.combinatorics :as combi]
+            ;; Only loading cartesian-product? Warning remains..
+            [clojure.math.combinatorics :refer [cartesian-product] :as combi]
+            ;; [clojure.math.combinatorics :as combi]
             [clojure.string :as str]
             ))
 
@@ -886,6 +890,7 @@ The keyword :of is optional for readability.
 )
 
 
+;; TODO: only use gensymed or auto-gensymed variables in all macros 
 (defmacro aggregate
   "List (array) and set comprehension. Generates a MiniZinc array/set
   containing the possible combinations of locally declared MiniZinc
@@ -2863,7 +2868,8 @@ BUG: this fn is currently far too inflexible."
 
 ;; TODO: 
 ;; - Make the doc more easy to comprehend.
-;; - Consider renaming 
+;; - Consider renaming
+;; !? BUG: Should clj2mnz be really called within def?
 (defmacro def-submodel
   "Abstracts a part of a MiniZinc model as a Clojure function. Such
   submodels can be used as a substitute for MiniZinc predicates and
