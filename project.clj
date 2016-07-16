@@ -23,4 +23,7 @@
           :output-path "doc/reference"
           ;; TODO: update URI for soures 
           :source-uri "https://github.com/tanders/clojure2minizinc/tree/master/"
-          :src-linenum-anchor-prefix "L"})
+          :src-linenum-anchor-prefix "L"}
+  ;; specify in which ns to start by default 
+  :repl-options {:init-ns clojure2minizinc.core}
+  )
