@@ -36,6 +36,7 @@
             [clojure.math.combinatorics :refer [cartesian-product] :as combi]
             ;; [clojure.math.combinatorics :as combi]
             [clojure.string :as str]
+            ;; [clojure.inspector :as inspector]
             ))
 
 ;; (require '[clojure2minizinc.core :as mzn])
@@ -138,6 +139,7 @@
 
 ;; NOTE: ->aVar and map->aVar are created automatically, and it is included in the doc, because I cannot set ^:no-doc to it 
 (defrecord ^:no-doc aVar [name mzn-string])
+
 ;; NOTE: I would prefer making this a private function (and also aVar? make-anArray etc.), but it is required to be public (because used in macros?) 
 (defn ^:no-doc make-aVar 
   "[Aux function] Returns an aVar record."
@@ -1119,46 +1121,6 @@ A where-expression can be added after the generators, which acts as a
 
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
-;;; Conditional Expressions
-;;;
-
-(comment
-  ;; Tutorial p. 26
-  ;; TODO: define `if`, but under name `TODO` if* ??
-  ;; (if is a special form)
-
-  ;; MiniZinc if should have same syntax as Clojure if
-  
-  )
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
-;;; Local Variables
-;;;
-
-(comment
-  ;; Tutorial p. 49
-
-  ;; TODO: define `let`, but under name `local`
-  ;; (let is a special form)
-
-  ;; `local` should be usable like Clojure's if, but automatically assign the same names as the Clojure symbols/locals to MiniZinc params and variables
-
-;; var s..e: x;
-;; let {int: l = s div 2, int: u = e div 2, var l .. u: y} in x = 2*y
-
-
-  ;; constraint let { var int: s = x1 + x2 + x3 + x4 } in l <= s /\ s <= u;
-  ;; 
-  ;; BUG: variable def changed: skipped var name and added init value
-  (local [s (variable :int (+ x1x2 x3 x4))]
-         (<= l s u))  ; BUG: <= only binary 
-
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -3020,11 +2982,16 @@ BUG: this fn is currently far too inflexible."
 
 
 
-;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; TODO: define MiniZinc `let` as `local`
+;;; Local Variables
 ;;;
 
+;; Tutorial p. 49
+;;
+;; var s..e: x;
+;; let {int: l = s div 2, int: u = e div 2, var l .. u: y} in x = 2*y
 
 (defn- mk-decl-str [binding]
   (let [;; destructure binding#
@@ -3040,6 +3007,7 @@ BUG: this fn is currently far too inflexible."
   (mk-decl-str [[:int] z 1])
   )
 
+;; macro name chosen because `let` is a special form
 (defmacro local
   "Defines local MiniZinc variables. Similar to `let` in Clojure plus required
   type-ints for variables.
@@ -3090,6 +3058,75 @@ BUG: this fn is currently far too inflexible."
 
   )
 
+(comment
 
+  ;; Alternative `local` syntax
+  
+  ;; constraint let { var int: s = x1 + x2 + x3 + x4 } in l <= s /\ s <= u;
+  ;; 
+  ;; BUG: variable def changed: skipped var name and added init value
+  (local [s (variable :int (+ x1x2 x3 x4))]
+         (<= l s u))  ; BUG: <= only binary 
+
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Conditional Expressions
+;;;
+
+;; Tutorial p. 26
+
+
+;; fn name chosen because `if` is a special form
+(defn ifte
+  "MiniZinc if-then-else expression.  
+
+  Example: 
+
+  (ifte (< x y) x y)
+
+  Instead of elseif simply nest ifte-expressions.
+
+  (ifte (< x 0) -1 (ifte (> x 0) 1 0))
+
+  The type-inst of the `test` expression must be par bool or var bool. 
+  The `then` and `else` expressions must have the same type-inst, or 
+  be coercible to the same type-inst, which is also the type-inst of 
+  the whole expression.
+
+  If the `test` expression is var bool then the type-inst of the `then` 
+  and `else` expressions must be varifiable.
+
+  If the `test` expression is par boool then evaluation of if-then-else
+  expressions is lazy—the condition is evaluated, and then only one of 
+  the `then` and `else` branches are evaluated, depending on whether the
+  condition succeeded or failed. This is not the case if it is var bool.
+  "
+  {:style/indent [1 [[:defn]] :form]}
+  [test then else]
+  (str "if " (name-or-val test)
+       " then " (name-or-val then)
+       " else " (name-or-val else)
+       " endif"))
+
+
+(comment
+
+  (print 
+   (clj2mnz 
+    (let [x (variable (-- -1 1)) 
+          y (variable (-- -1 1))]
+      (constraint (= 0
+                     (ifte (< x y) x y))))))
+
+  ;; variant quasi with elseif: nested ifs 
+  (ifte (< x 0)
+    -1
+    (ifte (> x 0)
+      1
+      0))
+  
+  )
 
 
