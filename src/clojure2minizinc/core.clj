@@ -2954,8 +2954,9 @@ BUG: this fn is currently far too inflexible."
                                                        '~partitioned-args)))]
        ;; Constraint function
        (defn ~name ~doc-string ~args
-         ;; !! BUG: should args resolve to generated arg names
-         (str '~name "(" (str/join ", " '~args-str) ")"))
+         (str '~name "("
+              (str/join ", " (map (fn [x#] (if (aVar? x#) (:name x#) x#)) ~args))
+              ")"))
        ;; Predicate code
        (tell-store! 
         (str "predicate " '~name "(" mzn-args-string# ") =\n" 
@@ -2970,14 +2971,13 @@ BUG: this fn is currently far too inflexible."
   
   (print
    (clj2mnz
-    (predicate my_smaller_than
+    (predicate my_less_than
       [[:var :int] x
        [:var :int] y]
       (< x y))
     (let [x (variable (-- -1 1)) 
           y (variable (-- -1 1))]
-      ;; !! BUG: should args resolve to generated arg names
-      (constraint (my_smaller_than x y))
+      (constraint (my_less_than x 2))
       (solve :satisfy)
       (output-map {:x x :y y}))))
 
@@ -2993,8 +2993,7 @@ BUG: this fn is currently far too inflexible."
     (predicate my_smaller_than
       [:float x
        :int y]
-      (< x y))))
-
+      (< x y)))
 
 
 
@@ -3010,4 +3009,17 @@ BUG: this fn is currently far too inflexible."
              (!= (nth y i) (nth y j)))))
 
 )
+
+
+
+;;;;
+;;;
+;;; TODO: define MiniZinc `let` as `local`
+;;;
+
+
+
+
+
+
 
