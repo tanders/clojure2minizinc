@@ -2934,7 +2934,7 @@ BUG: this fn is currently far too inflexible."
 
   [:array (-- 1 3) [:var :int]]
   [:array :int [:var :int]]"
-  {:forms '[[name doc-string? args-with-type-insts body*]]
+  {:forms '[(predicate name doc-string? args-with-type-insts body*)]
    :style/indent [1 [[:defn]] :form]}
   [& all-args]
   (let [;; access arguments from all-args
@@ -2985,18 +2985,18 @@ BUG: this fn is currently far too inflexible."
 
 
   (clj2mnz 
-   (predicate my_smaller_than
-     "This is a test"
+   (predicate my_less_than
+     "This is a test doc-string"
      [[:var :int] x
       [:var :int] y]
      (< x y))) 
-
+  
   (clj2mnz 
-    (predicate my_smaller_than
-      [:float x
-       :int y]
-      (< x y)))
-
+   (predicate my_less_than
+     [:float x
+      :int y]
+     (< x y)))
+  
 
 
   (predicate alldifferent_except_x
