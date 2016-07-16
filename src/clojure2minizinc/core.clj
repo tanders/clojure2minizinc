@@ -2885,3 +2885,129 @@ BUG: this fn is currently far too inflexible."
        (clj2mnz 
         (tell-store! 
          ~@body)))))
+
+
+
+(defmacro predicate
+   "A MiniZinc predicate: defines a Clojure function that can
+  be called as a constraint, and generates the necessary MiniZinc code. 
+
+  `args-with-type-insts` is quasi a vector of typed arguments consisting 
+  of pairs of a type-insts and the argument. Each type-inst is  either a 
+  single specification or a vector of specifications.
+
+  `name` is the name of the resulting Clojure function and MiniZinc 
+  predicate, and `body` is expressions that the predicate executes. 
+
+
+  Example of a predicate definition and its call:
+
+  (predicate my_less_than
+   \"Less than constraint\"
+    [[:var :int] x
+     [:var :int] y]
+    (< x y))
+  (constraint (my_less_than a b))
+
+
+  Type-inst examples:
+
+  :bool
+  (-- 1 3)
+  #{1 3 5}
+  [:var :int]
+  [:var #{1 3 5}]
+  [:set :int]
+  [:set (-- 1 3)]
+  [:var :set :int]
+
+  The keyword :of is syntactic sugar for readability, e.g., in set 
+  declarations. The following two type-insts are equivalent.
+
+  [:var :set :int]
+  [:var :set :of :int]
+
+  The index type of an array first specifies the array’s index set.
+  The type of the contained values is specified with a nexted type-inst.
+
+  [:array (-- 1 3) [:var :int]]
+  [:array :int [:var :int]]"
+  {:forms '[[name doc-string? args-with-type-insts body*]]
+   :style/indent [1 [[:defn]] :form]}
+  [& all-args]
+  (let [;; access arguments from all-args
+        name (first all-args)
+        doc-string? (core/string? (second all-args))
+        doc-string (if doc-string? (second all-args) "Not documented.")
+        all-args (if doc-string? (next all-args) all-args)
+        args-with-type-insts (second all-args)
+        body (next (next all-args))
+        ;; partition only once
+        partitioned-args (partition 2 args-with-type-insts)
+        ;; Vector of arguments without type-insts
+        args (apply vector (map #'second partitioned-args))
+        ;; Argument strings: avoid evaluation of args in body of predicate 
+        args-str (map str args)]
+    `(let [;; Args in mzn syntax
+           mzn-args-string# (apply str (interpose ", " (map (fn [[type-inst# my-var#]]
+                                                         (str (mk-type-inst-string type-inst#) ": " my-var#))
+                                                       '~partitioned-args)))]
+       ;; Constraint function
+       (defn ~name ~doc-string ~args
+         ;; !! BUG: should args resolve to generated arg names
+         (str '~name "(" (str/join ", " '~args-str) ")"))
+       ;; Predicate code
+       (tell-store! 
+        (str "predicate " '~name "(" mzn-args-string# ") =\n" 
+             "  " (apply (fn ~args ~@body) '~args-str)
+             ";"))
+       ;; Return name of predicate
+       '~name)))
+
+
+
+(comment
+  
+  (print
+   (clj2mnz
+    (predicate my_smaller_than
+      [[:var :int] x
+       [:var :int] y]
+      (< x y))
+    (let [x (variable (-- -1 1)) 
+          y (variable (-- -1 1))]
+      ;; !! BUG: should args resolve to generated arg names
+      (constraint (my_smaller_than x y))
+      (solve :satisfy)
+      (output-map {:x x :y y}))))
+
+
+  (clj2mnz 
+   (predicate my_smaller_than
+     "This is a test"
+     [[:var :int] x
+      [:var :int] y]
+     (< x y))) 
+
+  (clj2mnz 
+    (predicate my_smaller_than
+      [:float x
+       :int y]
+      (< x y))))
+
+
+
+
+  (predicate alldifferent_except_x
+             ;; Array declaration more similar to args of function array, but now all expressed with keywords
+             [[:var :int] x
+              [:array :int [:var :int]] y]
+    (forall [i (index_set y)
+                j (index_set y)
+                :where (!= i j)]
+      (-> (and (!= (nth y i) x)
+                     (!= (nth y j) x))
+             (!= (nth y i) (nth y j)))))
+
+)
+
