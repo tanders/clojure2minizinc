@@ -145,16 +145,24 @@
    (make-aVar name nil))
   ([name mzn-string]
    (aVar. name mzn-string)))
+
 (defn ^:no-doc aVar? 
   "Returns true if x is aVar record."
   [x]
   (core/= (type x) clojure2minizinc.core.aVar))
+
+(defn  ^:no-doc name-or-val
+  "If arg is aVar its name is returned, otherwise x."
+  [x]
+  (if (aVar? x) (:name x) x))
 
 (comment
   (def myVar (make-aVar 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
   (:name myVar)
   (:mzn-string myVar)
   (aVar? myVar)
+
+  
 
   (map->aVar {:name 'test :mzn-string "hi there"})
   (->aVar 'test "hi there")
@@ -2684,9 +2692,7 @@ BUG: this fn is currently far too inflexible."
              {:x x :y y})
 
 
-  (walk/walk #(if (aVar? %) 
-                (:name %)
-                %)
+  (walk/walk #(name-or-val %)
              identity
              {:x x :y y})
   )
@@ -2957,7 +2963,7 @@ BUG: this fn is currently far too inflexible."
        ;; Constraint function
        (defn ~name ~doc-string ~args
          (str '~name "("
-              (str/join ", " (map (fn [x#] (if (aVar? x#) (:name x#) x#)) ~args))
+              (str/join ", " (map name-or-val ~args))
               ")"))
        ;; Predicate code
        (tell-store! 
@@ -3067,8 +3073,7 @@ BUG: this fn is currently far too inflexible."
             (str/join ", " (map mk-decl-str ~bindings-vec))
             "} in\n  "
             ;; body
-            (apply (fn ~args ~@body)
-                   (map (fn [x#] (if (aVar? x#) (:name x#) x#)) aVars#)))
+            (apply (fn ~args ~@body) (map name-or-val aVars#)))
        )))
 
 
