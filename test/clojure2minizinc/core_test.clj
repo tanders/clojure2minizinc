@@ -1,11 +1,15 @@
 (ns clojure2minizinc.core-test
+  ;; Doc for clojure.test: http://clojure.github.io/clojure/clojure.test-api.html
   (:require [clojure.test :refer :all]
             [clojure2minizinc.core :refer :all]
             [clojure.java.shell :as shell]))
 
 
-;; Doc for clojure.test: http://clojure.github.io/clojure/clojure.test-api.html
 
+
+
+(comment 
+;; BUG: function names outdated, I changed _int into int in its namespace, e.g., mz/int
 
 (deftest parameter-declarations
   (testing "Integer"
@@ -47,6 +51,7 @@
     (is (= (:mzn-string (_var (_dom 1 3) 'x)) "var 1..3: x;"))))
 
 
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -89,4 +94,7 @@ This is another line
 
   
   )
+
+
+
 
