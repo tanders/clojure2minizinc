@@ -141,8 +141,10 @@
 ;; NOTE: I would prefer making this a private function (and also aVar? make-anArray etc.), but it is required to be public (because used in macros?) 
 (defn ^:no-doc make-aVar 
   "[Aux function] Returns an aVar record."
-  [name mzn-string]
-  (aVar. name mzn-string))
+  ([name]
+   (make-aVar name nil))
+  ([name mzn-string]
+   (aVar. name mzn-string)))
 (defn ^:no-doc aVar? 
   "Returns true if x is aVar record."
   [x]
@@ -3018,7 +3020,70 @@ BUG: this fn is currently far too inflexible."
 ;;;
 
 
+(defn- mk-decl-str [binding]
+  (let [;; destructure binding#
+        [type-inst name init-value] binding
+        ;; declaration without initialisation 
+        var-decl (str (mk-type-inst-string type-inst) ": " name)
+        ;; optional initialisation
+        init-str (if init-value (str " = " init-value) "")]
+    (str var-decl init-str)))
 
+(comment
+  (mk-decl-str [[:var (-- -1 1)] x])
+  (mk-decl-str [[:int] z 1])
+  )
+
+(defmacro local
+  "Defines local MiniZinc variables. Similar to `let` in Clojure plus required
+  type-ints for variables.
+
+  `bindings*` is a vector of variable declarations; each is a list consisting 
+  of a type-inst, the variable name, and an optional initialisation value.
+
+  Example:
+
+  (local [([:var (-- 0 10)] x)
+          (:int y 1)]
+    (constraint (> x y)))
+
+  See [[predicate]] for type-inst examples."
+  {:forms '[(local [bindings*] exprs*)]
+   :style/indent [1 [[:defn]] :form]}
+  [bindings & body]
+  (let [;; vector of arguments without type-insts or initialisation
+        args (apply vector (map second bindings))
+        ;; bindings where each binding is wrapped in vector, not list
+        bindings-vec (apply vector (map (fn [binding]
+                                          ;; turn var decl into vector and "stringify"
+                                          ;; var name to avoid evaluation
+                                          (assoc (apply vector binding)
+                                                 1 ;; var name at 2nd pos.
+                                                 (str (second binding))))
+                                        bindings))]
+    `(let [;; plain aVar for each variable, without any mzn string
+           aVars# (map make-aVar '~args)]
+       (str "let {"
+            (str/join ", " (map mk-decl-str ~bindings-vec))
+            "} in\n  "
+            ;; body
+            (apply (fn ~args ~@body)
+                   (map (fn [x#] (if (aVar? x#) (:name x#) x#)) aVars#)))
+       )))
+
+
+(comment
+
+  (local [([:var (-- 0 10)] x)
+          (:int y 1)]
+    (constraint (> x y)))
+
+  (local [([:var (-- -1 1)] x)
+          ([:var #{1 3 5}] y)
+          ([:int] z 1)]
+    (constraint (+ x y z)))
+
+  )
 
 
 
