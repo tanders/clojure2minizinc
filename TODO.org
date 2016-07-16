@@ -90,14 +90,33 @@
 * DONE Simplify design: records only for decision variables
   CLOSED: [2014-05-17 Sat 14:20]
 
+* Allow debugging of resulting code
+  
+** Somehow translate line of code numbers of resulting *.mzn file into code line in original Clojure file
+
+   Each function definition in Clojure has its file, line etc. saved as meta data, e.g., 
+
+   (meta #'+)
+  
+   ; -> {:added "1.2", :ns #namespace[clojure.core], :name +, :file "clojure/core.clj", :inline-arities #function[clojure.core/>1?], :column 1, :line 965, :arglists ([] [x] [x y] [x y & more]), :doc "Returns the sum of nums. (+) returns 0. Does not auto-promote\n  longs, will throw on overflow. See also: +'", :inline #function[clojure.core/nary-inline/fn--4494]}
+
+   
+   If I would represent all mzn strings internally (again?) by a map that stores such information, then it should be possible to translate mzn line numbers into the corresponding cjr2mzn line numbers, at least for those that are created/applied by function calls. 
+   However, how to resolve the location of all the other code, e.g., (mz/-- 1 n) does call a function, but I am interested in the source code location of the function call, not of the function here...
+
+
+
 * Add parameters (plain integers etc)
+
 
 * Extend interface for minizinc 
   
   - Additional solver args
   - Try calling other solvers (Gecode...)
 
+
 * Add set domain
+
 
 * Add constraints
 
@@ -109,3 +128,4 @@
 * Add Visualizing MiniZinc models with CP-Viz
 
   See http://www.minizinc.org/downloads/doc-1.6/mzn-viz.pdf
+
