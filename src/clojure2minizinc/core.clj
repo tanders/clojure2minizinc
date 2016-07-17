@@ -2863,7 +2863,7 @@ BUG: this fn is currently far too inflexible."
   be called as a constraint, and generates the necessary MiniZinc code. 
 
   `args-with-type-insts` is quasi a vector of typed arguments consisting 
-  of pairs of a type-insts and the argument. Each type-inst is  either a 
+  of pairs of the variable name and a type-inst. Each type-inst is either a 
   single specification or a vector of specifications.
 
   `name` is the name of the resulting Clojure function and MiniZinc 
@@ -2874,8 +2874,8 @@ BUG: this fn is currently far too inflexible."
 
   (predicate my_less_than
    \"Less than constraint\"
-    [[:var :int] x
-     [:var :int] y]
+    [x [:var :int]
+     y [:var :int]]
     (< x y))
   (constraint (my_less_than a b))
 
@@ -2915,11 +2915,11 @@ BUG: this fn is currently far too inflexible."
         ;; partition only once
         partitioned-args (partition 2 args-with-type-insts)
         ;; Vector of arguments without type-insts
-        args (apply vector (map #'second partitioned-args))
+        args (apply vector (map #'first partitioned-args))
         ;; Argument strings: avoid evaluation of args in body of predicate 
         args-str (map str args)]
     `(let [;; Args in mzn syntax
-           mzn-args-string# (apply str (interpose ", " (map (fn [[type-inst# my-var#]]
+           mzn-args-string# (apply str (interpose ", " (map (fn [[my-var# type-inst#]]
                                                          (str (mk-type-inst-string type-inst#) ": " my-var#))
                                                        '~partitioned-args)))]
        ;; Constraint function
@@ -2942,8 +2942,8 @@ BUG: this fn is currently far too inflexible."
   (print
    (clj2mnz
     (predicate my_less_than
-      [[:var :int] x
-       [:var :int] y]
+      [x [:var :int]
+       y [:var :int]]
       (< x y))
     (let [x (variable (-- -1 1)) 
           y (variable (-- -1 1))]
@@ -2955,22 +2955,21 @@ BUG: this fn is currently far too inflexible."
   (clj2mnz 
    (predicate my_less_than
      "This is a test doc-string"
-     [[:var :int] x
-      [:var :int] y]
+     [x [:var :int]
+      y [:var :int]]
      (< x y))) 
   
   (clj2mnz 
    (predicate my_less_than
-     [:float x
-      :int y]
+     [x :float
+      y :int]
      (< x y)))
-  
 
 
   (predicate alldifferent_except_x
              ;; Array declaration more similar to args of function array, but now all expressed with keywords
-             [[:var :int] x
-              [:array :int [:var :int]] y]
+             [x [:var :int]
+              y [:array :int [:var :int]]]
     (forall [i (index_set y)
                 j (index_set y)
                 :where (!= i j)]
@@ -2995,7 +2994,7 @@ BUG: this fn is currently far too inflexible."
 
 (defn- mk-decl-str [binding]
   (let [;; destructure binding#
-        [type-inst name init-value] binding
+        [name type-inst init-value] binding
         ;; declaration without initialisation 
         var-decl (str (mk-type-inst-string type-inst) ": " name)
         ;; optional initialisation
@@ -3003,22 +3002,23 @@ BUG: this fn is currently far too inflexible."
     (str var-decl init-str)))
 
 (comment
-  (mk-decl-str [[:var (-- -1 1)] x])
-  (mk-decl-str [[:int] z 1])
+  (mk-decl-str ['x [:var (-- -1 1)]])
+  (mk-decl-str ['z [:int] 1])
   )
 
+;; TODO: consider putting var name first -- if so, then perhaps also at `predicate`
 ;; macro name chosen because `let` is a special form
 (defmacro local
   "Defines local MiniZinc variables. Similar to `let` in Clojure plus required
   type-ints for variables.
 
   `bindings*` is a vector of variable declarations; each is a list consisting 
-  of a type-inst, the variable name, and an optional initialisation value.
+  of the variable name, a type-inst, and optionally an initialisation value.
 
   Example:
 
-  (local [([:var (-- 0 10)] x)
-          (:int y 1)]
+  (local [(x [:var (-- 0 10)])
+          (y :int 1)]
     (constraint (> x y)))
 
   See [[predicate]] for type-inst examples."
@@ -3026,14 +3026,14 @@ BUG: this fn is currently far too inflexible."
    :style/indent [1 [[:defn]] :form]}
   [bindings & body]
   (let [;; vector of arguments without type-insts or initialisation
-        args (apply vector (map second bindings))
+        args (apply vector (map first bindings))
         ;; bindings where each binding is wrapped in vector, not list
         bindings-vec (apply vector (map (fn [binding]
                                           ;; turn var decl into vector and "stringify"
                                           ;; var name to avoid evaluation
                                           (assoc (apply vector binding)
-                                                 1 ;; var name at 2nd pos.
-                                                 (str (second binding))))
+                                                 0 ;; var name at 1st pos.
+                                                 (str (first binding))))
                                         bindings))]
     `(let [;; plain aVar for each variable, without any mzn string
            aVars# (map make-aVar '~args)]
@@ -3047,15 +3047,16 @@ BUG: this fn is currently far too inflexible."
 
 (comment
 
-  (local [([:var (-- 0 10)] x)
-          (:int y 1)]
+  (local [(x [:var (-- 0 10)])
+          (y :int 1)]
     (constraint (> x y)))
 
-  (local [([:var (-- -1 1)] x)
-          ([:var #{1 3 5}] y)
-          ([:int] z 1)]
+  (local [(x [:var (-- -1 1)])
+          (y [:var #{1 3 5}])
+          (z [:int] 1)]
     (constraint (+ x y z)))
 
+  
   )
 
 (comment
