@@ -479,6 +479,7 @@
 
 (defn- mk-type-inst-string [my-type-inst]
   "Translates a Clojure type-inst specification into a type-inst string
+(defn ^:no-doc mk-type-inst-string [my-type-inst]
  in MiniZinc syntax. `my-type-inst` is either a single specification or 
 a vector of specifications.
 
