@@ -46,9 +46,7 @@
 ;;;
 
 ;; Path to shell apps
-;; (def *mzn2fzn* "Path to the mzn2fzn executable" 
-;;   "/Applications/minizinc-1.6/bin/mzn2fzn")
-;; TODO: Find out -- use def or defvar? And does def support a doc string?
+;; (def *mzn2fzn* "Path to the mzn2fzn executable" "/Applications/minizinc-1.6/bin/mzn2fzn")
 (def ^:dynamic *fd-solver* "Path to default constraint solver for finite domain (integers)" 
   "minizinc")
 
@@ -477,9 +475,9 @@
   )
 
 
-(defn- mk-type-inst-string [my-type-inst]
-  "Translates a Clojure type-inst specification into a type-inst string
+;; Must be public, because it is called by macro predicate
 (defn ^:no-doc mk-type-inst-string [my-type-inst]
+  "[Aux function] Translates a Clojure type-inst specification into a type-inst string
  in MiniZinc syntax. `my-type-inst` is either a single specification or 
 a vector of specifications.
 
@@ -986,7 +984,8 @@ A where-expression can be added after the generators, which acts as a
   empty list, forall returns true. 
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(forall [generators*] exp)]
+  {; :forms '[(forall [generators*] exp)]
+   :arglists '([[generators*] exp])
    :style/indent [1 [[:defn]] :form]}
   [generators exp]
   `(format "forall(%s)" (aggregate ~generators ~exp)))
@@ -1023,12 +1022,17 @@ A where-expression can be added after the generators, which acts as a
 
   Binary: exists with list comprehension support.
 
+  Example:
+  (exists [i (-- 1 3)] (= (nth a i) 0))
+
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(exists [generators*] exp)]
+  {:arglists '([[generators*] exp]
+               [exp])
+   ;; :forms '[(exists [generators*]? exp)]   
    :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'exists x))
   ([generators exp]
-  `(format "exists(%s)" (aggregate ~generators ~exp))))
+   `(format "exists(%s)" (aggregate ~generators ~exp))))
 
 (comment
   (def a (array (-- 1 10) :int 'a))
@@ -1041,7 +1045,8 @@ A where-expression can be added after the generators, which acts as a
   number of aggregated Boolean expressions holds.
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(xorall [generators*] exp)]
+  {; :forms '[(xorall [generators*] exp)]
+   :arglists '([[generators*] exp])
    :style/indent [1 [[:defn]] :form]}
   [generators exp]
   `(format "xorall(%s)" (aggregate ~generators ~exp)))
@@ -1051,7 +1056,8 @@ A where-expression can be added after the generators, which acts as a
   of aggregated Boolean expressions holds.
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(iffall [generators*] exp)]
+  {; :forms '[(iffall [generators*] exp)]
+   :arglists '([[generators*] exp])
    :style/indent [1 [[:defn]] :form]}
   [generators exp]
   `(format "iffall(%s)" (aggregate ~generators ~exp)))
@@ -1065,7 +1071,9 @@ A where-expression can be added after the generators, which acts as a
   expressions. If aggregated expressions are empty returns 0. 
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(sum [generators*] exp)]
+  {; :forms '[(sum [generators*] exp)]
+   :arglists '([[generators*] exp]
+               [exp])
    :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'sum x))
   ([generators exp]
@@ -1081,7 +1089,9 @@ A where-expression can be added after the generators, which acts as a
   1.
   
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(product [generators*] exp)]
+  {; :forms '[(product [generators*] exp)]
+   :arglists '([[generators*] exp]
+               [exp])
    :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'product x))
   ([generators exp]
@@ -1097,7 +1107,9 @@ A where-expression can be added after the generators, which acts as a
   MiniZinc error.
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(min [generators*] exp)]
+  {; :forms '[(min [generators*] exp)]
+   :arglists '([[generators*] exp]
+               [exp])
    :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'min x))
   ([generators exp]
@@ -1113,7 +1125,9 @@ A where-expression can be added after the generators, which acts as a
   MiniZinc error.
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {:forms '[(max [generators*] exp)]
+  {; :forms '[(max [generators*] exp)]
+   :arglists '([[generators*] exp]
+               [exp])
    :style/indent [1 [[:defn]] :form]}
   ([x] (call-fn 'max x))
   ([generators exp]
