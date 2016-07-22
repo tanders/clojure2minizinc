@@ -4,10 +4,9 @@
 ;; OK - Document all basic constraints with that spec
 ;; OK - Double-check all param and var declarations are there etc.
 
-
 ;; ns-cheatsheet.clj: https://gist.github.com/ghoseb/287710
 (ns clojure2minizinc.core
-  "clojure2minizinc provides an interface between MiniZinc and
+  "Clojure2minizinc provides an interface between MiniZinc and
   Clojure. The clojure2minizinc user models in Clojure constraint
   satisfaction or optimisation problems over Boolean, integer, real
   number, and/or set variables. clojure2minizinc translates them into
@@ -21,6 +20,9 @@
                             string?
                             count range sort]) 
   (:require [clojure.core :as core]
+            [clojure.spec :as spec]
+            [clojure.spec.test :as spectest]
+            ;; [clojure.spec.gen :as gen]
             ;; TODO: consider replacing with org.clojars.hozumi/clj-commons-exec, see Clojure Cookbook
             [clojure.java.shell :as shell]
             ;; http://clojuredocs.org/clojure_core/1.3.0/clojure.pprint
@@ -984,7 +986,7 @@ A where-expression can be added after the generators, which acts as a
   empty list, forall returns true. 
 
   See [[aggregate]] for list comprehension syntax and examples."
-  {; :forms '[(forall [generators*] exp)]
+  {;; :forms '[(forall [generators*] exp)]
    :arglists '([[generators*] exp])
    :style/indent [1 [[:defn]] :form]}
   [generators exp]
@@ -2945,15 +2947,24 @@ BUG: this fn is currently far too inflexible."
        ;; Predicate code
        (tell-store! 
         (str "predicate " '~name "(" mzn-args-string# ") =\n" 
-             "  " (apply (fn ~args ~@body) '~args-str)
+             "  " (apply (fn ~args (str/join "\n  " (list ~@body))) '~args-str)
              ";"))
        ;; Return name of predicate
        '~name)))
 
+;; !? TODO: add type-inst spec in :bindings, once that is working
+(spec/def ::predicate (spec/cat :name symbol?
+                                :doc-string (spec/? core/string?)
+                                :bindings (spec/spec (spec/+ (spec/cat :var symbol? :type-inst any?)))
+                                :body (spec/+ any?)))
+(spec/fdef predicate :args ::predicate)
+(spectest/instrument `predicate)
+;; (spectest/unstrument `predicate)
+
 
 
 (comment
-  
+
   (print
    (clj2mnz
     (predicate my_less_than
@@ -2966,13 +2977,17 @@ BUG: this fn is currently far too inflexible."
       (solve :satisfy)
       (output-map {:x x :y y}))))
 
+  ;; predicate body with more than one expr
+  (print
+   (clj2mnz 
+    (predicate my_less_than
+      "This is a test doc-string"
+      [x [:var :int]
+       y [:var :int]]
+      (< x y)
+      (= x 1))
+    (constraint (my_less_than 1 2)))) 
 
-  (clj2mnz 
-   (predicate my_less_than
-     "This is a test doc-string"
-     [x [:var :int]
-      y [:var :int]]
-     (< x y))) 
   
   (clj2mnz 
    (predicate my_less_than
@@ -3007,7 +3022,11 @@ BUG: this fn is currently far too inflexible."
 ;; var s..e: x;
 ;; let {int: l = s div 2, int: u = e div 2, var l .. u: y} in x = 2*y
 
-(defn- mk-decl-str [binding]
+
+;; Must be public, because it is called by macro local
+(defn ^:no-doc mk-decl-str
+  "[Aux fn] def for macro `local`."
+  [binding]
   (let [;; destructure binding#
         [name type-inst init-value] binding
         ;; declaration without initialisation 
@@ -3021,7 +3040,8 @@ BUG: this fn is currently far too inflexible."
   (mk-decl-str ['z [:int] 1])
   )
 
-;; TODO: consider putting var name first -- if so, then perhaps also at `predicate`
+
+;; TODO: Consider adding spec for checking args. E.g., `local` is similar to `let` and it is easy to forget the surrounding ()
 ;; macro name chosen because `let` is a special form
 (defmacro local
   "Defines local MiniZinc variables. Similar to `let` in Clojure plus required
@@ -3052,12 +3072,24 @@ BUG: this fn is currently far too inflexible."
                                         bindings))]
     `(let [;; plain aVar for each variable, without any mzn string
            aVars# (map make-aVar '~args)]
-       (str "let {"
-            (str/join ", " (map mk-decl-str ~bindings-vec))
-            "} in\n  "
-            ;; body
-            (apply (fn ~args ~@body) (map name-or-val aVars#)))
+       ;; let header
+       (tell-store!
+        (str "let {"
+             (str/join ", " (map mk-decl-str ~bindings-vec))
+             "} in\n  "))
+       ;; let body -- store told internally (e.g., in `constraint` calls)
+       (apply (fn ~args ~@body) (map name-or-val aVars#))
        )))
+
+
+;; !? TODO: add type-inst spec, once that is working
+(spec/def ::local (spec/cat :bindings (spec/coll-of (spec/cat :var symbol? :type-inst any? :initialsation (spec/? any?))
+                                                   :kind vector?)
+                           :body (spec/+ any?)))
+(spec/fdef local :args ::local)
+(spectest/instrument `local)
+;; (spectest/unstrument `local)
+
 
 
 (comment
@@ -3071,7 +3103,27 @@ BUG: this fn is currently far too inflexible."
           (z [:int] 1)]
     (constraint (+ x y z)))
 
-  
+  ;; multiple constraints
+  (clj2mnz
+   (local [(x [:var (-- -1 1)])
+           (y [:var #{1 3 5}])
+           (z [:int] 1)]
+     (constraint (+ x y z))
+     (constraint (< x y))))
+
+  ;; Spec error without surrounding () of each binding
+  (local [y :int 1]
+    y)
+  (local ([y :int 1])
+    y)
+
+  (spec/conform ::local
+                `[[(x [:var (-- -1 1)])
+                   (y [:var #{1 3 5}])
+                   (z [:int] 1)]
+                  (constraint (+ x y z))
+                  (constraint (< x y))])
+      
   )
 
 (comment
