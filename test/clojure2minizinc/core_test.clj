@@ -1,8 +1,10 @@
 (ns clojure2minizinc.core-test
   ;; Doc for clojure.test: http://clojure.github.io/clojure/clojure.test-api.html
-  (:require [clojure.test :refer :all]
+  (:require [clojure.core :as core]
+            [clojure.test :refer :all]
             [clojure2minizinc.core :refer :all]
-            [clojure.java.shell :as shell]))
+            [clojure.java.shell :as shell]
+            [clojure.spec :as spec]))
 
 
 
@@ -97,4 +99,52 @@ This is another line
 
 
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; TMP: Testing clojure.spec
+;;;
+
+(spec/conform even? 1001)
+
+(spec/valid? even? 10)
+
+(spec/valid? #(core/> % 5) 10)
+
+(spec/valid? #(core/> % 5) 0)
+
+
+
+(spec/valid? #{:club :diamond :heart :spade} :club)
+(spec/valid? #{:club :diamond :heart :spade} 42)
+
+(spec/def ::suit #{:club :diamond :heart :spade})
+
+(spec/valid? ::suit :club)
+
+
+(spec/explain-data ::suit 42)
+
+
+
+
+
+
+(def email-regex #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$")
+(spec/def ::email-type (spec/and core/string? #(re-matches email-regex %)))
+
+(spec/def ::acctid core/int?)
+(spec/def ::first-name core/string?)
+(spec/def ::last-name core/string?)
+(spec/def ::email ::email-type)
+
+(spec/def ::person (spec/keys :req [::first-name ::last-name ::email]
+                              :opt [::phone]))
+
+(spec/valid? ::email-type "test@test.com")
+
+(spec/valid? ::person {::first-name "Elon"
+                       ::last-name "Musk"
+                       ::email "elon@example.com"})
 

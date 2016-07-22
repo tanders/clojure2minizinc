@@ -8,15 +8,23 @@
   ;; Difficulties: 
   ;; - The MiniZinc distribution and solvers are platform specific, so I would need an extra project for each platform.
   ;; - The MiniZinc distribution installation requires running some install script locally
-  :dependencies [;; [org.clojure/clojure "1.9.0-alpha7"]
-                 [org.clojure/clojure "1.8.0"]
-                 ;; [org.clojure/clojure "1.6.0"]
+  :dependencies [;; Version with clojure.spec
+                 ;; https://clojure.org/guides/spec
+                 ;; http://clojure.github.io/clojure/branch-master/clojure.spec-api.html
+                 [org.clojure/clojure "1.9.0-alpha10"]
+                 ;; A backport of clojure.spec for Clojure 1.8.
+                 ;; https://github.com/tonsky/clojure-future-spec
+                 ;; [clojure-future-spec "1.9.0-alpha10"]
+                 ;; [org.clojure/clojure "1.8.0"]
                  [me.raynes/fs "1.4.6"]
                  [org.clojure/math.combinatorics "0.1.3"]
                  ;; https://github.com/clojure-emacs/cider-tracing
                  ;; https://github.com/clojure/tools.trace
                  ;; [org.clojure/tools.trace "0.7.5"]
                  ]
+  ;; For spec generation -- https://github.com/clojure/test.check
+  ;; dev profile dependencies are included during testing but not published as a dependency or included in uber jars
+  :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]}}
   ;; see https://github.com/weavejester/codox
   :codox {:metadata {:doc "TODO: write docs"
                      :doc/format :markdown}
