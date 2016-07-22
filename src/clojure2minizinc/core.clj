@@ -156,7 +156,8 @@
 (defn  ^:no-doc name-or-val
   "If arg is aVar its name is returned, otherwise x."
   [x]
-  (if (aVar? x) (:name x) x))
+  (if (core/or (aVar? x) (anArray? x))
+    (:name x) x))
 
 (comment
   (def myVar (make-aVar 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
