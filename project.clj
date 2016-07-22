@@ -22,9 +22,9 @@
                  ;; https://github.com/clojure/tools.trace
                  ;; [org.clojure/tools.trace "0.7.5"]
                  ]
-  ;; For spec generation -- https://github.com/clojure/test.check
-  ;; dev profile dependencies are included during testing but not published as a dependency or included in uber jars
-  :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]}}
+  ;; ;; For spec generation -- https://github.com/clojure/test.check
+  ;; ;; dev profile dependencies are included during testing but not published as a dependency or included in uber jars
+  ;; :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]}}
   ;; see https://github.com/weavejester/codox
   :codox {:metadata {:doc "TODO: write docs"
                      :doc/format :markdown}
@@ -33,5 +33,5 @@
           :source-uri "https://github.com/tanders/clojure2minizinc/tree/master/"
           :src-linenum-anchor-prefix "L"}
   ;; specify in which ns to start by default 
-  :repl-options {:init-ns clojure2minizinc.core}
+  ;; :repl-options {:init-ns clojure2minizinc.core}
   )
