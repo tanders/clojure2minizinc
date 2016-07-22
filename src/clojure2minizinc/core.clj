@@ -477,8 +477,97 @@
   )
 
 
+;;;
+;;; Type-insts
+;;;
+
+
+(comment
+
+  ;; !! NOTE: currently excluded from base type-insts
+  ;; TODO: add these extra later (e.g., can they be elements in set or array?)
+  :string
+  :ann
+  :opt
+  )
+
+
+(comment
+  ;; clojure.spec def for type-insts
+  ;; Not quite working yet, therefore commented out again for now
+  
+;;
+;; !! NOTE: Some of this is already implicitly defined in :pre conditions of some functions, e.g., par -- make that uniform
+;; fn variable calls mk-type-inst-string, so it now allows for too many cases
+;;
+
+;; see MiniZinc spec, Sec 6.4. Type-inst Expressions Overview, p. 8f
+(spec/def ::base-ti-expr-tail-kw #{:bool :int :float})
+
+(spec/def ::set-ti-expr (spec/cat :set #{:set} :of (spec/? #{:of})
+                                  :base-ti-expr-tail ::base-ti-expr-tail))
+;; (spec/conform ::set-ti-expr [:set #{1 2 3}])
+
+(spec/def ::literal-set core/set?)
+
+;; range
+(def range-regex #"^[0-9]+\s*[.]{2}\s*[0-9]+")
+(spec/def ::range-str (spec/and core/string? #(re-matches range-regex %)))
+;; (spec/valid? ::range-str (-- 1 10))
+;; (spec/valid? ::range-str "1 .. 10")
+
+(spec/def ::var-par-kw #{:var :par})
+
+(spec/def ::base-ti-expr-tail (spec/or :base-ti-expr-tail-kw ::base-ti-expr-tail-kw
+                                       :literal-set ::literal-set
+                                       :range-str ::range-str))
+
+(spec/def ::base-ti-expr-tail-or-set (spec/or :base-ti-expr-tail ::base-ti-expr-tail
+                                              :set-ti-expr (spec/spec ::set-ti-expr)))
+
+(spec/def ::base-ti-expr (spec/or :base-ti-expr-tail-or-set ::base-ti-expr-tail-or-set
+                                  :var-par-ti-expr (spec/spec (spec/cat :var-par ::var-par-kw
+                                                                        :base-ti-expr-tail ::base-ti-expr-tail-or-set))))
+
+(spec/def ::array-ti-expr (spec/cat :array #{:array}
+                                    :index-type (spec/alt :int #{:int}
+                                                          :literal-set ::literal-set
+                                                          :range-str ::range-str)
+                                    :of (spec/? #{:of}) 
+                                    :base-ti-expr (spec/spec ::base-ti-expr)))
+;; (spec/valid? ::array-ti-expr [:array :int [:var :int]])
+
+
+(spec/def ::ti-expr (spec/or :base-ti-expr ::base-ti-expr
+                             :array-ti-expr ::array-ti-expr))
+
+)
+
+(comment
+
+  (spec/valid? ::ti-expr :bool)
+  (spec/valid? ::ti-expr [:set (-- 1 3)])
+
+  (spec/valid? ::ti-expr :bla)
+
+  ;; (spec/valid? ::ti-expr (list [:set (-- 1 3)])) 
+
+  (spec/valid? (spec/cat :my-type-inst ::ti-expr) (list [:set (-- 1 3)]))
+
+  
+  (gen/generate (spec/gen ::range-str))
+
+  (gen/sample (spec/gen ::base-ti-expr-tail))
+  
+  (spec/exercise ::base-ti-expr-tail-kw 5)
+  
+
+  )
+
+
+
 ;; Must be public, because it is called by macro predicate
-(defn ^:no-doc mk-type-inst-string [my-type-inst]
+(defn ^:no-doc mk-type-inst-string 
   "[Aux function] Translates a Clojure type-inst specification into a type-inst string
  in MiniZinc syntax. `my-type-inst` is either a single specification or 
 a vector of specifications.
@@ -516,6 +605,7 @@ a vector of specifications.
   ;; {:pre [(if (vector? my-type-inst) 
   ;;          ((first my-type-inst) #{:var :set :int :float})
   ;;          true)]}
+  [my-type-inst]
   (cond
     ;; array -- format largely similar to array function args 
     (core/and (vector? my-type-inst)
@@ -540,6 +630,27 @@ a vector of specifications.
 
 
 (comment
+  ;; clojure.spec def for type-insts -- testing interface of mk-type-inst-string
+  ;; Not quite working yet, therefore commented for now
+  
+(spec/fdef mk-type-inst-string
+           ;; possibly this is no spec/cat, but what then?
+           ;; :args (spec/cat :my-type-inst ::ti-expr)
+           :args (fn [my-spec]
+                   (print my-spec)
+                   (spec/valid? (spec/cat :my-type-inst ::ti-expr) my-spec))
+           :ret core/string?)
+;; TMP:
+(spectest/instrument `mk-type-inst-string)
+;; (spectest/unstrument `mk-type-inst-string)
+
+  (spec/valid? (spec/cat :my-type-inst ::ti-expr) (list [:var :set #{1 3 5}]))
+  (spec/valid? (spec/cat :my-type-inst ::ti-expr) '(:bool))
+
+)
+
+(comment
+  
   (mk-type-inst-string :bool)
   ;; ->  "bool"
   (mk-type-inst-string (-- 1 3))
@@ -569,8 +680,12 @@ a vector of specifications.
 
   (def xx 10)
   (mk-type-inst-string [:array (-- 1 xx) [:var :int]])
+
+  ;; Case causing errors
+  (mk-type-inst-string :bla)
   
   )
+
 
 
 (comment ; previous versions
