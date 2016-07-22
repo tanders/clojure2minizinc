@@ -2860,9 +2860,9 @@ BUG: this fn is currently far too inflexible."
   "Calls a MiniZinc solver on a given MiniZinc program and returns a
   list of one or more solutions.
   
-  Options are
+  Arguments are
   
-  - :mzn             (string) a MiniZinc program, which can be created
+  - mzn             (string) a MiniZinc program, which can be created
     with other functions of clojure2minizinc wrapped into clj2mnz 
   - :print-cmd?      (boolean) whether or not to print the UNIX
     command call of the solver (for debugging) 
@@ -3089,7 +3089,7 @@ BUG: this fn is currently far too inflexible."
       (< x y))
     (let [x (variable (-- -1 1)) 
           y (variable (-- -1 1))]
-      (constraint (my_less_than x 2))
+      (constraint (my_less_than 2 x))
       (solve :satisfy)
       (output-map {:x x :y y}))))
 
@@ -3111,6 +3111,19 @@ BUG: this fn is currently far too inflexible."
       y :int]
      (< x y)))
 
+  
+  ;; (print
+  ;;  (clj2mnz
+  ;;   (predicate my_test
+  ;;     [x [:var :int]
+  ;;      y [:array :int [:var :int]]]
+  ;;     (< x (nth y 0)))
+  ;;   (let [x (variable (-- -1 1)) 
+  ;;         y (array (-- 1 10) (-- 0 10))]
+  ;;     (constraint (my_test x y))
+  ;;     (solve :satisfy)
+  ;;     (output-map {:x x :y y}))))
+  
 
   (predicate alldifferent_except_x
              ;; Array declaration more similar to args of function array, but now all expressed with keywords
