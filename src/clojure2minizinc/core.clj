@@ -410,6 +410,37 @@
   )
 
 
+(defn literal
+  "Translates Clojure values into corresponding MiniZinc strings. Supported Clojure types are Booleans, integers, floats, strings, sets of ints, and vectors of above values."
+  [x]
+  (cond  (core/or (core/boolean? x)
+                  (core/int? x)
+                  (core/float? x)) (str x)
+         (core/string? x) (string x)
+         (core/set? x) (apply literal-set x)
+         (core/vector? x) (apply literal-array (map literal x))
+         :else (throw (Exception. 
+                       (pprint/cl-format nil
+                                         "literal: not allowed as literal MiniZinc expr: ~S of type ~S" 
+                                         x (type x))))))
+  
+
+(comment
+  (literal true)
+  (literal 42)
+  (literal 3.14)
+  (literal "test")
+  (literal #{1 2 3})
+  (literal [1 2 3])
+  (literal [1.1 2.2])
+  (literal ["foo" "bar"])
+  (literal [true false])
+
+  ;; exception
+  (literal {:test 1})
+  )
+
+
 ;; see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf p. 4
 ;; TODO: add distinction between parameter and variable declaration
 ;; etc -- in short, cover all type-inst variants in the flatzinc-spec, see link above
