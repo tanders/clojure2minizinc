@@ -2784,7 +2784,7 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
 
 ;; TODO: add support for seq_search, e.g., by extra fn
 ;; TODO: What about type float? Not mentioned in MiniZinc not FlatZinc doc
-(defn- search-annotation
+(defn search-annotation
   "Defines standard search annotation without extensions such as proposed, 
   e.g., by [1]).
   
@@ -2895,9 +2895,10 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
     (core/assert (if expr
                    (#{:maximize :minimize} solver)
                    (#{:satisfy} solver)))
-    (if ann
-      (format "solve :: %s\n  %s;" ann solver-call)
-      (format "solve %s;" solver-call))))
+    (tell-store!
+     (if ann
+       (format "solve :: %s\n  %s;" ann solver-call)
+       (format "solve %s;" solver-call)))))
 
   
 (comment
