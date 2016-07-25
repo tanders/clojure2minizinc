@@ -89,6 +89,7 @@
     )
   )
 
+;; TODO: change default to nil, so I do not have to check whether it is true in include
 (def ^{:dynamic true} ^:no-doc *included-files*  ; :private true
   "A thread-local store for collecting which files have already been included. Used for automatic inclusion of global constraint defs."
   false)
@@ -297,6 +298,10 @@
         y (variable (-- 1 3))
         z (variable (-- 1 3))]
     (expr [x y z]))
+
+  ;; exception
+  (expr {:test 1})
+
 
   )
 
@@ -3038,7 +3043,10 @@ BUG: this fn is currently far too inflexible."
           ;; TODO: this is not yet a clean solution
           ;; In case there is an error as part of a warning then show that. How can I show a warning and still return the final result?
           (if (core/not= (:err result) "")
-            (throw (Exception. (format "MiniZinc: %s" (:err result)))))
+            (throw
+             (ex-info (format "MiniZinc: %s" (:err result)) {:type :minizinc-warning :cause :minizinc-warning})
+             ;; (Exception. (format "MiniZinc: %s" (:err result)))
+             ))
           ;; TODO: Consider replacing read-string with clojure.edn/read-string or read 
           ;; See, e.g., Clojure Cookbook, sec. 4.14: "use read to read large data structures from a stream"
           ;; and later secs. e.g., 4.15, 4.16, 4.17
@@ -3047,7 +3055,9 @@ BUG: this fn is currently far too inflexible."
                  ;; Take Windows vs. UNIX line break differences into account
                  (clojure.string/split (:out result) #"(\r\n----------\r\n|==========\r\n)")
                  (clojure.string/split (:out result) #"(\n----------\n|==========\n)"))))
-        (throw (Exception. (format "MiniZinc: %s" (:err result))))))))
+        (throw (ex-info (format "MiniZinc: %s" (:err result)) {:type :minizinc-error :cause :minizinc-error})
+               ;; (Exception. (format "MiniZinc: %s" (:err result)))
+               )))))
 
 
 
@@ -3148,6 +3158,7 @@ BUG: this fn is currently far too inflexible."
   [& all-args]
   (let [;; access arguments from all-args
         name (first all-args)
+        ;; name-kw (keyword name)
         doc-string? (core/string? (second all-args))
         doc-string (if doc-string? (second all-args) "Not documented.")
         all-args (if doc-string? (next all-args) all-args)
@@ -3252,6 +3263,75 @@ BUG: this fn is currently far too inflexible."
 )
 
 
+
+(defn validate-predicate
+  "Calls defined mzn predicate in a minimalistic CSP with the given fixed arguments (Clojure values) to demonstrate whether the arguments comply with the predicate (returns `true`) or not (returns error message as string)."    
+  [predicate & args]
+  (try (do
+         (minizinc
+          (clj2mnz
+           (constraint (apply predicate (map literal args)))
+           (solve :satisfy)
+           (output-map {:solved true})))
+         true)
+       (catch clojure.lang.ExceptionInfo e
+         (let [e-type (core/-> e ex-data :type)]
+           ;; only catch minizinc errors or warnings, but no other exceptions
+           (if (or (= e-type :minizinc-warning)
+                   (= e-type :minizinc-error))                   
+             (.getMessage e)
+             (throw e))))))
+
+
+(comment
+
+  (predicate alldifferent_except_x
+    "Constrains the elements of array `y` to be all different except those
+  elements that are assigned to `x`.
+  source: modification of MiniZinc's `alldifferent_except_0.mzn`"
+    [x [:var :int]
+     y [:array :int [:var :int]]]    
+    (forall [i (index_set y)
+             j (index_set y)
+             :where (!= i j)]
+      (-> (and (!= (nth y i) x)
+               (!= (nth y j) x))
+          (!= (nth y i) (nth y j)))))
+
+  (validate-predicate alldifferent_except_x 0 [5 4 3 2 1 6 9 0 0 0]) ;; OK
+  (validate-predicate alldifferent_except_x 0 [5 4 3 2 1 6 1 0 0 0]) ;; error, because 1 occurs twice
+
+
+  
+
+  )
+  
+
+;; ;; !! Unfinished (and with namespace qualifier m/...) 
+;; (defmacro def-predicate-test
+;;   ;; TODO: `local` or `let` syntax?
+;;   "Vector bindings sets arguments for bindings like `local` or `let`
+;; Provides init value for all args of predicate and only args of predicate, in the right order"
+;;   [predicate bindings]
+;;   (let [args  ;; TODO: extract from bindings
+;;         fn-name (symbol (str test "-" predicate))]
+;;   `(defn ~fn-name
+;;      ~(str "Tests predicate " predicate)
+;;      [my-x my-y]
+;;      (m/minizinc
+;;       (m/clj2mnz
+;;        ;; TODO: decide: `local` or `let`
+;;        (let ~bindings
+;;          (m/constraint ~(apply predicate args))
+;;          (m/solve :satisfy)
+;;          ;; TODO: generate out map
+;;          (m/output-map {:my-array my-array})))))))
+;;
+;; (predicate-test alldifferent_except_x
+;;   [x (m/int 'x 9)
+;;    my-array (m/array (m/-- 1 10) [:var (m/-- 0 10)])])
+
+  
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
