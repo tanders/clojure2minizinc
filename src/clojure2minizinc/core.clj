@@ -2814,7 +2814,7 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
     - :indomain_middle -- assign the variable its domain value closest
       to the mean of its current bounds
     - :indomain_median -- assign the variable its median domain value
-    - ::indomain -- nondeterministically assign values to the variable in 
+    - :indomain -- nondeterministically assign values to the variable in 
       ascending order
     - :indomain_random -- assign the variable a random value from its domain
     - :indomain_split -- bisect the variables domain excluding the upper half.
@@ -2839,21 +2839,18 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
   References:
 
   [1] Schrijvers, T. et al. (2013) 'Search combinators'. Constraints. 18(2), 269–305."
-  [type variables varchoice constrainchoice strategy]
+  ;; [type variables varchoice constrainchoice strategy]
+  [type variables & {:keys [varchoice constrainchoice strategy]
+                     :or {varchoice :first_fail constrainchoice :indomain_median strategy :complete}}]
   (let [search-type (str (name type) "_search")]
     (call-fn search-type variables varchoice constrainchoice strategy)))
 
 (comment
-  (search-annotation :int 'x :first_fail :indomain_min :complete)
+  (search-annotation :int 'x)
+  (search-annotation :int 'x
+                     :varchoice :occurrence
+                     :constrainchoice :indomain_random)
   )
-
-
-;; ;; annotation expression, e.g., solve annotation
-;; int_search(q, first_fail, indomain_min, complete)
-
-;; ;; annotation binding
-;; search_ann = int_search(q, input_order, indomain_min, complete);
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2878,10 +2875,13 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
 
   (solve :satisfy)
   (solve :maximize (+ x y))  
+  (solve :satisfy
+         :ann (search-annotation :int x))
+
   "
-  ;; TODO: which notation for keywords in :arglists
-  {; :forms '[(solve solver exp? {:keys [ann]})]
-   :arglists '([solver expr? {:keys [ann]}])}
+  ;; No standard notation for :arglists
+  ;; Inspiration for this simple form from http://grokbase.com/t/gg/clojure/11cxesejc1/arglists-question
+  {:arglists '([solver expr? :ann])}
   [& all-args]
   (let [solver (first all-args)
         second-arg (second all-args)
@@ -2905,9 +2905,11 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
   (solve :satisfy)
   (solve :maximize (+ 'x 'y))
   (solve :satisfy
-         :ann (search-annotation :int 'x :first_fail :indomain_min :complete))
+         :ann (search-annotation :int 'x))
   (solve :maximize (+ 'x 'y)
-         :ann (search-annotation :int 'x :first_fail :indomain_min :complete))
+         :ann (search-annotation :int 'x
+                                 :varchoice :occurrence
+                                 :constrainchoice :indomain_random))
 
   ;; error
   (solve :foo)   
