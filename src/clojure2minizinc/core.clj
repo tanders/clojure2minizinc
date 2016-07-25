@@ -153,12 +153,6 @@
   [x]
   (core/= (type x) clojure2minizinc.core.aVar))
 
-(defn  ^:no-doc name-or-val
-  "If arg is aVar its name is returned, otherwise x."
-  [x]
-  (if (core/or (aVar? x) (anArray? x))
-    (:name x) x))
-
 (comment
   (def myVar (make-aVar 'x (format "var %s: %s;" (-- 1 3) (name 'x))))
   (:name myVar)
@@ -211,6 +205,14 @@
   (anArray? a)
 
   )
+
+
+(defn  ^:no-doc name-or-val
+  "If arg is aVar its name is returned, otherwise x."
+  [x]
+  (if (core/or (aVar? x) (anArray? x))
+    (:name x) x))
+
 
 ;; quasi forward declaration, so that fns can be used in other fns before defined
 (def literal-set)
