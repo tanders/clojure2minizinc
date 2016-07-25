@@ -27,6 +27,18 @@
    In clojure2minizinc, CSPs are defined directly in Clojure. MiniZinc (and its constraint solvers, including 3rd-party solvers) do the actual work in the background, and the result is read back into Clojure. clojure2minizinc code can be very close to MiniZinc code, and therefore this tutorial complements the [[http://www.minizinc.org/downloads/doc-latest/minizinc-tute.pdf][MiniZinc tutorial]]: its examples are translated into Clojure here. In addition to the translated examples, this tutorial primarily explains the differences between clojure2minizinc and MiniZinc. It also discusses how the power of Clojure can complement what MiniZinc provides.
 
 
+* COMMENT ?? TODO 
+
+  Make sure minizinc executables are found.
+
+  I had problems after a CIDER update, because seemingly the PATH was suddenly not read, until I used 
+  https://github.com/purcell/exec-path-from-shell
+
+  Correct PATH important instead of just setting absolute path to minizinc exec, because minizinc in turn is calling other execs
+
+  But should this really discussed here?
+
+
 * Basic Modelling in MiniZinc
 
 ** Defining a Namespace for the Tutorial
