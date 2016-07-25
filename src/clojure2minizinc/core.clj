@@ -2715,35 +2715,6 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; Solver
-;;;
-
-(defn solve 
-  "Solve items specify what kind of solution is being looked
-  for. Supported values for solver are :satisfy, :maximize, and
-  :minimize (a keyword)."
-  ([solver]
-     {:pre [(#{:satisfy} solver)]}
-     (tell-store! (format "solve %s;" (name solver))))
-  ([solver exp]
-     {:pre [(#{:maximize :minimize} solver)]}
-     (tell-store! (format "solve %s %s;" (name solver) (expr exp)))))
-
-
-(comment
-  (solve :satisfy)
-  (solve :foo) ;; error -> assert failed
-
-  ;; Unfinished
-  (solve :satisfy :annotation [])
-  ;; int_search(q, first_fail, indomain_min, complete)
-
-  
-  )
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
 ;;; Annotation
 ;;;
 
@@ -2758,12 +2729,6 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
   
   ;; ;; annotation declaration
   ;; annotation bitdomain(int:nwords);
-
-  ;; ;; annotation expression, e.g., solve annotation
-  ;; int_search(q, first_fail, indomain_min, complete)
-
-  ;; ;; annotation binding
-  ;; search_ann = int_search(q, input_order, indomain_min, complete);
 
   ;; ;; annotations added to various other language constructs with :: operator
   ;; ;; Annotations can be attached to variables (on their declarations), expresssions, type-inst synonyms, enum items, solve items and on user defined operations.
@@ -2782,17 +2747,12 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
   ;; !! Most important are solver annotations for now, perhaps I only add those?
 
 
-  ;; ;; for annotation declaration 
-  ;; (defn annotation
-  ;;   []
-  ;;   )
+  ;; for annotation declaration 
+  (defn annotation
+    []
+    )
 
-  ;; ;; for :: operator
-  ;; (defn __
-  ;;   [expr annotation-name & args]
-  ;;   1)
-  
-  
+
   ;; [:int_search q :first_fail :indomain_min :complete]
 
   ;; (annotation )
@@ -2801,6 +2761,156 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
 
   )
 
+
+(defn __
+  "Speficies an annotation -- the :: operator in MiniZinc. 
+
+  Note that many functions (bool, int, float, set, array, constraint, search)
+  support annotations as arguments. Use this function for annotating inner 
+  expressions.
+
+  Note that solvers are free to ignore any or all annotations in a model."
+  [expr annotation-name & args]
+  (str expr " :: " (if args
+                     (apply call-fn annotation-name args)
+                     annotation-name)))
+
+(comment
+  (__ (__ (+ 1 2) 'foo (string 'a) :b) 'bar)
+  (__ (+ 1 2) 'test_ann)
+  (__ (+ 1 2) (search-annotation :int 'x :first_fail :indomain_min :complete))
+  
+  )
+
+;; TODO: add support for seq_search, e.g., by extra fn
+;; TODO: What about type float? Not mentioned in MiniZinc not FlatZinc doc
+(defn- search-annotation
+  "Defines standard search annotation without extensions such as proposed, 
+  e.g., by [1]).
+  
+  Note that solvers are free to ignore annotations in a model, but it is 
+  recommended that solvers at least recognise these search annotations,
+  in particular the starred options.
+  
+  Arguments:
+
+  - type: the type of the `variables`; either :int, :bool, or :set
+  - variables: a one dimensional array of variables 
+  - varchoice: a variable choice annotation; either 
+    - :input_order -- * choose in order from the array
+    - :first_fail -- * choose the variable with the smallest domain size
+    - :anti_first_fail -- choose the variable with the largest domain
+    - :smallest -- choose the variable with smallest value in its domain
+    - :largest -- choose the variable with largest value in its domain
+    - :occurrence -- choose the variable with the largest number of attached
+      constraints
+    - :most_constrained -- choose the variable with the smallest domain, 
+      breaking ties using the number of constraints
+    - :max_regret -- choose the variable with the largest difference between
+      the two smallest values in its domain
+  - constrainchoice: a choice of how to constrain a variable
+    - :indomain_min -- * assign the variable its smallest domain value
+    - :indomain_max -- * assign the variable its largest domain value
+    - :indomain_middle -- assign the variable its domain value closest
+      to the mean of its current bounds
+    - :indomain_median -- assign the variable its median domain value
+    - ::indomain -- nondeterministically assign values to the variable in 
+      ascending order
+    - :indomain_random -- assign the variable a random value from its domain
+    - :indomain_split -- bisect the variables domain excluding the upper half.
+    - :indomain_reverse_split -- bisect the variables domain excluding the 
+      lower half.
+    - :indomain_interval -- if the variable’s domain consists of several 
+      contiguous intervals, reduce the domain to the first interval. Otherwise 
+      just split the variable’s domain.
+  - strategy: a search strategy; solvers should at least support :complete 
+    (i.e., exhaustive search)
+
+  Of course, not all assignment strategies make sense for all search 
+  annotations (e.g., bool search and indomain split).
+
+  
+  Example:
+
+  ;; x is an array of int vars
+  (search-annotation :int x :first_fail :indomain_min :complete)
+
+
+  References:
+
+  [1] Schrijvers, T. et al. (2013) 'Search combinators'. Constraints. 18(2), 269–305."
+  [type variables varchoice constrainchoice strategy]
+  (let [search-type (str (name type) "_search")]
+    (call-fn search-type variables varchoice constrainchoice strategy)))
+
+(comment
+  (search-annotation :int 'x :first_fail :indomain_min :complete)
+  )
+
+
+;; ;; annotation expression, e.g., solve annotation
+;; int_search(q, first_fail, indomain_min, complete)
+
+;; ;; annotation binding
+;; search_ann = int_search(q, input_order, indomain_min, complete);
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Solver
+;;;
+
+(defn solve 
+  "Solve items specify what kind of solution is being looked for. 
+
+  Arguments:
+
+  - solver -- determines whether the model represents a constraint satisfaction 
+    problem (:satisfy) or an optimisation problem (either :maximize, or 
+    :minimize). In the latter case, argument `expr` must be given.
+  - expr -- expression to be minimized/maximized; can have integer or 
+    float type.
+  - :ann -- a search annotation created with `search-annotation` or a 
+    similar function.
+
+  Examples:
+
+  (solve :satisfy)
+  (solve :maximize (+ x y))  
+  "
+  ;; TODO: which notation for keywords in :arglists
+  {; :forms '[(solve solver exp? {:keys [ann]})]
+   :arglists '([solver expr? {:keys [ann]}])}
+  [& all-args]
+  (let [solver (first all-args)
+        second-arg (second all-args)
+        expr (if (core/and second-arg (core/not= second-arg :ann))
+               second-arg
+               nil)
+        ann (if expr
+              (:ann (apply hash-map (rest (rest all-args))))
+              (:ann (apply hash-map (rest all-args))))
+        solver-call (str/join " " (map str [(name solver) expr]))]
+    (core/assert (if expr
+                   (#{:maximize :minimize} solver)
+                   (#{:satisfy} solver)))
+    (if ann
+      (format "solve :: %s\n  %s;" ann solver-call)
+      (format "solve %s;" solver-call))))
+
+  
+(comment
+  (solve :satisfy)
+  (solve :maximize (+ 'x 'y))
+  (solve :satisfy
+         :ann (search-annotation :int 'x :first_fail :indomain_min :complete))
+  (solve :maximize (+ 'x 'y)
+         :ann (search-annotation :int 'x :first_fail :indomain_min :complete))
+
+  ;; error
+  (solve :foo)   
+  )
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3107,8 +3217,6 @@ BUG: this fn is currently far too inflexible."
 
 
 
-;; TODO: Only tell-store! definition when predicate is actually called, and ensure code for each predicate is included only once.
-;; See include definition...
 (defmacro predicate
   "A MiniZinc predicate: defines a Clojure function that can
   be called as a constraint, and generates the necessary MiniZinc code. 
@@ -3153,7 +3261,8 @@ BUG: this fn is currently far too inflexible."
 
   [:array (-- 1 3) [:var :int]]
   [:array :int [:var :int]]"
-  {:forms '[(predicate name doc-string? args-with-type-insts body*)]
+  {; :forms '[(predicate name doc-string? args-with-type-insts body*)]
+   :arglists '([name doc-string? args-with-type-insts body*])
    :style/indent [1 [[:defn]] :form]}
   [& all-args]
   (let [;; access arguments from all-args
