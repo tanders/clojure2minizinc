@@ -2721,8 +2721,73 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
 (comment
   (solve :satisfy)
   (solve :foo) ;; error -> assert failed
+
+  ;; Unfinished
+  (solve :satisfy :annotation [])
+  ;; int_search(q, first_fail, indomain_min, complete)
+
+  
   )
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Annotation
+;;;
+
+(comment
+
+  ;; ;; Several expressions/statements to support
+  ;; ;; annotations have ann type
+
+  ;; "Annotations allow a modeller to specify non-declarative and solver-specific information that is beyond the core language. Annotations do not change the meaning of a model, however, only how it is solved."
+  
+  ;; ;; -> Does that mean I have to revise pretty much all definitions to allow for them?
+  
+  ;; ;; annotation declaration
+  ;; annotation bitdomain(int:nwords);
+
+  ;; ;; annotation expression, e.g., solve annotation
+  ;; int_search(q, first_fail, indomain_min, complete)
+
+  ;; ;; annotation binding
+  ;; search_ann = int_search(q, input_order, indomain_min, complete);
+
+  ;; ;; annotations added to various other language constructs with :: operator
+  ;; ;; Annotations can be attached to variables (on their declarations), expresssions, type-inst synonyms, enum items, solve items and on user defined operations.
+  ;; search annotations
+  ;; constraint annotations
+  ;; added to variable or parameter declarations (e.g., to indicate special kind of variables)
+  ;; int: x::foo;
+  ;; x = (3 + 4)::bar("a", 9)::baz("b");
+
+
+  ;; Annotation has quasi function syntax: `name(arg1, arg2, ...)`, which can be also only the `name`  
+
+  ;; Possibly tricky: how to quasi integrate into existing calls with :: operator -- do I need to rewrite lots of definitions?
+  ;; -> only if they introduce `\;` at end, and I would have to add annotation before that
+
+  ;; !! Most important are solver annotations for now, perhaps I only add those?
+
+
+  ;; ;; for annotation declaration 
+  ;; (defn annotation
+  ;;   []
+  ;;   )
+
+  ;; ;; for :: operator
+  ;; (defn __
+  ;;   [expr annotation-name & args]
+  ;;   1)
+  
+  
+  ;; [:int_search q :first_fail :indomain_min :complete]
+
+  ;; (annotation )
+
+
+
+  )
 
 
 
