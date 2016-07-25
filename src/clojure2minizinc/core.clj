@@ -131,6 +131,13 @@
 
 
 
+(def ^{:dynamic true} ^:no-doc *defined-predicates*  
+  "A thread-local store for collecting which predicates have been defined."
+  {})
+
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Data structure definitions 
@@ -2924,7 +2931,8 @@ BUG: this fn is currently far too inflexible."
   output, and one solver declaration, all in any order."
   [& constraints]
   `(binding [*mzn-store* []
-             *included-files* #{}]
+             *included-files* #{}
+             *defined-predicates* #{}]
      ~@constraints
      ;; TODO: map is lazy -- make sure dynamic scope is not left
      (apply str (doall (map (fn [x#]  ; x# results in unique gensym
@@ -3089,8 +3097,10 @@ BUG: this fn is currently far too inflexible."
 
 
 
+;; TODO: Only tell-store! definition when predicate is actually called, and ensure code for each predicate is included only once.
+;; See include definition...
 (defmacro predicate
-   "A MiniZinc predicate: defines a Clojure function that can
+  "A MiniZinc predicate: defines a Clojure function that can
   be called as a constraint, and generates the necessary MiniZinc code. 
 
   `args-with-type-insts` is quasi a vector of typed arguments consisting 
@@ -3151,18 +3161,23 @@ BUG: this fn is currently far too inflexible."
         args-str (map str args)]
     `(let [;; Args in mzn syntax
            mzn-args-string# (apply str (interpose ", " (map (fn [[my-var# type-inst#]]
-                                                         (str (mk-type-inst-string type-inst#) ": " my-var#))
-                                                       '~partitioned-args)))]
+                                                              (str (mk-type-inst-string type-inst#) ": " my-var#))
+                                                            '~partitioned-args)))]
        ;; Constraint function
        (defn ~name ~doc-string ~args
+         ;; function class ensures that predicate definition is included in resulting mzn code
+         (if (not (contains? *defined-predicates* '~name))
+           (do
+             ;; predicage definition
+             (tell-store! 
+              (str "predicate " '~name "(" mzn-args-string# ") =\n" 
+                   "  " (apply (fn ~args (str/join "\n  " (list ~@body))) '~args-str)
+                   ";"))
+             (set! *defined-predicates* (conj *defined-predicates* '~name))))
+         ;; Return function call code
          (str '~name "("
               (str/join ", " (map name-or-val ~args))
-              ")"))
-       ;; Predicate code
-       (tell-store! 
-        (str "predicate " '~name "(" mzn-args-string# ") =\n" 
-             "  " (apply (fn ~args (str/join "\n  " (list ~@body))) '~args-str)
-             ";"))
+              ")")) 
        ;; Return name of predicate
        '~name)))
 
