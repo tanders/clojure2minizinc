@@ -1,4 +1,8 @@
 (ns clojure2minizinc.core-test
+  (:refer-clojure :exclude [> >= <= < = == != -> + - * / mod assert concat min max 
+                            int float set and or not nth
+                            string?
+                            count range sort])
   ;; Doc for clojure.test: http://clojure.github.io/clojure/clojure.test-api.html
   (:require [clojure.core :as core]
             [clojure.test :refer :all]
