@@ -1,6 +1,7 @@
+;; !! TODO: def annotation arg for fn variable, array, and constraint (int, bool, float, set and solve are done)
 ;; TODO: revise with meanwhile available MiniZinc spec
 ;; OLD TODO: revise with FlatZinc spec at http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
-;; - ! Add support for search annotations as documented in the spec (but allow for more than given there)
+;; OK - ! Add support for search annotations as documented in the spec (but allow for more than given there)
 ;; OK - Document all basic constraints with that spec
 ;; OK - Double-check all param and var declarations are there etc.
 
@@ -313,27 +314,77 @@
 ;;; MiniZinc parameters (quasi constants)
 ;;;
 
-;; BUG: I may need to declare a parameter with an explicitly given name, but not initialisation -- initialisation happens in init file. This case is more important than being able to initialise a variable without giving it a name - giving it a name unnecessarily does not hurt too much (but is inconvenient). By contrast, initialising it unnecessarily makes initialisation in datafile impossible. 
-;; More flexible, but more verbose: using keyword args. Even better: making key-args also an option.
-(defn- par   
-  "Declares a parameter (quasi a constant) with the given type (a
-  string, symbol or keyword; can be int, float, bool and 'set of
-  int'), an optional init-value (default nil, meaning no
-  initialisation), and optional var name (a string, symbol or keyword,
-  default is a gensym-ed name)."
-  ([param-type] (par param-type (gensym (name param-type))))
-  ([param-type par-name] (par param-type par-name nil))
-  ([param-type par-name init-value]
-     {:pre [(#{"int" "float" "bool" "set of int"} (name param-type))]}
-     ;; (println (pprint/cl-format nil "param-type: ~S, init-value: ~S, par-name ~S" param-type init-value par-name))
-     (tell-store!
-      (make-aVar (name par-name) 
-                 (if init-value
-                   (format "%s: %s = %s;" (name param-type) (name par-name) init-value)
-                   (format "%s: %s;" (name param-type) (name par-name)))))))
+;;;
+;;; Destructuring of arg list with optional and keyword args using clojure.spec
+;;;
+
+(spec/def ::param-type #(#{"int" "float" "bool" "set of int"} (name %)))
+
+(spec/def ::par-args
+  (spec/cat :param-type ::param-type :more (spec/? (spec/cat :par-name symbol? :init-value (spec/? any?)))
+            :keys (spec/keys* :opt-un [::ann])))
+
+(comment 
+  (spec/conform ::par-args ["set of int" 'x 1 :ann 'test])
+  (spec/conform ::par-args [:int 'x 1])
+  (spec/conform ::par-args [:int 'x])
+  (spec/conform ::par-args [:int])
+  (spec/conform ::par-args [:int 'x :ann 'test])
+  (spec/conform ::par-args [:int :ann 'test])
+  )
+
+
+;; inspired by http://stackoverflow.com/questions/17901933/flattening-a-map-by-join-the-keys
+(defn- flatten-map
+  "[Aux] Expects a (nested) map and returns a flat map. Nested values use only their nested keys -- higher-level keys of nested maps are ignored."
+  [form]
+  (into {} (mapcat (fn [[k v]]
+                     (if (map? v)
+                       (flatten-map v)
+                       [[k v]]))
+                   form)))
 
 (comment
-  (:mzn-string (par :int 'x 1))
+  (flatten-map (spec/conform ::par-args
+                             ;; args vector
+                             [:int 'x 1 :ann 'test]))
+)
+
+
+(defn- par
+  "Declares a parameter (quasi a constant).
+
+  Arguments:
+
+  - param-type: a string, symbol or keyword; can be int, float, bool and 
+    'set of int'
+  - par-name: optional par name (a symbol); default is
+    a gensym-ed name
+  - init-value: optional initialisation 
+  - :ann : an annotation
+  "
+  {:arglists '([param-type :ann]
+               [param-type par-name :ann]
+               [param-type par-name init-value :ann])}
+  [& all-args]
+  (let [{:keys [param-type par-name init-value ann]} (flatten-map (spec/conform ::par-args all-args))
+        par-name2 (if (core/not par-name)
+                    (gensym (name param-type))
+                    par-name)]
+    (tell-store!
+     (make-aVar par-name2 
+                (str (name param-type) ": " (name par-name2)
+                     (when init-value (str " = " init-value))
+                     (when ann (str " :: " ann))
+                     ";")
+                ))))
+
+(comment
+  
+  (par :int 'x 1 :ann 'test)
+  (par :int 'x :ann 'test)
+  (par :int)
+  
   (par :int 'test 1)
   (par :int)
 
@@ -346,38 +397,62 @@
   (par :bool)
 
   (par "set of int" 'MySet (-- 1 'max))
+
+  (:mzn-string (par :int 'x 1))
+
   )
 
+
 (defn int 
-  "Declares an initeger parameter (quasi a constant) with an optional
-  init-value (default nil, meaning no initialisation), and optional
-  name (a string, symbol or keyword, default is a gensym-ed name).
+  "Declares an initeger parameter (quasi a constant).
+
+  Arguments:
+
+  - par-name: optional par name (a symbol); default is
+    a gensym-ed name
+  - init-value: optional initialisation 
+  - :ann : an annotation
 
   Note: use [[variable]] for creating an integer variable."
-  ([] (par :int)) 
-  ([par-name] (par :int par-name))
-  ([par-name init-value] (par :int par-name init-value)))
+  {:arglists '([:ann]
+               [par-name :ann]
+               [par-name init-value :ann])}
+  [& all-args]
+  (apply par :int all-args))
 
 (defn float 
-  "Declares a float parameter (quasi a constant) with an optional
-  init-value (default nil, meaning no initialisation), and optional
-  name (a string, symbol or keyword, default is a gensym-ed name).
+  "Declares a float parameter (quasi a constant).
+
+  Arguments:
+
+  - par-name: optional par name (a symbol); default is
+    a gensym-ed name
+  - init-value: optional initialisation 
+  - :ann : an annotation
 
   Note: use [[variable]] for creating a float variable."
-  ([] (par :float)) 
-  ([par-name] (par :float par-name))
-  ([par-name init-value] (par :float par-name init-value)))
+  {:arglists '([:ann]
+               [par-name :ann]
+               [par-name init-value :ann])}
+  [& all-args]
+  (apply par :float all-args))
 
-(defn bool 
-  "Declares a bool parameter (quasi a constant) with an optional
-  init-value (default nil, meaning no initialisation), and optional
-  name (a string, symbol or keyword, default is a gensym-ed name).
+(defn bool
+  "Declares a bool parameter (quasi a constant).
 
-  Note: use [[variable]] for creating a Boolean variable."
-  ([] (par :bool)) 
-  ([par-name] (par :bool par-name))
-  ([par-name init-value] (par :bool par-name init-value)))
+  Arguments:
 
+  - par-name: optional par name (a symbol); default is
+    a gensym-ed name
+  - init-value: optional initialisation 
+  - :ann : an annotation
+
+  Note: use [[variable]] for creating a bool variable."
+  {:arglists '([:ann]
+               [par-name :ann]
+               [par-name init-value :ann])}
+  [& all-args]
+  (apply par :bool all-args))
 
 
 (defn string?
@@ -457,11 +532,13 @@
 ;; TODO: add distinction between parameter and variable declaration
 ;; etc -- in short, cover all type-inst variants in the flatzinc-spec, see link above
 (defn set
-  "Declares a set of integers parameter (quasi a constant) with an
-  optional init-value and optional name (a string, symbol or keyword,
-  default is a gensym-ed name). The init value is a range, e.g., `(--
-  1 10)` meaning the set contains all integers in the range. The
-  default is nil, meaning no initialisation.
+  "Declares a set of integers parameter (quasi a constant).
+
+  Arguments:
+
+  - par-name: optional par name (a symbol); default is a gensym-ed name
+  - init-value: optional initialisation, a range or a set
+  - :ann : an annotation
 
   Note: use [[variable]] for creating a set variable.
 
@@ -470,15 +547,23 @@
   ; A set of integers with automatically generated name and no specified value
   (set)
   ; A named integer set
-  (set \"MySet\")
+  (set 'MySet)
   ; A named set of integers with the given range
-  (set \"MySet\" (-- 1 10))
+  (set 'MySet (-- 1 10))
   ; A named set of integers with the given value
-  (set \"MySet\" #{1 3 5})
-  "
-  ([] (set (gensym "Set"))) 
-  ([par-name] (set par-name nil))
-  ([par-name init-value] (par "set of int" par-name (apply literal-set init-value))))
+  (set 'MySet #{1 3 5})"
+  {:arglists '([:ann]
+               [par-name :ann]
+               [par-name init-value :ann])}
+  [& all-args]
+  (let [{:keys [param-type par-name init-value ann]} (flatten-map (spec/conform ::par-args
+                                                                                (core/cons "set of int" all-args)))]
+    (par "set of int"
+         (if-not par-name (gensym "Set") par-name)
+         (cond (core/string? init-value) init-value
+               (core/set? init-value) (apply literal-set init-value))
+         :ann ann)))
+
 
 (comment
   (int)
@@ -487,9 +572,11 @@
   (bool)
 
   (set)
-  (set "MySet")
-  (set "MySet" (-- 1 10))
-  (set "MySet" #{1 3 5})
+  (set 'MySet)
+  (set 'MySet (-- 1 10))
+  (set 'MySet #{1 3 5})
+
+  (literal-set (-- 1 10))
   )
 
 
@@ -2761,11 +2848,11 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
 
   )
 
-
+;; !! TODO: def annotation arg for variable, array, constraint
 (defn __
   "Speficies an annotation -- the :: operator in MiniZinc. 
 
-  Note that many functions (bool, int, float, set, array, constraint, search)
+  Note that many functions (bool, int, float, set, array, variable, constraint, solve)
   support annotations as arguments. Use this function for annotating inner 
   expressions.
 
