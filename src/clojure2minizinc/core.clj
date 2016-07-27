@@ -50,6 +50,7 @@
 
 ;; Path to shell apps
 ;; (def *mzn2fzn* "Path to the mzn2fzn executable" "/Applications/minizinc-1.6/bin/mzn2fzn")
+;; !! NOTE: should this really be a dynamic var? Cannot be updated outside a thread...
 (def ^:dynamic *fd-solver* "Path to default constraint solver for finite domain (integers)" 
   "minizinc")
 
@@ -66,7 +67,7 @@
 ;;;
 
 ;; Sending all constraints to a single store instead of returning them from functions like constraint allows, e.g., to store minizinc vars in arbitrary clojure data structures and freely traversing such data structure for applying constraints to these, without worrying how to collect the constraint information.
-;; Note: Must be public so that other packages can indirectly write to it (why? tell-store! does not need to be public either.)
+;; Note: Must be public so that other packages can indirectly write to it (macro clj2mnz includes *mzn-store* in resulting code)
 (def ^{:dynamic true} ^:no-doc *mzn-store*  ; :private true
   "A thread-local store for collecting all information about a CSP."
   false)
@@ -145,6 +146,18 @@
 ;;; Data structure definitions 
 ;;; (I could perhaps only use strings, but additional explicit information important for certain types)
 ;;;
+;;;
+;;; QUESTION: Should I use plain maps instead of records? I would only need to have some type feature and define functions like aVar?, aRecord? etc.
+;;; Because this code will be performance sensitive for realtime use, I best use a records according to https://cemerick.com/2011/07/05/flowchart-for-choosing-the-right-clojure-type-definition-form/
+;;; 
+;;; More discussion:
+;;; Potential disadvantages: are records faster?
+;;; Potential advantages: maps are very flexible, and literal data, well supported Clojure data type with lots of functions predefined...
+;;; See also http://grokbase.com/t/gg/clojure/127py2gr5h/any-downside-of-record-compared-to-map
+;;;
+;;;
+;;;
+
 
 ;; NOTE: ->aVar and map->aVar are created automatically, and it is included in the doc, because I cannot set ^:no-doc to it 
 (defrecord ^:no-doc aVar [name mzn-string])
@@ -168,10 +181,9 @@
   (:mzn-string myVar)
   (aVar? myVar)
 
-  
-
   (map->aVar {:name 'test :mzn-string "hi there"})
   (->aVar 'test "hi there")
+  
   )
 
 ;; NOTE: ->anArray and map->anArray are created automatically, and it is included in the doc, because I cannot set ^:no-doc to it 
@@ -952,6 +964,7 @@ The keyword :of is optional for readability.
   (array (-- 1 3) :int 'x [5 6 7])      
 
   BUG: literal arrays not supported as init val.
+  BUG: Annotations not yet supported.
 "
   ([index-set type-inst] (array index-set type-inst (gensym "array")))
   ([index-set type-inst array-name] (array index-set type-inst array-name nil))
@@ -1439,6 +1452,8 @@ A where-expression can be added after the generators, which acts as a
 
   ; an integer variable named x (instead of an automatically assigned name)
   (variable (-- 1 10) 'x)    
+
+  BUG: Annotations not yet supported.
 "
     ([type-inst] (variable type-inst (gensym "var")))
     ([type-inst var-name]
@@ -1511,7 +1526,9 @@ A where-expression can be added after the generators, which acts as a
 
 (defn constraint 
   "Expects a constraint expression (a string) and turns it into a
-  constraint statement."
+  constraint statement.
+
+  BUG: Annotations not yet supported."
   [constraint-expr]
   (tell-store! (format "constraint %s;" (expr constraint-expr))))
 
@@ -3562,6 +3579,9 @@ BUG: this fn is currently far too inflexible."
   )
 
 
+;; !! TODO: tell-store! a composite data structure containing the head and body of the let expression
+;; TODO: Fix probem with potential scrabled MiniZinc code (when used in a predicate definition)
+;; !! Could stateless variant of tell-store! with something like futures provide a solution?
 ;; TODO: Consider adding spec for checking args. E.g., `local` is similar to `let` and it is easy to forget the surrounding ()
 ;; macro name chosen because `let` is a special form
 (defmacro local
@@ -3577,7 +3597,9 @@ BUG: this fn is currently far too inflexible."
           (y :int 1)]
     (constraint (> x y)))
 
-  See [[predicate]] for type-inst examples."
+  See [[predicate]] for type-inst examples.
+
+  BUG: Can result in scrabled MiniZinc code, e.g., when used in a predicate definition (header and body of let expression detouched)."
   {:forms '[(local [bindings*] exprs*)]
    :style/indent [1 [[:defn]] :form]}
   [bindings & body]
@@ -3591,8 +3613,14 @@ BUG: this fn is currently far too inflexible."
                                                  0 ;; var name at 1st pos.
                                                  (str (first binding))))
                                         bindings))]
-    `(let [;; plain aVar for each variable, without any mzn string
+    `(let [;; plain aVar for each variable of local, without any mzn string
            aVars# (map make-aVar '~args)]
+       ;; TODO: combine the header and body into a single (new) data structure that is returned and can be processed by any function in the body
+       ;; No, I cannot do that, because tell-store! can be called within body, e.g., by `constraint`
+       ;; Can I instead annotate the header and body of the let expr with the same ID, so that those two parts can be combined later? I would need some datastructure beyond strings for that, OK. Adding an ID to the header would then be easy.
+       ;; !! !! However, how can I add an ID to the body? The body would need to return the data it potentially already told the store, and `local` should be able to add some ID to it that would also update the store. For that I would need either a stateful ID [value], or a single assignment [value]
+       ;; !! !! If the body contains multiple expressions, then all their results must be collected and the same ID added 
+       ;;
        ;; let header
        (tell-store!
         (str "let {"
