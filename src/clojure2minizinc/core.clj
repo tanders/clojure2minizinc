@@ -3398,14 +3398,20 @@ BUG: this fn is currently far too inflexible."
        ;; Constraint function
        (defn ~name ~doc-string ~args
          ;; function class ensures that predicate definition is included in resulting mzn code
-         (if (not (contains? *defined-predicates* '~name))
-           (do
-             ;; predicage definition
-             (tell-store! 
-              (str "predicate " '~name "(" mzn-args-string# ") =\n" 
-                   "  " (apply (fn ~args (str/join "\n  " (list ~@body))) '~args-str)
-                   ";"))
-             (set! *defined-predicates* (conj *defined-predicates* '~name))))
+         (when (core/not (contains? *defined-predicates* '~name))
+           (set! *defined-predicates* (conj *defined-predicates* '~name))
+           ;; generation of predicate definition code:
+           ;; broken into multiple tell-store! calls to preserve order in case tell-store!
+           ;; is called in `body` (if it is a single call then nested calls e.g. in `local`
+           ;; would be executed earlier resulting in a scrambled order of code lines.
+           (tell-store! (str "predicate " '~name "(" mzn-args-string# ") ="))
+           (tell-store! (apply (fn ~args (str/join "\n  " (list ~@body))) '~args-str))
+           (tell-store! ";")
+           ;; (tell-store! 
+           ;;  (str "predicate " '~name "(" mzn-args-string# ") =\n" 
+           ;;       "  " (apply (fn ~args (str/join "\n  " (list ~@body))) '~args-str)
+           ;;       ";"))
+           )
          ;; Return function call code
          (str '~name "("
               (str/join ", " (map name-or-val ~args))
@@ -3425,6 +3431,8 @@ BUG: this fn is currently far too inflexible."
 
 
 (comment
+
+  (contains? (core/conj *defined-predicates* 'test-pred) 'test-pred)
 
   (print
    (clj2mnz
@@ -3480,6 +3488,8 @@ BUG: this fn is currently far too inflexible."
       (-> (and (!= (nth y i) x)
                      (!= (nth y j) x))
              (!= (nth y i) (nth y j)))))
+
+
 
 )
 
@@ -3584,10 +3594,6 @@ BUG: this fn is currently far too inflexible."
   )
 
 
-;; !! TODO: tell-store! a composite data structure containing the head and body of the let expression
-;; TODO: Fix probem with potential scrabled MiniZinc code (when used in a predicate definition)
-;; !! Could stateless variant of tell-store! with something like futures provide a solution?
-;; TODO: Consider adding spec for checking args. E.g., `local` is similar to `let` and it is easy to forget the surrounding ()
 ;; macro name chosen because `let` is a special form
 (defmacro local
   "Defines local MiniZinc variables. Similar to `let` in Clojure plus required
@@ -3602,9 +3608,7 @@ BUG: this fn is currently far too inflexible."
           (y :int 1)]
     (constraint (> x y)))
 
-  See [[predicate]] for type-inst examples.
-
-  BUG: Can result in scrabled MiniZinc code, e.g., when used in a predicate definition (header and body of let expression detouched)."
+  See [[predicate]] for type-inst examples."
   {:forms '[(local [bindings*] exprs*)]
    :style/indent [1 [[:defn]] :form]}
   [bindings & body]
@@ -3620,17 +3624,11 @@ BUG: this fn is currently far too inflexible."
                                         bindings))]
     `(let [;; plain aVar for each variable of local, without any mzn string
            aVars# (map make-aVar '~args)]
-       ;; TODO: combine the header and body into a single (new) data structure that is returned and can be processed by any function in the body
-       ;; No, I cannot do that, because tell-store! can be called within body, e.g., by `constraint`
-       ;; Can I instead annotate the header and body of the let expr with the same ID, so that those two parts can be combined later? I would need some datastructure beyond strings for that, OK. Adding an ID to the header would then be easy.
-       ;; !! !! However, how can I add an ID to the body? The body would need to return the data it potentially already told the store, and `local` should be able to add some ID to it that would also update the store. For that I would need either a stateful ID [value], or a single assignment [value]
-       ;; !! !! If the body contains multiple expressions, then all their results must be collected and the same ID added 
-       ;;
        ;; let header
        (tell-store!
         (str "let {"
              (str/join ", " (map mk-decl-str ~bindings-vec))
-             "} in\n  "))
+             "} in"))
        ;; let body -- store told internally (e.g., in `constraint` calls)
        (apply (fn ~args ~@body) (map name-or-val aVars#))
        )))
@@ -3648,14 +3646,14 @@ BUG: this fn is currently far too inflexible."
 
 (comment
 
-  (local [(x [:var (-- 0 10)])
-          (y :int 1)]
-    (constraint (> x y)))
+  ;; (local [(x [:var (-- 0 10)])
+  ;;         (y :int 1)]
+  ;;   (constraint (> x y)))
 
-  (local [(x [:var (-- -1 1)])
-          (y [:var #{1 3 5}])
-          (z [:int] 1)]
-    (constraint (+ x y z)))
+  ;; (local [(x [:var (-- -1 1)])
+  ;;         (y [:var #{1 3 5}])
+  ;;         (z [:int] 1)]
+  ;;   (constraint (+ x y z)))
 
   ;; multiple constraints
   (clj2mnz
@@ -3665,11 +3663,22 @@ BUG: this fn is currently far too inflexible."
      (constraint (+ x y z))
      (constraint (< x y))))
 
-  ;; Spec error without surrounding () of each binding
-  (local [y :int 1]
-    y)
-  (local ([y :int 1])
-    y)
+  ;; with custom predicate
+  (predicate test-pred [x [:var :int]]
+             (local [(y [:var :int])]
+               (+ x y)))
+  (print
+   (clj2mnz
+    (constraint (test-pred 1))
+    (constraint (test-pred 2))
+    ))
+  
+
+  ;; ;; Spec error without surrounding () of each binding
+  ;; (local [y :int 1]
+  ;;   y)
+  ;; (local ([y :int 1])
+  ;;   y)
 
   (spec/conform ::local
                 `[[(x [:var (-- -1 1)])
