@@ -80,7 +80,11 @@
   (if *mzn-store*
     (do (set! *mzn-store* (conj *mzn-store* constraint))
         constraint)
-    constraint))
+    (throw (Exception. (str "Constraint, variable or parameter added outside clj2mzn; cannot tell `"
+                            (if (core/string? constraint)
+                              constraint
+                              (:mzn-string constraint))
+                            "`." )))))
 
 (comment
   (binding [*mzn-store* ()]
@@ -107,18 +111,19 @@
 ;;         file)
 ;;     file))
 
-;; Extends *included-files* by given file and tells store to include that file, but only if that file was not included already. (Only extends *included-files* at thread-local level, otherwise does nothing).
+;; Extends *included-files* by given file and tells store to include that file, but only if that file was not included already. (Only extends *included-files* at thread-local level, otherwise throws exception).
 (defn include 
-  "Include the given file. Does automatic book keeping whether file
-  was already included, and includes it only once."
+  "Include the given file. Does automatic book keeping whether file was
+  already included, and includes it only once."
   [file]
-  (if (core/and *included-files*
-                (core/not (contains? *included-files* file)))
-    (do ; (println (format "add-included-file!: %s, %s, %s" file *included-files* *mzn-store*))
+  (if *included-files*    
+    (if (core/not (contains? *included-files* file))
+      (do ; (println (format "add-included-file!: %s, %s, %s" file *included-files* *mzn-store*))
         (tell-store! (format "include \"%s\";" file))
         (set! *included-files* (conj *included-files* file))
         file)
-    file))
+      file)
+    (throw (Exception. (str "Include called outside clj2mzn; cannot include " file "." )))))
 
 (comment
   (binding [*included-files* #{}
@@ -136,7 +141,7 @@
 
 (def ^{:dynamic true} ^:no-doc *defined-predicates*  
   "A thread-local store for collecting which predicates have been defined."
-  {})
+  #{})
 
 
 
