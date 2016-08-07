@@ -1,5 +1,10 @@
 ;; !! TODO: def annotation arg for fn variable, array, and constraint (int, bool, float, set and solve are done)
 ;; TODO: revise with meanwhile available MiniZinc spec
+;;
+;; Add support for direct output to FlatZinc. See FlatZinc reference.
+;; Declarations must occur in a certain order: zero or more external predicate declarations (i.e., a non-standard predicate that is supported directly by the target solver); zero or more parameter declarations; zero or more variable declarations; zero or more constraints; a solve goal. I would allow for parallel processing, and those different declarations would be somehow tagged to sort them later.
+;; I would translate various existing MiniZinc statements/expressions directly into the corresponding FlatZinc, e.g., for ...
+;;
 ;; OLD TODO: revise with FlatZinc spec at http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
 ;; OK - ! Add support for search annotations as documented in the spec (but allow for more than given there)
 ;; OK - Document all basic constraints with that spec
@@ -36,7 +41,8 @@
             ;; https://clojure.github.io/math.combinatorics/
             ;; !! Warning: WARNING: #'clojure.core/update replaced by #'clojure.math.combinatorics/update
             ;; Only loading cartesian-product? Warning remains..
-            [clojure.math.combinatorics :refer [cartesian-product] :as combi]
+            [clojure.math.combinatorics :refer [cartesian-product] :as combi
+             :exclude [update]]
             ;; [clojure.math.combinatorics :as combi]
             [clojure.string :as str]
             ;; [clojure.inspector :as inspector]
