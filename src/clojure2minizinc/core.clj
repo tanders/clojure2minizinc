@@ -67,37 +67,98 @@
    (str/lower-case (System/getProperty "os.name"))
    "win"))
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Utils
+;;;
+
+;; Note: contains? does not was the name may suggest.
+;; http://stackoverflow.com/questions/3249334/test-whether-a-list-contains-a-specific-value-in-clojure#3249401
+(defn in? 
+  "true if `collection` contains `elm`"
+  [collection elm]  
+  (some #(core/= elm %) collection))
+
+(comment 
+ (in? '(100 101 102) 101)
+ (in? '(100 101 102) 1)
+
+ (in? '(100 101 102) nil)
+ (in? '(100 nil 102) nil)
+ (in? '(100 false 102) false)
+ )
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Defining the store for storing all information about a CSP
 ;;;
 
+;;;
+;;; Flatzinc expects that the declarations of a model occur in the following order
+;;;
+;;; 1. zero or more external predicate declarations (i.e., a non-standard predicate that is supported directly by the target solver);
+;;; 2. zero or more parameter declarations;
+;;; 3. zero or more variable declarations;
+;;; 4. zero or more constraints;
+;;; 5. a solve goal
+;;;
+;;; I add:
+;;; 0. include statements
+;;; 0b. predicate and function definitions
+;;; 
+
 ;; Sending all constraints to a single store instead of returning them from functions like constraint allows, e.g., to store minizinc vars in arbitrary clojure data structures and freely traversing such data structure for applying constraints to these, without worrying how to collect the constraint information.
 ;; Note: Must be public so that other packages can indirectly write to it (macro clj2mnz includes *mzn-store* in resulting code)
 (def ^{:dynamic true} ^:no-doc *mzn-store*  ; :private true
   "A thread-local store for collecting all information about a CSP."
-  false)
+  false
+  )
 
 (defn ^:no-doc tell-store! 
-  "[Aux function] Extends *mzn-store* by given constraint and returns
-  constraint (only extends *mzn-store* at thread-local level,
-  otherwise does nothing)."
-  [constraint]
+  "[Aux function] Extends *mzn-store* by the given minizinc declaration
+  of the given kind (a keyword such as `:include') and returns declaration. 
+  (only extends *mzn-store* at thread-local level, otherwise does nothing)."
+  [kind mzn]
   (if *mzn-store*
-    (do (set! *mzn-store* (conj *mzn-store* constraint))
-        constraint)
+    (do (set! *mzn-store* (assoc *mzn-store* kind (conj (kind *mzn-store*) mzn)))
+        mzn)
     (throw (Exception. (str "Constraint, variable or parameter added outside clj2mzn; cannot tell `"
-                            (if (core/string? constraint)
-                              constraint
-                              (:mzn-string constraint))
+                            (if (core/string? mzn)
+                              mzn
+                              (:mzn-string mzn))
                             "`." )))))
 
-(comment
-  (binding [*mzn-store* ()]
-    (tell-store! 1)
-    (tell-store! 2)
-    (tell-store! 3)
-    ;; (println *mzn-store*)
+(spec/fdef tell-store!
+           :args (spec/cat :kind #{:include
+                                   ;; :predicate
+                                   :parameter
+                                   :variable
+                                   ;; :constraint
+                                   ;; predicates and constraints 
+                                   :other
+                                   :solve
+                                   :output}
+                           :mzn any?))
+(spectest/instrument `tell-store!)
+;; (spectest/unstrument `tell-store!)
+
+
+(comment  
+  (binding [*mzn-store* {:include []
+                         :predicate []
+                         :parameter []
+                         :variable []
+                         :constraint []
+                         :solve []
+                         :output []}]
+    (tell-store! :constraint 1)
+    (tell-store! :constraint 2)
+    (tell-store! :variable 3)
+    (println *mzn-store*)
     )
   )
 
@@ -110,7 +171,7 @@
 ;;   "Extends *included-files* by given file and tells store to include that file, but only if that file was not included already. (Only extends *included-files* at thread-local level, otherwise does nothing)."
 ;;   [file]
 ;;   (if (core/and *included-files*
-;;                 (core/not (contains? *included-files* file)))
+;;                 (core/not (in? *included-files* file)))
 ;;     (do (println (format "add-included-file!: %s, %s, %s" file *included-files* *mzn-store*))
 ;;         (tell-store! (include file))
 ;;         (set! *included-files* (conj *included-files* file))
@@ -123,9 +184,9 @@
   already included, and includes it only once."
   [file]
   (if *included-files*    
-    (if (core/not (contains? *included-files* file))
+    (if (core/not (in? *included-files* file))
       (do ; (println (format "add-included-file!: %s, %s, %s" file *included-files* *mzn-store*))
-        (tell-store! (format "include \"%s\";" file))
+        (tell-store! :include (format "include \"%s\";" file))
         (set! *included-files* (conj *included-files* file))
         file)
       file)
@@ -133,7 +194,13 @@
 
 (comment
   (binding [*included-files* #{}
-            *mzn-store* ()]
+            *mzn-store* {:include []
+                         :predicate []
+                         :parameter []
+                         :variable []
+                         :constraint []
+                         :solve []
+                         :output []}]
     (include "test.mzn")
     (include (io/as-file "test2.mzn"))
     (include "test.mzn")
@@ -394,13 +461,13 @@
         par-name2 (if (core/not par-name)
                     (gensym (name param-type))
                     par-name)]
-    (tell-store!
-     (make-aVar par-name2 
-                (str (name param-type) ": " (name par-name2)
-                     (when init-value (str " = " init-value))
-                     (when ann (str " :: " ann))
-                     ";")
-                ))))
+    (tell-store! :parameter
+                 (make-aVar par-name2 
+                            (str (name param-type) ": " (name par-name2)
+                                 (when init-value (str " = " init-value))
+                                 (when ann (str " :: " ann))
+                                 ";")
+                            ))))
 
 (comment
   
@@ -976,45 +1043,51 @@ The keyword :of is optional for readability.
 
   BUG: literal arrays not supported as init val.
   BUG: Annotations not yet supported.
-"
+  "
   ([index-set type-inst] (array index-set type-inst (gensym "array")))
   ([index-set type-inst array-name] (array index-set type-inst array-name nil))
   ([index-set type-inst array-name init-value]
-     ;; {:pre [(#{"int" "float" "bool" "string" "set of int"} (name type-inst))]}
-     ;; (println (pprint/cl-format nil "type-inst: ~S, init-value: ~S, array-name ~S" type-inst init-value array-name))
-     (tell-store!
-      (make-anArray 
-       (name array-name) 
-       (format "array[%s] of %s: %s;" 
-               ;; index-set
-               (cond 
-                ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
-                (aVar? index-set) (:name index-set)
-                (core/string? index-set) index-set
-                ;; TODO: consider replacing list? with the more general seq?, just in case (to include cons's, lazy seq's etc.
-                (core/or (list? index-set) 
-                         (vector? index-set)) (apply str
-                                                   (interpose ", "
-                                                              (map #(cond 
-                                                                     ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
-                                                                     (aVar? %) (:name %)
-                                                                     (core/string? %) %
-                                                                     :else (throw 
-                                                                            (Exception. 
-                                                                             (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
-                                                                                               % (type %)))))
-                                                                   index-set)))
-                :else (throw (Exception. 
-                              (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
-                                                index-set (type index-set)))))
-               (mk-type-inst-string type-inst) ;; TODO: unfinished: only simple type-inst naming type supported
-               (if init-value
-                 (str (name array-name) " = " (apply literal-array init-value))
-                 (name array-name)))
-       index-set))))
+   ;; {:pre [(#{"int" "float" "bool" "string" "set of int"} (name type-inst))]}
+   ;; (println (pprint/cl-format nil "type-inst: ~S, init-value: ~S, array-name ~S" type-inst init-value array-name))
+   (tell-store!
+    ;; telling a parameter or variable?
+    (if (core/and (vector? type-inst)
+                  (in? type-inst :var))
+        :variable
+        :parameter)
+    (make-anArray 
+     (name array-name) 
+     (format "array[%s] of %s: %s;" 
+             ;; index-set
+             (cond 
+               ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
+               (aVar? index-set) (:name index-set)
+               (core/string? index-set) index-set
+               ;; TODO: consider replacing list? with the more general seq?, just in case (to include cons's, lazy seq's etc.
+               (core/or (list? index-set) 
+                        (vector? index-set)) (apply str
+                                                    (interpose ", "
+                                                               (map #(cond 
+                                                                       ;; TODO: consider revising design -- currently a set wrapped in a var, and index-set stored in name
+                                                                       (aVar? %) (:name %)
+                                                                       (core/string? %) %
+                                                                       :else (throw 
+                                                                              (Exception. 
+                                                                               (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
+                                                                                                 % (type %)))))
+                                                                    index-set)))
+               :else (throw (Exception. 
+                             (pprint/cl-format nil "Not allowed as array index-set: ~S of type ~S" 
+                                               index-set (type index-set)))))
+             (mk-type-inst-string type-inst) ;; TODO: unfinished: only simple type-inst naming type supported
+             (if init-value
+               (str (name array-name) " = " (apply literal-array init-value))
+               (name array-name)))
+     index-set))))
 
 
 (comment
+
   (array (-- 1 10) :bool)
   (array (-- 1 10) :int 'test) ;"array[0..10] of var int: test;"
   (array (-- 1 10) (-- 1 3))
@@ -1125,6 +1198,7 @@ The keyword :of is optional for readability.
   )
 
 ;; http://www.minizinc.org/downloads/doc-1.6/mzn-globals.html
+;; !! BUG: include must be added at top-level -- it cannot happen within a predicate def or local body
 (defn call-global-constraint
   "Includes <fn>.mzn and then calls fn, like [[call-fn]]."
   [fn & args]
@@ -1470,7 +1544,8 @@ A where-expression can be added after the generators, which acts as a
     ([type-inst var-name]
        (let [dom-string (mk-type-inst-string type-inst)
              name-string (name var-name)]
-         (tell-store! (make-aVar name-string (format "var %s: %s;" dom-string name-string))))))
+         (tell-store! :variable
+                      (make-aVar name-string (format "var %s: %s;" dom-string name-string))))))
     
 
 (comment
@@ -1541,7 +1616,7 @@ A where-expression can be added after the generators, which acts as a
 
   BUG: Annotations not yet supported."
   [constraint-expr]
-  (tell-store! (format "constraint %s;" (expr constraint-expr))))
+  (tell-store! :other (format "constraint %s;" (expr constraint-expr))))
 
 ;; (defmacro ^:private def-unary-operator
 ;;   "Defines a function that outputs the code for a MiniZinc unary operator."
@@ -3010,10 +3085,10 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
     (core/assert (if expr
                    (#{:maximize :minimize} solver)
                    (#{:satisfy} solver)))
-    (tell-store!
-     (if ann
-       (format "solve :: %s\n  %s;" ann solver-call)
-       (format "solve %s;" solver-call)))))
+    (tell-store! :solve
+                 (if ann
+                   (format "solve :: %s\n  %s;" ann solver-call)
+                   (format "solve %s;" solver-call)))))
 
   
 (comment
@@ -3047,7 +3122,8 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
   "Expects a map containing MiniZinc variables and returns a string
   formatted for MiniZinc to output a Clojure map for Clojure to read."
   [my-map]
-  (tell-store! 
+  (tell-store!
+   :output
    (str "output [\"{\", " 
         ;; BUG: of REPL? Strings containing parentheses can cause blocking.
         ;; waiting for a response at https://groups.google.com/forum/#!forum/clojure-tools
@@ -3065,7 +3141,8 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
   formatted for MiniZinc to output a Clojure vector for Clojure to
   read."
   [my-vec]
-  (tell-store! 
+  (tell-store!
+   :output
    (str "output [\"[\", " 
         ;; BUG: of REPL? Strings containing parentheses can cause blocking.
         ;; waiting for a response at https://groups.google.com/forum/#!forum/clojure-tools
@@ -3082,7 +3159,7 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
   "Outputs a single MiniZinc variable. For example, a one-dimensional
   MiniZinc array can be read into a Clojure vector directly."
   [my-var]
-  (tell-store! (format "output [ show(%s) ];" (expr my-var))))
+  (tell-store! :output (format "output [ show(%s) ];" (expr my-var))))
 
 ;; TODO: output for multi-dimensional vector
 
@@ -3093,7 +3170,7 @@ table(array[int] of var int:  x, array[int, int] of int:  t)
 
 BUG: this fn is currently far too inflexible."
   [mzn-string]
-  (tell-store! (format "output [ %s ];" (expr mzn-string)))) ; \"\\n\"
+  (tell-store! :output (format "output [ %s ];" (expr mzn-string)))) ; \"\\n\"
 
 (comment
   (print (output "x = show(a)"))
@@ -3157,24 +3234,35 @@ BUG: this fn is currently far too inflexible."
 ;; TODO: this will likely not work as a function, because given function calls are evaluated outside the necessary dynamic scope. Nevertheless, try before using a macro instead
 ;; TODO: Possibly I late embed this in minizinc below? Then it needs to become a macro itself.
 ;; TODO: should macros be defined elsewhere as caution?
-(defmacro clj2mnz 
-  "Translates a constraint problem defined in Clojure into the
+(let [process-store-vector (fn [x]  
+                             (str (cond (core/or (aVar? x) (anArray? x))
+                                        (:mzn-string x)
+                                        (core/string? x) x
+                                        :else (throw (Exception. (pprint/cl-format nil "~S not supported. MiniZinc statements must be strings or variables defined with function clojure2minizinc.core/variable." x)))) 
+                                  "\n"))]
+  (defmacro clj2mnz 
+    "Translates a constraint problem defined in Clojure into the
   corresponding MiniZinc code. Expects any number of
   variable/parameter declarations, any number of constraints, one
   output, and one solver declaration, all in any order."
-  [& constraints]
-  `(binding [*mzn-store* []
-             *included-files* #{}
-             *defined-predicates* #{}]
-     ~@constraints
-     ;; TODO: map is lazy -- make sure dynamic scope is not left
-     (apply str (doall (map (fn [x#]  ; x# results in unique gensym
-                              (str (cond (core/or (aVar? x#) (anArray? x#))
-                                         (:mzn-string x#)
-                                         (core/string? x#) x#
-                                         :else (throw (Exception. (pprint/cl-format nil "~S not supported. MiniZinc statements must be strings or variables defined with function clojure2minizinc.core/variable." x#)))) 
-                                   "\n"))
-                            *mzn-store*)))))
+    [& constraints]
+    `(binding [*mzn-store* {:include []
+                            ;; :predicate []
+                            :parameter []
+                            :variable []
+                            ;; :constraint []
+                            ;; predicates and constraints 
+                            :other []
+                            :solve []
+                            :output []}
+               *included-files* #{}
+               *defined-predicates* #{}]
+       ~@constraints
+       ;; TODO: map is lazy -- make sure dynamic scope is not left
+       (apply str (map (fn [key#] (apply str (doall (map ~process-store-vector (key# *mzn-store*)))))
+                       [:include :parameter :variable :other :solve :output]))
+       ;; (apply str (doall (map process-store-vector *mzn-store*)))
+       )))
 
 (comment
   ;; minimum CSP
@@ -3184,11 +3272,12 @@ BUG: this fn is currently far too inflexible."
    (clj2mnz
     (let [a (variable (-- 1 3) 'a) ;; mzn var naming redundant, but ensures var name in *.mzn file
           b (variable (-- 1 3) 'b)]
-      (constraint (!= a b))
-      (solve :satisfy)
       (output-map {:a a :b b})
+      (solve :satisfy)
+      (constraint (!= a b))
       (pprint/pprint *mzn-store*)
       )))
+
   )
 
 
@@ -3222,6 +3311,7 @@ BUG: this fn is currently far too inflexible."
     to the solver in UNIX shell syntax, e.g., [\"-a\"] for all
     solutions. 
 
+  BUG: MiniZinc sets output cannot be read yet.
   BUG: resulting temporary MiniZinc file is not deleted after Clojure quits."
   [mzn & {:keys [solver mznfile data
                  print-cmd?
@@ -3275,7 +3365,8 @@ BUG: this fn is currently far too inflexible."
              (ex-info (format "MiniZinc: %s" (:err result)) {:type :minizinc-warning :cause :minizinc-warning})
              ;; (Exception. (format "MiniZinc: %s" (:err result)))
              ))
-          ;; TODO: Consider replacing read-string with clojure.edn/read-string or read 
+          ;; BUG: MiniZinc sets output cannot be read yet. Should I define a bespoke parser generator?
+          ;; Old TODO: Consider replacing read-string with clojure.edn/read-string or read 
           ;; See, e.g., Clojure Cookbook, sec. 4.14: "use read to read large data structures from a stream"
           ;; and later secs. e.g., 4.15, 4.16, 4.17
           (map read-string
@@ -3307,6 +3398,21 @@ BUG: this fn is currently far too inflexible."
   )
 
 
+(comment
+
+  (defn read-mzn-result
+    []
+    (cond true 1))
+  
+  
+  (read-string "[15, 16, 18, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21]")
+  ;; NOTE: Reading a set does not work
+  (read-string "{15,16,18}")
+
+  
+  )
+
+  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -3329,9 +3435,10 @@ BUG: this fn is currently far too inflexible."
   ;; *mzn-store* is false outside of a call to mz/clj2mnz
   `(def ~name
      (fn ~args
-       (clj2mnz 
-        (tell-store! 
-         ~@body)))))
+       (clj2mnz
+        ;; !! NOTE: I do not know/check whether a contraint or something else is told.
+        ;; OK here, but needs to be revised for flatzinc output
+        (tell-store! :other ~@body)))))
 
 
 
@@ -3404,15 +3511,16 @@ BUG: this fn is currently far too inflexible."
        ;; Constraint function
        (defn ~name ~doc-string ~args
          ;; function class ensures that predicate definition is included in resulting mzn code
-         (when (core/not (contains? *defined-predicates* '~name))
+         (when (core/not (in? *defined-predicates* '~name))
            (set! *defined-predicates* (conj *defined-predicates* '~name))
            ;; generation of predicate definition code:
            ;; broken into multiple tell-store! calls to preserve order in case tell-store!
            ;; is called in `body` (if it is a single call then nested calls e.g. in `local`
            ;; would be executed earlier resulting in a scrambled order of code lines.
-           (tell-store! (str "predicate " '~name "(" mzn-args-string# ") ="))
-           (tell-store! (apply (fn ~args (str/join "\n  " (list ~@body))) '~args-str))
-           (tell-store! ";")
+           ;; BUG: How to ensure the middle tell-store! does not call `constraint` or some other function causing this codeline ending up outside the predicate
+           (tell-store! :other (str "predicate " '~name "(" mzn-args-string# ") ="))
+           (tell-store! :other (apply (fn ~args (str/join "\n  " (list ~@body))) '~args-str))
+           (tell-store! :other ";")
            ;; (tell-store! 
            ;;  (str "predicate " '~name "(" mzn-args-string# ") =\n" 
            ;;       "  " (apply (fn ~args (str/join "\n  " (list ~@body))) '~args-str)
@@ -3438,7 +3546,7 @@ BUG: this fn is currently far too inflexible."
 
 (comment
 
-  (contains? (core/conj *defined-predicates* 'test-pred) 'test-pred)
+  (in? (core/conj *defined-predicates* 'test-pred) 'test-pred)
 
   (print
    (clj2mnz
@@ -3631,10 +3739,10 @@ BUG: this fn is currently far too inflexible."
     `(let [;; plain aVar for each variable of local, without any mzn string
            aVars# (map make-aVar '~args)]
        ;; let header
-       (tell-store!
-        (str "let {"
-             (str/join ", " (map mk-decl-str ~bindings-vec))
-             "} in"))
+       (tell-store! :other
+                    (str "let {"
+                         (str/join ", " (map mk-decl-str ~bindings-vec))
+                         "} in"))
        ;; let body -- store told internally (e.g., in `constraint` calls)
        (apply (fn ~args ~@body) (map name-or-val aVars#))
        )))
